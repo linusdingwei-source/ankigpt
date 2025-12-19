@@ -1,0 +1,84 @@
+{
+  "common": {
+    "appName": "Japanese Text to Speech",
+    "login": "Login",
+    "register": "Register",
+    "logout": "Logout",
+    "email": "Email",
+    "password": "Password",
+    "confirmPassword": "Confirm Password",
+    "submit": "Submit",
+    "cancel": "Cancel",
+    "back": "Back",
+    "loading": "Loading...",
+    "error": "Error",
+    "success": "Success",
+    "or": "OR"
+  },
+  "auth": {
+    "loginTitle": "Sign In",
+    "registerTitle": "Create Account",
+    "forgotPassword": "Forgot Password?",
+    "resetPassword": "Reset Password",
+    "sendVerificationCode": "Send Verification Code",
+    "verificationCode": "Verification Code",
+    "loginWithGoogle": "Sign in with Google",
+    "loginWithEmail": "Sign in with Email",
+    "noAccount": "Don't have an account?",
+    "hasAccount": "Already have an account?",
+    "signUp": "Sign Up",
+    "signIn": "Sign In",
+    "emailRequired": "Email is required",
+    "passwordRequired": "Password is required",
+    "codeRequired": "Verification code is required",
+    "invalidEmail": "Invalid email format",
+    "passwordTooShort": "Password must be at least 6 characters",
+    "passwordsNotMatch": "Passwords do not match",
+    "codeSent": "Verification code sent",
+    "enterCode": "Please enter verification code",
+    "registerSuccess": "Registration successful, logging in...",
+    "resetSuccess": "Password reset successful, redirecting..."
+  },
+  "tts": {
+    "title": "Japanese Text to Speech",
+    "description": "Enter Japanese text to generate and download audio",
+    "inputPlaceholder": "Enter Japanese text...",
+    "generate": "Generate Audio",
+    "download": "Download Audio",
+    "pleaseLogin": "Please login first",
+    "generating": "Generating...",
+    "maxLength": "Maximum 500 characters"
+  },
+  "pricing": {
+    "title": "Choose a Plan",
+    "description": "Select a plan that fits your needs and get more Credits",
+    "popular": "Popular",
+    "credits": "Credits",
+    "bonus": "Bonus",
+    "purchase": "Purchase Now",
+    "loginToPurchase": "Login to Purchase",
+    "alreadyHaveAccount": "Already have an account?"
+  },
+  "payment": {
+    "success": "Payment Successful",
+    "successMessage": "Your payment has been processed successfully. Credits have been added to your account.",
+    "cancelled": "Payment Cancelled",
+    "cancelledMessage": "Your payment has been cancelled. You can try again later.",
+    "error": "Payment Error",
+    "verifying": "Verifying payment...",
+    "backToPricing": "Back to Pricing",
+    "goToDashboard": "Go to Dashboard"
+  },
+  "dashboard": {
+    "credits": "Credits",
+    "buyCredits": "Buy Credits",
+    "buyCreditsNow": "Buy Credits Now"
+  },
+  "captcha": {
+    "title": "Captcha",
+    "refresh": "Refresh",
+    "enterAnswer": "Enter answer",
+    "incorrect": "Incorrect answer"
+  }
+}
+

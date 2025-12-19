@@ -1,0 +1,10 @@
+User-agent: *
+Allow: /
+Disallow: /api/
+Disallow: /dashboard
+Disallow: /payment/
+Disallow: /_next/
+Disallow: /admin/
+
+Sitemap: https://yourdomain.com/sitemap.xml
+

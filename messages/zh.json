@@ -1,0 +1,84 @@
+{
+  "common": {
+    "appName": "日语文本转语音",
+    "login": "登录",
+    "register": "注册",
+    "logout": "退出",
+    "email": "邮箱",
+    "password": "密码",
+    "confirmPassword": "确认密码",
+    "submit": "提交",
+    "cancel": "取消",
+    "back": "返回",
+    "loading": "加载中...",
+    "error": "错误",
+    "success": "成功",
+    "or": "或"
+  },
+  "auth": {
+    "loginTitle": "登录账户",
+    "registerTitle": "创建账户",
+    "forgotPassword": "忘记密码？",
+    "resetPassword": "重置密码",
+    "sendVerificationCode": "发送验证码",
+    "verificationCode": "验证码",
+    "loginWithGoogle": "使用 Google 登录",
+    "loginWithEmail": "使用邮箱登录",
+    "noAccount": "还没有账户？",
+    "hasAccount": "已有账户？",
+    "signUp": "立即注册",
+    "signIn": "立即登录",
+    "emailRequired": "请输入邮箱",
+    "passwordRequired": "请输入密码",
+    "codeRequired": "请输入验证码",
+    "invalidEmail": "邮箱格式不正确",
+    "passwordTooShort": "密码至少需要6个字符",
+    "passwordsNotMatch": "两次输入的密码不一致",
+    "codeSent": "验证码已发送",
+    "enterCode": "请输入验证码",
+    "registerSuccess": "注册成功，正在登录...",
+    "resetSuccess": "密码重置成功，正在跳转..."
+  },
+  "tts": {
+    "title": "日语文本转语音",
+    "description": "输入日语文本，生成语音并下载",
+    "inputPlaceholder": "请输入日语文本...",
+    "generate": "生成语音",
+    "download": "下载音频",
+    "pleaseLogin": "请先登录",
+    "generating": "正在生成...",
+    "maxLength": "最多输入500个字符"
+  },
+  "pricing": {
+    "title": "选择套餐",
+    "description": "选择适合您的套餐，获得更多Credits",
+    "popular": "推荐",
+    "credits": "Credits",
+    "bonus": "赠送",
+    "purchase": "立即购买",
+    "loginToPurchase": "登录购买",
+    "alreadyHaveAccount": "已有账户？"
+  },
+  "payment": {
+    "success": "支付成功",
+    "successMessage": "您的支付已成功处理，Credits已添加到您的账户。",
+    "cancelled": "支付已取消",
+    "cancelledMessage": "您的支付已被取消。您可以稍后重试。",
+    "error": "支付错误",
+    "verifying": "正在验证支付...",
+    "backToPricing": "返回定价",
+    "goToDashboard": "前往仪表板"
+  },
+  "dashboard": {
+    "credits": "Credits",
+    "buyCredits": "购买Credits",
+    "buyCreditsNow": "立即购买Credits"
+  },
+  "captcha": {
+    "title": "验证码",
+    "refresh": "刷新",
+    "enterAnswer": "请输入答案",
+    "incorrect": "答案错误"
+  }
+}
+

@@ -1,0 +1,84 @@
+{
+  "common": {
+    "appName": "日本語テキスト音声変換",
+    "login": "ログイン",
+    "register": "登録",
+    "logout": "ログアウト",
+    "email": "メールアドレス",
+    "password": "パスワード",
+    "confirmPassword": "パスワード確認",
+    "submit": "送信",
+    "cancel": "キャンセル",
+    "back": "戻る",
+    "loading": "読み込み中...",
+    "error": "エラー",
+    "success": "成功",
+    "or": "または"
+  },
+  "auth": {
+    "loginTitle": "ログイン",
+    "registerTitle": "アカウント作成",
+    "forgotPassword": "パスワードを忘れた場合",
+    "resetPassword": "パスワードリセット",
+    "sendVerificationCode": "確認コードを送信",
+    "verificationCode": "確認コード",
+    "loginWithGoogle": "Googleでログイン",
+    "loginWithEmail": "メールでログイン",
+    "noAccount": "アカウントをお持ちでない場合",
+    "hasAccount": "既にアカウントをお持ちの場合",
+    "signUp": "登録",
+    "signIn": "ログイン",
+    "emailRequired": "メールアドレスを入力してください",
+    "passwordRequired": "パスワードを入力してください",
+    "codeRequired": "確認コードを入力してください",
+    "invalidEmail": "メールアドレスの形式が正しくありません",
+    "passwordTooShort": "パスワードは6文字以上である必要があります",
+    "passwordsNotMatch": "パスワードが一致しません",
+    "codeSent": "確認コードを送信しました",
+    "enterCode": "確認コードを入力してください",
+    "registerSuccess": "登録成功、ログイン中...",
+    "resetSuccess": "パスワードリセット成功、リダイレクト中..."
+  },
+  "tts": {
+    "title": "日本語テキスト音声変換",
+    "description": "日本語テキストを入力して音声を生成し、ダウンロードできます",
+    "inputPlaceholder": "日本語テキストを入力...",
+    "generate": "音声生成",
+    "download": "音声ダウンロード",
+    "pleaseLogin": "まずログインしてください",
+    "generating": "生成中...",
+    "maxLength": "最大500文字"
+  },
+  "pricing": {
+    "title": "プランを選択",
+    "description": "あなたに合ったプランを選択して、より多くのCreditsを獲得しましょう",
+    "popular": "おすすめ",
+    "credits": "Credits",
+    "bonus": "ボーナス",
+    "purchase": "今すぐ購入",
+    "loginToPurchase": "ログインして購入",
+    "alreadyHaveAccount": "既にアカウントをお持ちですか？"
+  },
+  "payment": {
+    "success": "支払い成功",
+    "successMessage": "お支払いが正常に処理されました。Creditsがアカウントに追加されました。",
+    "cancelled": "支払いがキャンセルされました",
+    "cancelledMessage": "お支払いがキャンセルされました。後でもう一度お試しください。",
+    "error": "支払いエラー",
+    "verifying": "支払いを確認中...",
+    "backToPricing": "価格に戻る",
+    "goToDashboard": "ダッシュボードへ"
+  },
+  "dashboard": {
+    "credits": "Credits",
+    "buyCredits": "Creditsを購入",
+    "buyCreditsNow": "今すぐCreditsを購入"
+  },
+  "captcha": {
+    "title": "キャプチャ",
+    "refresh": "更新",
+    "enterAnswer": "答えを入力",
+    "incorrect": "答えが間違っています"
+  }
+}
+
