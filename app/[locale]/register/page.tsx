@@ -1,11 +1,12 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useTranslations } from 'next-intl';
 import { useRouter, usePathname } from '@/i18n/routing';
 import { signIn } from 'next-auth/react';
 import Link from 'next/link';
 import { SendCodeButton } from '@/components/SendCodeButton';
+import { trackPageViewEvent, trackButtonClick, trackRegistrationSuccess } from '@/lib/analytics';
 
 export default function RegisterPage() {
   const t = useTranslations();
@@ -21,8 +22,14 @@ export default function RegisterPage() {
   const [codeSent, setCodeSent] = useState(false);
   const [error, setError] = useState('');
 
+  useEffect(() => {
+    // 追踪注册页访问
+    trackPageViewEvent('REGISTER', { locale });
+  }, [locale]);
+
   const handleCodeSent = () => {
     setCodeSent(true);
+    trackButtonClick('SEND_CODE', 'register_page');
   };
 
   const validateBeforeSend = () => {
@@ -78,6 +85,7 @@ export default function RegisterPage() {
         if (result?.error) {
           setError('Registration successful but login failed. Please login manually.');
         } else {
+          trackRegistrationSuccess('email');
           router.push(`/${locale}/dashboard`);
           router.refresh();
         }
@@ -93,6 +101,7 @@ export default function RegisterPage() {
 
   const handleGoogleSignUp = async () => {
     setLoading(true);
+    trackButtonClick('GOOGLE_LOGIN', 'register_page');
     await signIn('google', { callbackUrl: `/${locale}/dashboard` });
   };
 

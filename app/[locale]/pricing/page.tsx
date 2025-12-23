@@ -1,10 +1,11 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useTranslations } from 'next-intl';
 import { usePathname } from '@/i18n/routing';
 import { useSession } from 'next-auth/react';
 import Link from 'next/link';
+import { trackPageViewEvent, trackButtonClick, trackCheckoutStarted } from '@/lib/analytics';
 
 const packages = [
   {
@@ -44,6 +45,11 @@ export default function PricingPage() {
   const { data: session } = useSession();
   const [loading, setLoading] = useState<string | null>(null);
 
+  useEffect(() => {
+    // 追踪定价页访问
+    trackPageViewEvent('PRICING', { locale });
+  }, [locale]);
+
   const handlePurchase = async (packageId: string) => {
     if (!session) {
       // Redirect to login
@@ -52,6 +58,21 @@ export default function PricingPage() {
     }
 
     setLoading(packageId);
+    
+    // 追踪购买按钮点击
+    const selectedPackage = packages.find(p => p.id === packageId);
+    if (selectedPackage) {
+      trackButtonClick('PURCHASE', 'pricing_page');
+      trackCheckoutStarted(packageId, selectedPackage.price, selectedPackage.totalCredits);
+      
+      // 存储套餐信息用于支付成功后的追踪
+      sessionStorage.setItem('purchase_package', JSON.stringify({
+        packageId,
+        price: selectedPackage.price,
+        credits: selectedPackage.totalCredits,
+      }));
+    }
+
     try {
       const res = await fetch('/api/payment/create-checkout', {
         method: 'POST',

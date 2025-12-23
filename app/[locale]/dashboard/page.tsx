@@ -5,6 +5,15 @@ import { useTranslations } from 'next-intl';
 import { useRouter, usePathname } from '@/i18n/routing';
 import { signOut, useSession } from 'next-auth/react';
 import Link from 'next/link';
+import {
+  trackPageViewEvent,
+  trackButtonClick,
+  trackAudioGenerationStart,
+  trackAudioGenerationSuccess,
+  trackAudioGenerationFailed,
+  trackAudioDownload,
+  trackInsufficientCredits,
+} from '@/lib/analytics';
 
 export default function DashboardPage() {
   const t = useTranslations();
@@ -43,6 +52,9 @@ export default function DashboardPage() {
           }
         })
         .catch(err => console.error('Failed to fetch credits:', err));
+
+      // 追踪仪表板访问
+      trackPageViewEvent('DASHBOARD', { locale });
     }
   }, [status, router, locale, session]);
 
@@ -62,6 +74,10 @@ export default function DashboardPage() {
     setLoading(true);
     setError('');
     setAudioUrl(null);
+
+    // 追踪音频生成开始
+    trackAudioGenerationStart(text.length);
+    trackButtonClick('GENERATE_AUDIO', 'dashboard');
 
     try {
       const res = await fetch('/api/tts/generate', {
@@ -86,6 +102,8 @@ export default function DashboardPage() {
           // Update credits if returned
           if (data.credits !== undefined) {
             setCredits(data.credits);
+            // 追踪音频生成成功
+            trackAudioGenerationSuccess(text.length, data.credits);
           }
         } catch (err) {
           console.error('Error processing audio:', err);
@@ -97,6 +115,10 @@ export default function DashboardPage() {
         // If insufficient credits, update credits display
         if (res.status === 402 && data.credits !== undefined) {
           setCredits(data.credits);
+          trackInsufficientCredits(data.credits);
+        } else {
+          // 追踪音频生成失败
+          trackAudioGenerationFailed(errorMsg, data.credits);
         }
       }
     } catch (err) {
@@ -108,6 +130,8 @@ export default function DashboardPage() {
 
   const handleDownload = () => {
     if (audioUrl) {
+      // 追踪音频下载
+      trackAudioDownload();
       const a = document.createElement('a');
       a.href = audioUrl;
       a.download = `japanese-tts-${Date.now()}.mp3`;

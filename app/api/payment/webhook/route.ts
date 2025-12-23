@@ -109,6 +109,9 @@ export async function POST(request: NextRequest) {
       await addCredits(userId, totalCredits);
 
       console.log(`✅ Payment successful: Added ${totalCredits} credits (${baseCredits} base + ${bonusCredits} bonus) to user ${userId}`);
+      
+      // Note: GA tracking for payment success is handled on the client side
+      // in the payment success page, as webhook runs server-side
     } else if (event.type === 'payment_intent.payment_failed') {
       const paymentIntent = event.data.object as Stripe.PaymentIntent;
       

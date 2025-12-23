@@ -3,6 +3,7 @@ import { getMessages } from 'next-intl/server';
 import { notFound } from 'next/navigation';
 import { routing } from '@/i18n/routing';
 import { Providers } from '@/components/providers';
+import { GoogleAnalytics } from '@/components/GoogleAnalytics';
 import { generateMetadata as generateSEOMetadata } from '@/lib/seo';
 import { generateWebSiteStructuredData, generateOrganizationStructuredData } from '@/lib/structured-data';
 import '../globals.css';
@@ -98,6 +99,7 @@ export default async function LocaleLayout({
         />
       </head>
       <body>
+        <GoogleAnalytics />
         <Providers>
           <NextIntlClientProvider messages={messages}>
             {children}

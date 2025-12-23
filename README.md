@@ -17,6 +17,7 @@
 - ✅ 安全防护：数学验证码、频率限制（邮箱60秒、IP每小时5次）
 - ✅ 响应式 UI 设计
 - ✅ **完整 SEO 优化**：Meta 标签、Open Graph、Twitter Card、结构化数据、Sitemap、Robots.txt
+- ✅ **Google Analytics 转化漏斗追踪**：页面访问、按钮点击、购买转化、音频转换成功率
 
 ## 技术栈
 
@@ -45,8 +46,13 @@ pnpm install
 创建 `.env` 文件并配置以下变量：
 
 ```env
-# 数据库
-DATABASE_URL="postgresql://user:password@localhost:5432/dbname?schema=public"
+# 数据库 - Supabase
+# Connection pooling (for application queries)
+DATABASE_URL="postgresql://postgres.qkvgeuallarmbcfjzkko:Fydw%40715@aws-1-ap-south-1.pooler.supabase.com:6543/postgres?pgbouncer=true"
+
+# Direct connection (for migrations)
+# 重要：直接连接必须使用 db.[PROJECT-REF].supabase.co，不能使用 pooler 地址
+DIRECT_URL="postgresql://postgres:Fydw%40715@db.qkvgeuallarmbcfjzkko.supabase.co:5432/postgres"
 
 # NextAuth
 AUTH_SECRET="your-secret-key-here"
@@ -76,6 +82,9 @@ OPENAI_API_KEY="your-openai-api-key"
 # SEO 配置
 NEXT_PUBLIC_SITE_URL="https://yourdomain.com"
 GOOGLE_SITE_VERIFICATION="your-google-verification-code"
+
+# Google Analytics
+NEXT_PUBLIC_GA_ID="G-XXXXXXXXXX"
 ```
 
 ### 3. 初始化数据库
@@ -212,6 +221,32 @@ prisma/              # 数据库 schema
 - ✅ 首页 FAQ 部分（提升 SEO 价值）
 
 详细配置请参考 [SEO_GUIDE.md](./SEO_GUIDE.md)
+
+## Google Analytics 转化漏斗追踪
+
+项目已完整实现 Google Analytics 4 追踪，包括：
+
+- ✅ **页面访问追踪**：首页、登录页、注册页、定价页、仪表板
+- ✅ **按钮点击追踪**：所有关键按钮的点击事件
+- ✅ **购买转化追踪**：开始结账、支付成功、支付失败
+- ✅ **音频转换成功率追踪**：生成开始、成功、失败、下载
+
+### 转化漏斗
+
+完整的用户转化路径追踪：
+```
+首页访问 → 登录/注册 → 仪表板 → 生成音频 → 定价页 → 购买 → 支付成功
+```
+
+### 关键指标
+
+- **注册转化率** = (注册成功数 / 首页访问数) × 100%
+- **登录转化率** = (登录成功数 / 登录页访问数) × 100%
+- **音频生成成功率** = (生成成功数 / 生成开始数) × 100%
+- **购买转化率** = (支付成功数 / 定价页访问数) × 100%
+- **完整转化率（访问到付费）** = (支付成功数 / 首页访问数) × 100%
+
+详细配置请参考 [ANALYTICS_GUIDE.md](./ANALYTICS_GUIDE.md)
 
 ### 快速开始 SEO
 

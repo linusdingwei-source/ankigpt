@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { useRouter, usePathname } from '@/i18n/routing';
 import Link from 'next/link';
+import { trackPaymentSuccess } from '@/lib/analytics';
 
 export default function PaymentSuccessPage() {
   const t = useTranslations();
@@ -28,6 +29,18 @@ export default function PaymentSuccessPage() {
       try {
         const res = await fetch(`/api/payment/success?session_id=${sessionId}`);
         if (res.ok) {
+          // Get package info from session storage or URL params
+          const packageInfo = sessionStorage.getItem('purchase_package');
+          if (packageInfo) {
+            try {
+              const { packageId, price, credits } = JSON.parse(packageInfo);
+              trackPaymentSuccess(packageId, price, credits, sessionId);
+              sessionStorage.removeItem('purchase_package');
+            } catch (e) {
+              console.error('Failed to parse package info:', e);
+            }
+          }
+          
           // Redirect to dashboard after 2 seconds
           setTimeout(() => {
             router.push(`/${locale}/dashboard?payment=success`);

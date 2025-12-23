@@ -1,11 +1,12 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useTranslations } from 'next-intl';
 import { useRouter, usePathname } from '@/i18n/routing';
 import { signIn } from 'next-auth/react';
 import Link from 'next/link';
 import { SendCodeButton } from '@/components/SendCodeButton';
+import { trackPageViewEvent, trackButtonClick, trackLoginSuccess, trackRegistrationSuccess } from '@/lib/analytics';
 
 export default function LoginPage() {
   const t = useTranslations();
@@ -21,8 +22,14 @@ export default function LoginPage() {
   const [codeSent, setCodeSent] = useState(false);
   const [error, setError] = useState('');
 
+  useEffect(() => {
+    // 追踪登录页访问
+    trackPageViewEvent('LOGIN', { locale });
+  }, [locale]);
+
   const handleCodeSent = () => {
     setCodeSent(true);
+    trackButtonClick('SEND_CODE', 'login_page');
   };
 
   const handlePasswordLogin = async (e: React.FormEvent) => {
@@ -38,6 +45,7 @@ export default function LoginPage() {
       if (result?.error) {
         setError('Invalid email or password');
       } else {
+        trackLoginSuccess('email');
         router.push(`/${locale}/dashboard`);
       }
     } catch (err) {
@@ -59,6 +67,7 @@ export default function LoginPage() {
       });
       const data = await res.json();
       if (res.ok) {
+        trackLoginSuccess('code');
         router.push(`/${locale}/dashboard`);
         router.refresh();
       } else {
@@ -73,6 +82,7 @@ export default function LoginPage() {
 
   const handleGoogleLogin = async () => {
     setLoading(true);
+    trackButtonClick('GOOGLE_LOGIN', 'login_page');
     await signIn('google', { callbackUrl: `/${locale}/dashboard` });
   };
 
@@ -109,6 +119,7 @@ export default function LoginPage() {
             onClick={() => {
               setLoginMethod('password');
               setCodeSent(false);
+              trackButtonClick('EMAIL_LOGIN', 'login_page');
             }}
             className={`flex-1 py-2 px-4 rounded-lg transition-colors ${
               loginMethod === 'password'
@@ -119,7 +130,10 @@ export default function LoginPage() {
             {t('auth.loginWithEmail')}
           </button>
           <button
-            onClick={() => setLoginMethod('code')}
+            onClick={() => {
+              setLoginMethod('code');
+              trackButtonClick('CODE_LOGIN', 'login_page');
+            }}
             className={`flex-1 py-2 px-4 rounded-lg transition-colors ${
               loginMethod === 'code'
                 ? 'bg-indigo-600 text-white'
