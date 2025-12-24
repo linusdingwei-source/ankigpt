@@ -179,7 +179,12 @@ export default function DashboardPage() {
                 {session.user?.email}
               </div>
               <button
-                onClick={() => signOut({ callbackUrl: `/${locale}/login` })}
+                onClick={async () => {
+                  await signOut({ 
+                    callbackUrl: `/${locale}/login`,
+                    redirect: true 
+                  });
+                }}
                 className="px-4 py-2 text-sm bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
               >
                 {t('common.logout')}

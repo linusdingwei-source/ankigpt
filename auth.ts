@@ -183,17 +183,31 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       
       const pathParts = urlObj.pathname.split('/').filter(Boolean);
       
-      // 检查是否是错误的路径格式（如 /login/dashboard）
-      if (pathParts.length >= 2 && pathParts[0] === 'login' && pathParts[1] === 'dashboard') {
-        // 从 callbackUrl cookie 或 URL 参数中尝试获取原始 locale
-        // 如果无法获取，使用默认 locale
-        return `${baseUrl}/zh/dashboard`;
+      // 检查是否是错误的路径格式（如 /login/dashboard 或 /zh/dashboard/login）
+      if (
+        (pathParts.length >= 2 && pathParts[0] === 'login' && pathParts[1] === 'dashboard') ||
+        (pathParts.length >= 3 && locales.includes(pathParts[0]) && pathParts[1] === 'dashboard' && pathParts[2] === 'login')
+      ) {
+        // 如果是 /zh/dashboard/login 格式，提取 locale 并重定向到登录页
+        if (pathParts.length >= 3 && locales.includes(pathParts[0])) {
+          return `${baseUrl}/${pathParts[0]}/login`;
+        }
+        // 否则使用默认 locale
+        return `${baseUrl}/zh/login`;
+      }
+      
+      // 检查是否是错误的路径格式（如 /dashboard/login）
+      if (pathParts.length >= 2 && pathParts[0] === 'dashboard' && pathParts[1] === 'login') {
+        return `${baseUrl}/zh/login`;
       }
       
       // 检查路径是否已经包含 locale
       if (pathParts.length > 0 && locales.includes(pathParts[0])) {
-        // 路径已经包含 locale，直接返回
-        return url.startsWith('http') ? url : `${baseUrl}${url}`;
+        // 路径已经包含 locale，确保是绝对 URL
+        if (url.startsWith('http')) {
+          return url;
+        }
+        return `${baseUrl}${url.startsWith('/') ? url : `/${url}`}`;
       }
       
       // 如果路径不包含 locale，需要添加
