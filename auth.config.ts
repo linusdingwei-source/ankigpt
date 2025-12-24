@@ -4,7 +4,8 @@ import Credentials from 'next-auth/providers/credentials';
 
 export const authConfig = {
   pages: {
-    signIn: '/login',
+    // 使用默认 locale 的登录页，实际重定向会在 redirect callback 中处理
+    signIn: '/zh/login',
   },
   callbacks: {
     authorized({ auth, request: { nextUrl } }) {

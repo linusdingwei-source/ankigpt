@@ -170,6 +170,62 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       }
       return true;
     },
+    async redirect({ url, baseUrl }) {
+      const locales = ['zh', 'en', 'ja'];
+      
+      // 解析 URL
+      let urlObj: URL;
+      try {
+        urlObj = new URL(url, baseUrl);
+      } catch {
+        urlObj = new URL(baseUrl);
+      }
+      
+      const pathParts = urlObj.pathname.split('/').filter(Boolean);
+      
+      // 检查是否是错误的路径格式（如 /login/dashboard）
+      if (pathParts.length >= 2 && pathParts[0] === 'login' && pathParts[1] === 'dashboard') {
+        // 从 callbackUrl cookie 或 URL 参数中尝试获取原始 locale
+        // 如果无法获取，使用默认 locale
+        return `${baseUrl}/zh/dashboard`;
+      }
+      
+      // 检查路径是否已经包含 locale
+      if (pathParts.length > 0 && locales.includes(pathParts[0])) {
+        // 路径已经包含 locale，直接返回
+        return url.startsWith('http') ? url : `${baseUrl}${url}`;
+      }
+      
+      // 如果路径不包含 locale，需要添加
+      if (pathParts.length > 0) {
+        // 检查是否是已知的页面
+        const knownPages = ['login', 'dashboard', 'register', 'pricing', 'forgot-password'];
+        if (knownPages.includes(pathParts[0])) {
+          // 从 URL 参数或 cookie 中获取 locale（如果可用）
+          // 否则使用默认 locale
+          const locale = 'zh'; // 默认使用中文
+          return `${baseUrl}/${locale}/${pathParts.join('/')}`;
+        }
+      }
+      
+      // 如果是绝对 URL 且在同一域名下，直接返回
+      if (url.startsWith(baseUrl)) {
+        return url;
+      }
+      
+      // 如果是相对路径，确保包含 locale
+      if (url.startsWith('/')) {
+        // 检查是否已经是正确的格式
+        if (pathParts.length > 0 && locales.includes(pathParts[0])) {
+          return `${baseUrl}${url}`;
+        }
+        // 添加默认 locale
+        return `${baseUrl}/zh${url}`;
+      }
+      
+      // 默认重定向到 dashboard
+      return `${baseUrl}/zh/dashboard`;
+    },
     async jwt({ token, user }) {
       if (user) {
         token.id = user.id;
