@@ -70,7 +70,7 @@ export function SendCodeButton({ email, type = 'login', onCodeSent, onError, dis
           setShowCaptcha(true);
         }
       }
-    } catch (err) {
+    } catch {
       onError('Network error');
       setShowCaptcha(true);
     } finally {

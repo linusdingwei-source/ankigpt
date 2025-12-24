@@ -63,7 +63,7 @@ export default function PricingPage() {
     const selectedPackage = packages.find(p => p.id === packageId);
     if (selectedPackage) {
       trackButtonClick('PURCHASE', 'pricing_page');
-      trackCheckoutStarted(packageId, selectedPackage.price, selectedPackage.totalCredits);
+      trackCheckoutStarted(packageId, selectedPackage.price);
       
       // 存储套餐信息用于支付成功后的追踪
       sessionStorage.setItem('purchase_package', JSON.stringify({

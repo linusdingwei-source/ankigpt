@@ -3,10 +3,9 @@
 import "dotenv/config";
 import { defineConfig } from "prisma/config";
 
-// 直接连接地址（用于迁移和 db push）
-const DIRECT_URL = process.env["DIRECT_URL"] || "postgresql://postgres:Fydw%40715@db.qkvgeuallarmbcfjzkko.supabase.co:5432/postgres";
-// 连接池地址（用于应用查询）
-const DATABASE_URL = process.env["DATABASE_URL"] || "postgresql://postgres.qkvgeuallarmbcfjzkko:Fydw%40715@aws-1-ap-south-1.pooler.supabase.com:6543/postgres?pgbouncer=true";
+// Prisma 7: 迁移操作使用直接连接（DIRECT_URL），应用查询使用连接池（DATABASE_URL）
+// 迁移时优先使用 DIRECT_URL，如果没有则使用 DATABASE_URL
+const MIGRATION_URL = process.env["DIRECT_URL"] || process.env["DATABASE_URL"] || "postgresql://postgres:Fydw%40715@db.qkvgeuallarmbcfjzkko.supabase.co:5432/postgres";
 
 export default defineConfig({
   schema: "prisma/schema.prisma",
@@ -14,9 +13,8 @@ export default defineConfig({
     path: "prisma/migrations",
   },
   datasource: {
-    // 应用查询使用连接池（提高性能）
-    url: DATABASE_URL,
-    // 迁移操作使用直接连接（db push, migrate）
-    directUrl: DIRECT_URL,
+    // Prisma 7: 迁移操作使用直接连接（支持 DDL 操作）
+    // 应用查询的连接在 PrismaClient 初始化时从环境变量读取
+    url: MIGRATION_URL,
   },
 });

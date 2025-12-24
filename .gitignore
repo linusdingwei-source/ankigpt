@@ -30,6 +30,14 @@ yarn-error.log*
 .env*.local
 .env.production
 .env.development
+env
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
 
 # vercel
 .vercel
@@ -39,3 +47,5 @@ yarn-error.log*
 next-env.d.ts
 
 /app/generated/prisma
+.prisma
+/lib/generated-client

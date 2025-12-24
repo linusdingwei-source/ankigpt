@@ -49,7 +49,7 @@ export default async function HomePage({
   const t = await getTranslations();
 
   if (session?.user) {
-    redirect(`/${locale}/dashboard`);
+    redirect({ href: '/dashboard', locale });
   }
 
   // FAQ data for structured data

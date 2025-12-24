@@ -121,7 +121,7 @@ export default function DashboardPage() {
           trackAudioGenerationFailed(errorMsg, data.credits);
         }
       }
-    } catch (err) {
+    } catch {
       setError('Network error');
     } finally {
       setLoading(false);

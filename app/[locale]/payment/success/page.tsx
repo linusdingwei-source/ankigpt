@@ -49,7 +49,7 @@ export default function PaymentSuccessPage() {
           const data = await res.json();
           setError(data.error || 'Payment verification failed');
         }
-      } catch (err) {
+      } catch {
         setError('Network error');
       } finally {
         setLoading(false);

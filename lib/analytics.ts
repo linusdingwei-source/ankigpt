@@ -83,7 +83,7 @@ export const FunnelEvents = {
 // 转化漏斗追踪函数
 
 // 页面访问追踪
-export function trackPageViewEvent(pageName: string, additionalData?: Record<string, any>) {
+export function trackPageViewEvent(pageName: string, additionalData?: Record<string, unknown>) {
   trackEvent(FunnelEvents[`${pageName.toUpperCase()}_VIEW` as keyof typeof FunnelEvents] || 'page_view', 'Page View', pageName);
   
   if (additionalData) {
@@ -119,7 +119,7 @@ export function trackLoginSuccess(method: 'email' | 'google' | 'code') {
 }
 
 // 开始结账追踪
-export function trackCheckoutStarted(packageId: string, price: number, credits: number) {
+export function trackCheckoutStarted(packageId: string, price: number) {
   trackEvent(FunnelEvents.CHECKOUT_STARTED, 'Ecommerce', packageId, price);
   trackEvent('begin_checkout', 'ecommerce', packageId); // GA4 标准事件
   

@@ -6,7 +6,7 @@ import { useRouter, usePathname } from '@/i18n/routing';
 import { signIn } from 'next-auth/react';
 import Link from 'next/link';
 import { SendCodeButton } from '@/components/SendCodeButton';
-import { trackPageViewEvent, trackButtonClick, trackLoginSuccess, trackRegistrationSuccess } from '@/lib/analytics';
+import { trackPageViewEvent, trackButtonClick, trackLoginSuccess } from '@/lib/analytics';
 
 export default function LoginPage() {
   const t = useTranslations();
@@ -48,7 +48,7 @@ export default function LoginPage() {
         trackLoginSuccess('email');
         router.push(`/${locale}/dashboard`);
       }
-    } catch (err) {
+    } catch {
       setError('Login failed');
     } finally {
       setLoading(false);
@@ -73,7 +73,7 @@ export default function LoginPage() {
       } else {
         setError(data.error || 'Login failed');
       }
-    } catch (err) {
+    } catch {
       setError('Network error');
     } finally {
       setLoading(false);

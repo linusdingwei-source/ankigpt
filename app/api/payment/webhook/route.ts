@@ -32,13 +32,14 @@ export async function POST(request: NextRequest) {
       signature,
       process.env.STRIPE_WEBHOOK_SECRET
     );
-  } catch (err: any) {
+  } catch (err: unknown) {
+    const error = err as Error & { type?: string };
     console.error('Webhook signature verification failed:', {
-      message: err.message,
-      type: err.type,
+      message: error.message,
+      type: error.type,
     });
     return NextResponse.json(
-      { error: `Webhook signature verification failed: ${err.message}` },
+      { error: `Webhook signature verification failed: ${error.message}` },
       { status: 400 }
     );
   }
@@ -166,11 +167,12 @@ export async function POST(request: NextRequest) {
     } else {
       console.log(`Unhandled event type: ${event.type}`);
     }
-  } catch (error: any) {
+  } catch (error: unknown) {
+    const err = error as Error;
     console.error('Error processing webhook event:', {
       type: event.type,
-      error: error.message,
-      stack: error.stack,
+      error: err.message,
+      stack: err.stack,
     });
     // Don't return error to Stripe, just log it
     // Stripe will retry if we return 5xx

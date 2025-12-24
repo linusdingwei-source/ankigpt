@@ -32,24 +32,24 @@ export default function RegisterPage() {
     trackButtonClick('SEND_CODE', 'register_page');
   };
 
-  const validateBeforeSend = () => {
-    if (!email) {
-      setError(t('auth.emailRequired'));
-      return false;
-    }
-
-    if (password && password.length < 6) {
-      setError(t('auth.passwordTooShort'));
-      return false;
-    }
-
-    if (password !== confirmPassword) {
-      setError(t('auth.passwordsNotMatch'));
-      return false;
-    }
-
-    return true;
-  };
+  // const validateBeforeSend = () => {
+  //   if (!email) {
+  //     setError(t('auth.emailRequired'));
+  //     return false;
+  //   }
+  //
+  //   if (password && password.length < 6) {
+  //     setError(t('auth.passwordTooShort'));
+  //     return false;
+  //   }
+  //
+  //   if (password !== confirmPassword) {
+  //     setError(t('auth.passwordsNotMatch'));
+  //     return false;
+  //   }
+  //
+  //   return true;
+  // };
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -92,7 +92,7 @@ export default function RegisterPage() {
       } else {
         setError(data.error || 'Registration failed');
       }
-    } catch (err) {
+    } catch {
       setError('Network error');
     } finally {
       setLoading(false);
