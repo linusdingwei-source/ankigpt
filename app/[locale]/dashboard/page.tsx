@@ -2,9 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import { useTranslations } from 'next-intl';
-import { useRouter, usePathname } from '@/i18n/routing';
+import { useRouter, usePathname, Link } from '@/i18n/routing';
 import { signOut, useSession } from 'next-auth/react';
-import Link from 'next/link';
 import {
   trackPageViewEvent,
   trackButtonClick,
@@ -170,7 +169,7 @@ export default function DashboardPage() {
                 </div>
               )}
               <Link
-                href={`/${locale}/pricing`}
+                href="/pricing"
                 className="px-4 py-2 text-sm bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
               >
                 {t('dashboard.buyCredits')}
@@ -255,7 +254,7 @@ export default function DashboardPage() {
                 {error.includes('Insufficient credits') && (
                   <div className="mt-2">
                     <Link
-                      href={`/${locale}/pricing`}
+                      href="/pricing"
                       className="text-indigo-600 hover:underline dark:text-indigo-400 font-semibold"
                     >
                       {t('dashboard.buyCreditsNow')} →
