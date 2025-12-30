@@ -25,7 +25,25 @@ export default function LoginPage() {
   useEffect(() => {
     // 追踪登录页访问
     trackPageViewEvent('LOGIN', { locale });
-  }, [locale]);
+    
+    // 检查是否已经登录，如果是则重定向到 dashboard
+    const checkSession = async () => {
+      try {
+        const res = await fetch('/api/auth/session');
+        const session = await res.json();
+        if (session?.user) {
+          router.push(`/${locale}/dashboard`);
+        }
+      } catch (error) {
+        // 忽略错误，继续显示登录页面
+        console.error('Failed to check session:', error);
+      }
+    };
+    
+    // 延迟检查，避免与 OAuth 回调冲突
+    const timer = setTimeout(checkSession, 1000);
+    return () => clearTimeout(timer);
+  }, [locale, router]);
 
   const handleCodeSent = () => {
     setCodeSent(true);
