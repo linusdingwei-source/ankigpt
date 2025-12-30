@@ -2,9 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import { useTranslations } from 'next-intl';
-import { usePathname } from '@/i18n/routing';
+import { usePathname, Link } from '@/i18n/routing';
 import { useSession } from 'next-auth/react';
-import Link from 'next/link';
 import { trackPageViewEvent, trackButtonClick, trackCheckoutStarted } from '@/lib/analytics';
 
 const packages = [
@@ -185,7 +184,7 @@ export default function PricingPage() {
             <p className="text-gray-600 dark:text-gray-400">
               {t('pricing.alreadyHaveAccount')}{' '}
               <Link
-                href={`/${locale}/login`}
+                href="/login"
                 className="text-indigo-600 hover:underline dark:text-indigo-400"
               >
                 {t('common.login')}
