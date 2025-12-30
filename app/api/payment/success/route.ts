@@ -23,25 +23,15 @@ export async function GET(request: NextRequest) {
     // Verify the session
     const checkoutSession = await stripe.checkout.sessions.retrieve(sessionId);
 
-    if (checkoutSession.payment_status === 'paid') {
-      // Get locale from URL or default to 'zh'
-      const pathname = request.nextUrl.pathname;
-      const localeMatch = pathname.match(/^\/(zh|en|ja)/);
-      const locale = localeMatch ? localeMatch[1] : 'zh';
-      
-      return NextResponse.redirect(new URL(`/${locale}/payment/success?session_id=${sessionId}`, request.url));
-    } else if (checkoutSession.payment_status === 'unpaid' || checkoutSession.payment_status === 'no_payment_required') {
-      // Payment failed or declined
-      const pathname = request.nextUrl.pathname;
-      const localeMatch = pathname.match(/^\/(zh|en|ja)/);
-      const locale = localeMatch ? localeMatch[1] : 'zh';
-      
-      return NextResponse.redirect(new URL(`/${locale}/payment/cancel?error=payment_failed`, request.url));
-    }
-
+    // Return payment status as JSON instead of redirecting
+    // The client-side page will handle the display and redirect
     return NextResponse.json({ 
+      success: checkoutSession.payment_status === 'paid',
       status: checkoutSession.payment_status,
-      message: 'Payment status: ' + checkoutSession.payment_status 
+      sessionId: sessionId,
+      message: checkoutSession.payment_status === 'paid' 
+        ? 'Payment successful' 
+        : 'Payment status: ' + checkoutSession.payment_status 
     });
   } catch (error) {
     console.error('Payment success check error:', error);

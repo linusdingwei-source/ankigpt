@@ -47,8 +47,8 @@ export async function POST(request: NextRequest) {
           quantity: 1,
         },
       ],
-      success_url: `${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/payment/success?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/payment/cancel`,
+      success_url: `${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/zh/payment/success?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/zh/payment/cancel`,
       metadata: {
         userId: session.user.id as string,
         packageId: selectedPackage.id,

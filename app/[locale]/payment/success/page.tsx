@@ -28,7 +28,10 @@ export default function PaymentSuccessPage() {
     const verifyPayment = async () => {
       try {
         const res = await fetch(`/api/payment/success?session_id=${sessionId}`);
-        if (res.ok) {
+        const data = await res.json();
+        
+        if (res.ok && data.success) {
+          // Payment verified successfully
           // Get package info from session storage or URL params
           const packageInfo = sessionStorage.getItem('purchase_package');
           if (packageInfo) {
@@ -41,17 +44,19 @@ export default function PaymentSuccessPage() {
             }
           }
           
+          setLoading(false);
+          
           // Redirect to dashboard after 2 seconds
           setTimeout(() => {
             router.push(`/${locale}/dashboard?payment=success`);
           }, 2000);
         } else {
-          const data = await res.json();
-          setError(data.error || 'Payment verification failed');
+          setError(data.error || data.message || 'Payment verification failed');
+          setLoading(false);
         }
-      } catch {
+      } catch (err) {
+        console.error('Payment verification error:', err);
         setError('Network error');
-      } finally {
         setLoading(false);
       }
     };
