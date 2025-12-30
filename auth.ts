@@ -173,6 +173,16 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     async redirect({ url, baseUrl }) {
       const locales = ['zh', 'en', 'ja'];
       
+      // 调试日志（生产环境可以移除）
+      if (process.env.NODE_ENV === 'development') {
+        console.log('[NextAuth Redirect]', { url, baseUrl });
+      }
+      
+      // 如果是 API 路径，不应该重定向
+      if (url.includes('/api/')) {
+        return baseUrl;
+      }
+      
       // 解析 URL
       let urlObj: URL;
       try {
@@ -190,7 +200,11 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       ) {
         // 如果是 /zh/dashboard/login 格式，提取 locale 并重定向到登录页
         if (pathParts.length >= 3 && locales.includes(pathParts[0])) {
-          return `${baseUrl}/${pathParts[0]}/login`;
+          const redirectUrl = `${baseUrl}/${pathParts[0]}/login`;
+          if (process.env.NODE_ENV === 'development') {
+            console.log('[NextAuth Redirect] Fixed error path to:', redirectUrl);
+          }
+          return redirectUrl;
         }
         // 否则使用默认 locale
         return `${baseUrl}/zh/login`;
@@ -205,9 +219,19 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       if (pathParts.length > 0 && locales.includes(pathParts[0])) {
         // 路径已经包含 locale，确保是绝对 URL
         if (url.startsWith('http')) {
-          return url;
+          const redirectUrl = url;
+          if (process.env.NODE_ENV === 'development') {
+            console.log('[NextAuth Redirect] Already absolute URL with locale:', redirectUrl);
+          }
+          return redirectUrl;
         }
-        return `${baseUrl}${url.startsWith('/') ? url : `/${url}`}`;
+        // 确保返回完整的绝对 URL
+        const fullPath = url.startsWith('/') ? url : `/${url}`;
+        const redirectUrl = `${baseUrl}${fullPath}`;
+        if (process.env.NODE_ENV === 'development') {
+          console.log('[NextAuth Redirect] Converted relative to absolute with locale:', redirectUrl);
+        }
+        return redirectUrl;
       }
       
       // 如果路径不包含 locale，需要添加
@@ -218,12 +242,19 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           // 从 URL 参数或 cookie 中获取 locale（如果可用）
           // 否则使用默认 locale
           const locale = 'zh'; // 默认使用中文
-          return `${baseUrl}/${locale}/${pathParts.join('/')}`;
+          const redirectUrl = `${baseUrl}/${locale}/${pathParts.join('/')}`;
+          if (process.env.NODE_ENV === 'development') {
+            console.log('[NextAuth Redirect] Added locale to known page:', redirectUrl);
+          }
+          return redirectUrl;
         }
       }
       
       // 如果是绝对 URL 且在同一域名下，直接返回
       if (url.startsWith(baseUrl)) {
+        if (process.env.NODE_ENV === 'development') {
+          console.log('[NextAuth Redirect] Same domain absolute URL:', url);
+        }
         return url;
       }
       
@@ -231,14 +262,26 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       if (url.startsWith('/')) {
         // 检查是否已经是正确的格式
         if (pathParts.length > 0 && locales.includes(pathParts[0])) {
-          return `${baseUrl}${url}`;
+          const redirectUrl = `${baseUrl}${url}`;
+          if (process.env.NODE_ENV === 'development') {
+            console.log('[NextAuth Redirect] Relative path with locale:', redirectUrl);
+          }
+          return redirectUrl;
         }
         // 添加默认 locale
-        return `${baseUrl}/zh${url}`;
+        const redirectUrl = `${baseUrl}/zh${url}`;
+        if (process.env.NODE_ENV === 'development') {
+          console.log('[NextAuth Redirect] Added default locale to relative path:', redirectUrl);
+        }
+        return redirectUrl;
       }
       
       // 默认重定向到 dashboard
-      return `${baseUrl}/zh/dashboard`;
+      const redirectUrl = `${baseUrl}/zh/dashboard`;
+      if (process.env.NODE_ENV === 'development') {
+        console.log('[NextAuth Redirect] Default redirect:', redirectUrl);
+      }
+      return redirectUrl;
     },
     async jwt({ token, user }) {
       if (user) {
