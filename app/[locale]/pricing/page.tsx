@@ -184,7 +184,7 @@ export default function PricingPage() {
             <p className="text-gray-600 dark:text-gray-400">
               {t('pricing.alreadyHaveAccount')}{' '}
               <Link
-                href="/login"
+                href={`/${locale}/login`}
                 className="text-indigo-600 hover:underline dark:text-indigo-400"
               >
                 {t('common.login')}

@@ -1,13 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import { stripe } from '@/lib/stripe';
+import { getLocaleFromRequest, buildLocalizedPath } from '@/lib/locale-utils';
 
 export async function GET(request: NextRequest) {
   try {
     const session = await auth();
     
     if (!session?.user) {
-      return NextResponse.redirect(new URL('/login', request.url));
+      const locale = getLocaleFromRequest(request);
+      return NextResponse.redirect(new URL(buildLocalizedPath(locale, 'login'), request.url));
     }
 
     const searchParams = request.nextUrl.searchParams;

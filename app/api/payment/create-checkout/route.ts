@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import { stripe, packages } from '@/lib/stripe';
+import { getLocaleFromRequest, buildLocalizedPath } from '@/lib/locale-utils';
 
 export async function POST(request: NextRequest) {
   try {
@@ -37,6 +38,10 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Get locale from request
+    const locale = getLocaleFromRequest(request);
+    const baseUrl = process.env.NEXTAUTH_URL || 'http://localhost:3000';
+
     // Create Stripe Checkout Session
     const checkoutSession = await stripe.checkout.sessions.create({
       mode: 'payment',
@@ -47,8 +52,8 @@ export async function POST(request: NextRequest) {
           quantity: 1,
         },
       ],
-      success_url: `${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/zh/payment/success?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/zh/payment/cancel`,
+      success_url: `${baseUrl}${buildLocalizedPath(locale, 'payment/success')}?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${baseUrl}${buildLocalizedPath(locale, 'payment/cancel')}`,
       metadata: {
         userId: session.user.id as string,
         packageId: selectedPackage.id,
