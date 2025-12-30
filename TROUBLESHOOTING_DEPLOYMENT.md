@@ -211,10 +211,8 @@ npm run dev
 
 ### 可选的环境变量
 
-- [ ] `SMTP_HOST` - 邮件服务器
-- [ ] `SMTP_PORT` - 邮件端口
-- [ ] `SMTP_USER` - 邮件用户名
-- [ ] `SMTP_PASSWORD` - 邮件密码
+- [ ] `RESEND_API_KEY` - Resend API 密钥
+- [ ] `RESEND_FROM_EMAIL` - 已验证的发件人邮箱
 - [ ] `STRIPE_SECRET_KEY` - Stripe 密钥
 - [ ] `STRIPE_WEBHOOK_SECRET` - Stripe Webhook 密钥
 - [ ] `OPENAI_API_KEY` - OpenAI API 密钥

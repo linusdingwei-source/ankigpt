@@ -15,10 +15,8 @@ const requiredVars = [
 
 const optionalVars = [
   'DIRECT_URL',
-  'SMTP_HOST',
-  'SMTP_PORT',
-  'SMTP_USER',
-  'SMTP_PASSWORD',
+  'RESEND_API_KEY',
+  'RESEND_FROM_EMAIL',
   'STRIPE_SECRET_KEY',
   'STRIPE_WEBHOOK_SECRET',
   'OPENAI_API_KEY',

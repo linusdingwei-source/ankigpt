@@ -50,13 +50,10 @@ GOOGLE_CLIENT_ID="生产环境客户端ID"
 GOOGLE_CLIENT_SECRET="生产环境客户端密钥"
 ```
 
-**邮件服务（SMTP）**：
+**邮件服务（Resend）**：
 ```env
-SMTP_HOST="smtp.gmail.com"
-SMTP_PORT="587"
-SMTP_USER="your-email@gmail.com"
-SMTP_PASSWORD="应用专用密码"
-SMTP_FROM="your-email@gmail.com"
+RESEND_API_KEY="re_..."  # 从 Resend Dashboard > API Keys 获取
+RESEND_FROM_EMAIL="noreply@yourdomain.com"  # 已验证的发件人邮箱
 ```
 
 **Stripe（生产环境）**：
@@ -150,7 +147,7 @@ GOOGLE_CLIENT_SECRET="生产环境客户端密钥"
 
 #### 6.2 其他邮件服务
 
-如果使用其他邮件服务（如 SendGrid、Resend），更新相应的 SMTP 配置。
+**注意**：项目现在使用 Resend 作为邮件服务，详细配置请参考 [RESEND_SETUP.md](./RESEND_SETUP.md)。
 
 ### ✅ 7. 域名和 SSL 配置
 

@@ -62,12 +62,9 @@ NEXTAUTH_URL="http://localhost:3000"
 GOOGLE_CLIENT_ID="your-google-client-id"
 GOOGLE_CLIENT_SECRET="your-google-client-secret"
 
-# 邮件服务 (SMTP)
-SMTP_HOST="smtp.gmail.com"
-SMTP_PORT="587"
-SMTP_USER="your-email@gmail.com"
-SMTP_PASSWORD="your-app-password"
-SMTP_FROM="your-email@gmail.com"
+# 邮件服务 (Resend)
+RESEND_API_KEY="re_..."  # 从 Resend Dashboard > API Keys 获取
+RESEND_FROM_EMAIL="noreply@yourdomain.com"  # 已验证的发件人邮箱
 
 # Stripe 支付
 STRIPE_SECRET_KEY="sk_test_..."

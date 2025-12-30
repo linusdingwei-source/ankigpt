@@ -24,11 +24,8 @@
 - [ ] Google OAuth 重定向 URI 已配置
 
 #### 邮件服务
-- [ ] `SMTP_HOST` - SMTP 服务器地址
-- [ ] `SMTP_PORT` - SMTP 端口
-- [ ] `SMTP_USER` - SMTP 用户名
-- [ ] `SMTP_PASSWORD` - SMTP 密码（应用专用密码）
-- [ ] `SMTP_FROM` - 发件人邮箱
+- [ ] `RESEND_API_KEY` - Resend API 密钥
+- [ ] `RESEND_FROM_EMAIL` - 已验证的发件人邮箱
 
 #### Stripe（生产环境）
 - [ ] `STRIPE_SECRET_KEY` - 生产环境密钥（sk_live_...）

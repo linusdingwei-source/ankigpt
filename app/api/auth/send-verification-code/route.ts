@@ -1,19 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import nodemailer from 'nodemailer';
 import crypto from 'crypto';
 import { verifyCaptcha } from '@/lib/captcha';
 import { checkRateLimit } from '@/lib/rate-limit';
-
-const transporter = nodemailer.createTransport({
-  host: process.env.SMTP_HOST || 'smtp.gmail.com',
-  port: parseInt(process.env.SMTP_PORT || '587'),
-  secure: false,
-  auth: {
-    user: process.env.SMTP_USER,
-    pass: process.env.SMTP_PASSWORD,
-  },
-});
+import { sendEmail } from '@/lib/email';
 
 export async function POST(request: NextRequest) {
   try {
@@ -111,8 +101,7 @@ export async function POST(request: NextRequest) {
       ? 'Password Reset Verification Code'
       : 'Login Verification Code';
 
-    await transporter.sendMail({
-      from: process.env.SMTP_FROM || process.env.SMTP_USER,
+    await sendEmail({
       to: email,
       subject,
       html: `
