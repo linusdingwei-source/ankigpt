@@ -193,21 +193,54 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       
       const pathParts = urlObj.pathname.split('/').filter(Boolean);
       
-      // 检查是否是错误的路径格式（如 /login/dashboard 或 /zh/dashboard/login）
-      if (
-        (pathParts.length >= 2 && pathParts[0] === 'login' && pathParts[1] === 'dashboard') ||
-        (pathParts.length >= 3 && locales.includes(pathParts[0]) && pathParts[1] === 'dashboard' && pathParts[2] === 'login')
-      ) {
-        // 如果是 /zh/dashboard/login 格式，提取 locale 并重定向到登录页
-        if (pathParts.length >= 3 && locales.includes(pathParts[0])) {
-          const redirectUrl = `${baseUrl}/${pathParts[0]}/login`;
+      // 检查是否是错误的路径格式（如 /login/dashboard, /zh/login/dashboard, /login/register 等）
+      if (pathParts.length >= 2 && pathParts[0] === 'login') {
+        // /login/dashboard -> /zh/dashboard
+        if (pathParts[1] === 'dashboard') {
+          const locale = pathParts.length >= 3 && locales.includes(pathParts[2]) ? pathParts[2] : 'zh';
+          const redirectUrl = `${baseUrl}/${locale}/dashboard`;
           if (process.env.NODE_ENV === 'development') {
-            console.log('[NextAuth Redirect] Fixed error path to:', redirectUrl);
+            console.log('[NextAuth Redirect] Fixed /login/dashboard to:', redirectUrl);
           }
           return redirectUrl;
         }
-        // 否则使用默认 locale
-        return `${baseUrl}/zh/login`;
+        // /login/register -> /zh/register
+        if (pathParts[1] === 'register') {
+          const locale = pathParts.length >= 3 && locales.includes(pathParts[2]) ? pathParts[2] : 'zh';
+          const redirectUrl = `${baseUrl}/${locale}/register`;
+          if (process.env.NODE_ENV === 'development') {
+            console.log('[NextAuth Redirect] Fixed /login/register to:', redirectUrl);
+          }
+          return redirectUrl;
+        }
+      }
+      
+      // 检查 /zh/login/dashboard 格式
+      if (
+        pathParts.length >= 3 &&
+        locales.includes(pathParts[0]) &&
+        pathParts[1] === 'login' &&
+        pathParts[2] === 'dashboard'
+      ) {
+        const redirectUrl = `${baseUrl}/${pathParts[0]}/dashboard`;
+        if (process.env.NODE_ENV === 'development') {
+          console.log('[NextAuth Redirect] Fixed /zh/login/dashboard to:', redirectUrl);
+        }
+        return redirectUrl;
+      }
+      
+      // 检查 /zh/dashboard/login 格式
+      if (
+        pathParts.length >= 3 &&
+        locales.includes(pathParts[0]) &&
+        pathParts[1] === 'dashboard' &&
+        pathParts[2] === 'login'
+      ) {
+        const redirectUrl = `${baseUrl}/${pathParts[0]}/login`;
+        if (process.env.NODE_ENV === 'development') {
+          console.log('[NextAuth Redirect] Fixed /zh/dashboard/login to:', redirectUrl);
+        }
+        return redirectUrl;
       }
       
       // 检查是否是错误的路径格式（如 /dashboard/login）
