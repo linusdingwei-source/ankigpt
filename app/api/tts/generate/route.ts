@@ -2,8 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import { consumeCredits, getCredits } from '@/lib/credits';
 
-// Using Web Speech API via a service
-// For production, you might want to use a service like Google Cloud TTS, Azure TTS, or AWS Polly
+const TTS_CREDITS_COST = 1; // TTS 生成消耗 1 credit
+
 export async function POST(request: NextRequest) {
   try {
     const session = await auth();
@@ -35,7 +35,7 @@ export async function POST(request: NextRequest) {
     const userId = session.user.id as string;
     const currentCredits = await getCredits(userId);
     
-    if (currentCredits < 1) {
+    if (currentCredits < TTS_CREDITS_COST) {
       return NextResponse.json(
         { 
           error: 'Insufficient credits. Please purchase a package.',
@@ -45,70 +45,87 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Consume 1 credit
-    const creditConsumed = await consumeCredits(userId, 1);
-    if (!creditConsumed) {
+    // Check DashScope API Key
+    if (!process.env.DASHSCOPE_API_KEY) {
       return NextResponse.json(
-        { error: 'Failed to consume credits' },
+        { error: 'DashScope API key is not configured' },
         { status: 500 }
       );
     }
 
-    // For demo purposes, we'll use a simple approach
-    // In production, you should use a proper TTS service
-    // Here's an example using a free API service (you may need to replace with your preferred service)
-    
-    // Option 1: Use Google Cloud TTS (requires API key)
-    // Option 2: Use a free TTS API
-    // Option 3: Use browser's SpeechSynthesis API (client-side)
-    
-    // For now, we'll create a placeholder that returns a base64 encoded audio
-    // You should replace this with actual TTS service integration
-    
-    // Example: Using a mock response
-    // In production, integrate with actual TTS service like:
-    // - Google Cloud Text-to-Speech
-    // - Azure Cognitive Services
-    // - AWS Polly
-    // - OpenAI TTS
-    
-    const response = await fetch('https://api.openai.com/v1/audio/speech', {
+    // 调用 DashScope Qwen-TTS API
+    const ttsResponse = await fetch('https://dashscope.aliyuncs.com/api/v1/services/audio/tts/v2', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${process.env.OPENAI_API_KEY || ''}`,
+        'Authorization': `Bearer ${process.env.DASHSCOPE_API_KEY}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'tts-1',
-        input: text,
-        voice: 'alloy', // You can change to other voices
-        language: 'ja', // Japanese
+        model: 'qwen3-tts-flash',
+        text: text,
+        voice: 'Cherry', // 日语语音
+        language_type: 'Japanese',
       }),
     });
 
-    if (!response.ok) {
-      // Fallback: Return a simple message indicating TTS service is not configured
-      // In production, you should properly configure a TTS service
+    if (!ttsResponse.ok) {
+      const errorData = await ttsResponse.json().catch(() => ({}));
+      console.error('DashScope TTS API error:', errorData);
       return NextResponse.json(
         { 
-          error: 'TTS service not configured. Please set OPENAI_API_KEY or configure another TTS service.',
-          fallback: true 
+          error: 'TTS generation failed', 
+          details: errorData 
         },
-        { status: 503 }
+        { status: ttsResponse.status }
       );
     }
 
-    const audioBuffer = await response.arrayBuffer();
-    const base64Audio = Buffer.from(audioBuffer).toString('base64');
+    const ttsData = await ttsResponse.json();
+    
+    // Qwen-TTS 返回音频 URL
+    if (!ttsData.output?.audio?.url) {
+      return NextResponse.json(
+        { error: 'Invalid response from TTS service' },
+        { status: 500 }
+      );
+    }
 
-    const remainingCredits = await getCredits(userId);
+    const audioUrl = ttsData.output.audio.url;
 
-    return NextResponse.json({
-      success: true,
-      audio: base64Audio,
-      format: 'mp3',
-      credits: remainingCredits,
-    });
+    // 下载音频文件并转换为 base64
+    try {
+      const audioDownloadResponse = await fetch(audioUrl);
+      if (!audioDownloadResponse.ok) {
+        throw new Error(`Failed to download audio: ${audioDownloadResponse.statusText}`);
+      }
+
+      const audioBuffer = await audioDownloadResponse.arrayBuffer();
+      const base64Audio = Buffer.from(audioBuffer).toString('base64');
+
+      // 消耗 credits
+      const creditConsumed = await consumeCredits(userId, TTS_CREDITS_COST);
+      if (!creditConsumed) {
+        return NextResponse.json(
+          { error: 'Failed to consume credits' },
+          { status: 500 }
+        );
+      }
+
+      const remainingCredits = await getCredits(userId);
+
+      return NextResponse.json({
+        success: true,
+        audio: base64Audio,
+        format: 'mp3',
+        credits: remainingCredits,
+      });
+    } catch (downloadError) {
+      console.error('Error downloading audio:', downloadError);
+      return NextResponse.json(
+        { error: 'Failed to download audio from TTS service' },
+        { status: 500 }
+      );
+    }
   } catch (error) {
     console.error('TTS generation error:', error);
     return NextResponse.json(
