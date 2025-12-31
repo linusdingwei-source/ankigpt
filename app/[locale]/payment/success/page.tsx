@@ -2,15 +2,12 @@
 
 import { useEffect, useState } from 'react';
 import { useTranslations } from 'next-intl';
-import { useRouter, usePathname } from '@/i18n/routing';
-import Link from 'next/link';
+import { useRouter, Link } from '@/i18n/routing';
 import { trackPaymentSuccess } from '@/lib/analytics';
 
 export default function PaymentSuccessPage() {
   const t = useTranslations();
   const router = useRouter();
-  const pathname = usePathname();
-  const locale = pathname.split('/')[1] || 'zh';
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
@@ -47,8 +44,9 @@ export default function PaymentSuccessPage() {
           setLoading(false);
           
           // Redirect to dashboard after 2 seconds
+          // Use router.push with path only, router will automatically add locale
           setTimeout(() => {
-            router.push(`/${locale}/dashboard?payment=success`);
+            router.push('/dashboard?payment=success');
           }, 2000);
         } else {
           setError(data.error || data.message || 'Payment verification failed');
@@ -62,7 +60,7 @@ export default function PaymentSuccessPage() {
     };
 
     verifyPayment();
-  }, [router, locale]);
+  }, [router]);
 
   if (loading) {
     return (
@@ -85,7 +83,7 @@ export default function PaymentSuccessPage() {
           </h1>
           <p className="text-gray-600 dark:text-gray-400 mb-6">{error}</p>
           <Link
-            href={`/${locale}/pricing`}
+            href="/pricing"
             className="inline-block px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
           >
             {t('payment.backToPricing')}
@@ -106,7 +104,7 @@ export default function PaymentSuccessPage() {
           {t('payment.successMessage')}
         </p>
         <Link
-          href={`/${locale}/dashboard`}
+          href="/dashboard"
           className="inline-block px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
         >
           {t('payment.goToDashboard')}
