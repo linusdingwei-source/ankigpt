@@ -50,8 +50,9 @@ export async function POST(request: NextRequest) {
     // 使用假名文本生成 TTS（如果提供），否则使用原文
     const ttsInput = kanaText || text;
 
-    // 调用 DashScope Qwen-TTS API
-    const response = await fetch('https://dashscope.aliyuncs.com/api/v1/services/audio/tts/v2', {
+    // 调用 DashScope Qwen-TTS API (使用多模态生成接口)
+    // Qwen-TTS 需要使用 MultiModalConversation 接口
+    const response = await fetch('https://dashscope.aliyuncs.com/api/v1/services/aigc/multimodal-generation/generation', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${process.env.DASHSCOPE_API_KEY}`,
@@ -59,9 +60,13 @@ export async function POST(request: NextRequest) {
       },
       body: JSON.stringify({
         model: 'qwen3-tts-flash',
-        text: ttsInput,
-        voice: 'Cherry',
-        language_type: 'Japanese',
+        input: {
+          text: ttsInput,
+        },
+        parameters: {
+          voice: 'Cherry',
+          language_type: 'Japanese',
+        },
       }),
     });
 
