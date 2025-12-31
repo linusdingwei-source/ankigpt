@@ -24,6 +24,8 @@ model User {
   accounts      Account[]
   sessions      Session[]
   orders        Order[]
+  cards         Card[]
+  decks         Deck[]
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 }
@@ -93,4 +95,48 @@ model RateLimit {
 
   @@unique([key, type])
   @@index([expiresAt])
+}
+
+model Deck {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name      String   // 牌组名称
+  cards     Card[]   // 关联的卡片
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, name]) // 每个用户的牌组名称唯一
+  @@index([userId])
+}
+
+model Card {
+  id            String   @id @default(cuid())
+  userId        String
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  deckId        String?
+  deck          Deck?    @relation(fields: [deckId], references: [id], onDelete: SetNull)
+  
+  // 卡片内容
+  frontContent  String   // 日文原文
+  backContent   String   @db.Text // HTML 格式的分析内容（翻译、解释等）
+  cardType      String   @default("问答题（附翻转卡片）")
+  
+  // 音频相关
+  audioUrl      String?  // 音频文件 URL（存储在云存储或本地）
+  audioFilename String?  // 音频文件名
+  timestamps    Json?    // 时间戳数据（字符级对齐）
+  kanaText      String?  // 用于 TTS 的假名文本
+  
+  // 元数据
+  deckName      String   @default("default") // 牌组名称（冗余字段，用于快速查询）
+  tags          String[] // 标签数组
+  
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  
+  @@index([userId])
+  @@index([deckName])
+  @@index([deckId])
+  @@index([createdAt])
 }

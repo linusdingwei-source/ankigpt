@@ -1,0 +1,925 @@
+/* anki-gpt-addon/webview_styles.css (已修复滚动问题) */
+
+/* --- 1. 颜色和字体变量 --- */
+:root {
+    --bg-main: #2e2e2e;
+    --fg-text: #ffffff;
+    --bg-control: #4a4a4a;
+    --bg-active: #6a6a6a;
+    --border-color: #6a6a6a;
+    --accent-color: #00aaff;
+    --error-color: #ff6b6b;
+    --warning-color: #ffa500;
+    --success-color: #4CAF50;
+    --highlight-bg: #FFD700;
+    --highlight-fg: #000000;
+}
+
+/* --- 2. 基础和布局样式 (重构) --- */
+body {
+    font-family: "Arial", sans-serif;
+    background-color: var(--bg-main);
+    color: var(--fg-text);
+    margin: 0;
+    padding: 20px;
+    box-sizing: border-box;
+    height: 100vh;
+    overflow: hidden;
+    position: relative; /* 为全屏容器定位提供参考 */
+}
+.container {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+}
+.main-layout {
+    display: flex;
+    gap: 0;
+    width: 100%;
+    height: 100%;
+    min-height: 0;
+}
+/* 三列布局 */
+.three-column-layout {
+    display: flex;
+    gap: 0;
+    width: 100%;
+    height: 100%;
+    min-height: 0;
+}
+.left-panel {
+    flex: 0 0 350px;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    min-width: 250px;
+    max-width: 600px;
+    border: 1px dashed var(--border-color);
+    border-radius: 8px;
+    padding: 20px;
+    box-sizing: border-box;
+}
+.middle-panel {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-width: 300px;
+    border: 1px dashed var(--border-color);
+    border-radius: 8px;
+    padding: 20px;
+    box-sizing: border-box;
+    min-height: 0;
+}
+.right-panel {
+    flex: 0 0 300px;
+    display: flex;
+    flex-direction: column;
+    min-width: 200px;
+    max-width: 500px;
+    border: 1px dashed var(--border-color);
+    border-radius: 8px;
+    padding: 20px;
+    box-sizing: border-box;
+    min-height: 0;
+}
+/* 分隔条样式 */
+.resizer {
+    width: 4px;
+    background-color: var(--border-color);
+    cursor: col-resize;
+    flex-shrink: 0;
+    position: relative;
+    transition: background-color 0.2s ease;
+}
+.resizer:hover {
+    background-color: var(--accent-color);
+}
+.resizer::before {
+    content: '';
+    position: absolute;
+    left: -2px;
+    right: -2px;
+    top: 0;
+    bottom: 0;
+    cursor: col-resize;
+}
+/* 历史面板样式 */
+.history-panel {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+}
+.history-panel.hidden {
+    display: none;
+}
+.history-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 10px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--border-color);
+    flex-shrink: 0;
+}
+.history-title {
+    margin: 0;
+    color: var(--accent-color);
+    font-size: 1.1em;
+    flex: 1;
+    text-align: center;
+}
+.history-panel.hidden + .resizer {
+    display: none;
+}
+/* 浮动显示历史按钮 */
+.floating-history-btn {
+    position: fixed;
+    right: 20px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 40px;
+    height: 80px;
+    background-color: var(--bg-control);
+    border: 2px solid var(--accent-color);
+    border-radius: 8px 0 0 8px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--accent-color);
+    font-size: 20px;
+    z-index: 1000;
+    transition: all 0.3s ease;
+    box-shadow: -2px 0 8px rgba(0, 0, 0, 0.3);
+}
+.floating-history-btn:hover {
+    background-color: var(--accent-color);
+    color: var(--bg-main);
+    right: 0;
+}
+.floating-history-btn.hidden {
+    display: none;
+}
+.section {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+.hint-label {
+    font-size: 1.1em;
+    text-align: left;
+}
+
+/* --- 3. 表单控件样式 (保持不变) --- */
+.styled-select, .styled-input, .styled-textarea {
+    background-color: var(--bg-control);
+    color: var(--fg-text);
+    border: 1px solid var(--border-color);
+    padding: 10px 15px;
+    border-radius: 8px;
+    font-size: 1.2em;
+    width: 100%;
+    box-sizing: border-box;
+}
+.styled-select:focus,
+.styled-input:focus,
+.styled-textarea:focus {
+    outline: none;
+    border-color: var(--accent-color);
+    box-shadow: 0 0 0 2px rgba(0, 170, 255, 0.5);
+}
+.styled-select {
+    color: var(--accent-color);
+    appearance: none; -webkit-appearance: none; -moz-appearance: none;
+    background-image: url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%2300aaff%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-6.5%200-12.3%203.2-16.1%208.1-3.8%204.9-4.7%2011.4-2.9%2017.7l139.3%20139.3c3.8%203.8%209%205.9%2014.5%205.9s10.7-2.1%2014.5-5.9l139.3-139.3c1.8-6.3.9-12.8-2.9-17.7z%22%2F%3E%3C%2Fsvg%3E');
+    background-repeat: no-repeat;
+    background-position: right 15px center;
+    background-size: 12px;
+}
+.input-with-arrow-container { position: relative; width: 100%; }
+.input-with-arrow-container .styled-input { padding-right: 40px; }
+.input-with-arrow-container .styled-input::-webkit-calendar-picker-indicator { display: none !important; }
+.input-arrow { position: absolute; right: 15px; top: 50%; transform: translateY(-50%); width: 12px; height: 12px; pointer-events: none; background-image: url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%2300aaff%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-6.5%200-12.3%203.2-16.1%208.1-3.8%204.9-4.7%2011.4-2.9%2017.7l139.3%20139.3c3.8%203.8%209%205.9%2014.5%205.9s10.7-2.1%2014.5-5.9l139.3-139.3c1.8-6.3.9-12.8-2.9-17.7z%22%2F%3E%3C%2Fsvg%3E'); background-repeat: no-repeat; background-position: center; background-size: contain; }
+.input-section { flex-grow: 1; display: flex; flex-direction: column; }
+.styled-textarea { width: 100%; flex-grow: 1; resize: none; line-height: 1.5; }
+.styled-textarea::placeholder { color: rgba(255, 255, 255, 0.5); }
+.checkbox-section { flex-direction: row; align-items: center; justify-content: flex-start; }
+.styled-checkbox { position: absolute; opacity: 0; cursor: pointer; height: 0; width: 0; }
+.checkbox-label { position: relative; padding-left: 30px; cursor: pointer; font-size: 1.1em; user-select: none; }
+.checkbox-label::before { content: ''; position: absolute; left: 0; top: 50%; transform: translateY(-50%); width: 20px; height: 20px; border: 2px solid var(--accent-color); border-radius: 4px; background-color: var(--bg-control); transition: all 0.2s ease; }
+.styled-checkbox:checked + .checkbox-label::before { background-color: var(--accent-color); border-color: var(--accent-color); }
+.checkbox-label::after { content: ''; position: absolute; left: 7px; top: 50%; transform: translateY(-50%) rotate(45deg); width: 6px; height: 12px; border: solid var(--fg-text); border-width: 0 3px 3px 0; opacity: 0; transition: all 0.2s ease; }
+.styled-checkbox:checked + .checkbox-label::after { opacity: 1; }
+.styled-button { padding: 12px 25px; border-radius: 8px; font-size: 1.2em; font-weight: bold; cursor: pointer; transition: all 0.2s ease; box-sizing: border-box; border: none; }
+.styled-button.primary { background-color: var(--accent-color); color: var(--fg-text); width: 100%; }
+.styled-button.primary:hover:not(:disabled) { background-color: #0099e6; }
+.styled-button:disabled { opacity: 0.6; cursor: not-allowed; }
+
+/* --- 图标按钮样式 --- */
+.icon-button {
+    background-color: var(--bg-control);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    padding: 6px 10px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 32px;
+    height: 32px;
+    box-sizing: border-box;
+    color: var(--fg-text);
+    font-size: 16px;
+    line-height: 1;
+}
+
+.icon-button:hover {
+    background-color: var(--bg-active);
+    border-color: var(--accent-color);
+    color: var(--accent-color);
+}
+
+.icon-button:active {
+    background-color: var(--accent-color);
+    color: var(--bg-main);
+    transform: scale(0.95);
+}
+
+.icon-button .icon-fullscreen,
+.icon-button .icon-exit-fullscreen {
+    display: inline-block;
+    font-size: 18px;
+    line-height: 1;
+}
+
+/* --- 4. 通用预览区样式 (由JS动态生成) --- */
+.preview-placeholder { display: flex; justify-content: center; align-items: center; height: 100%; width: 100%; color: var(--border-color); text-align: center; }
+
+/* ▼▼▼ 核心修改区域开始 ▼▼▼ */
+.preview-section-inner {
+    width: 100%;
+    display: flex; /* 让内部元素可以灵活布局 */
+    flex-direction: column;
+    flex-grow: 1; /* 占满父容器可用空间 */
+    min-height: 0; /* flex布局关键属性 */
+    overflow-y: auto; /* 核心修复！让这个容器本身可以滚动 */
+    padding-right: 10px; /* 为滚动条留出空间，防止内容遮挡 */
+    margin-right: -10px; /* 将留出的空间补回来，保持视觉对齐 */
+}
+/* ▼▼▼ 滚动条美化 ▼▼▼ */
+.preview-section-inner::-webkit-scrollbar {
+    width: 8px;
+}
+.preview-section-inner::-webkit-scrollbar-track {
+    background: transparent; /* 轨道透明 */
+}
+.preview-section-inner::-webkit-scrollbar-thumb {
+    background-color: #666;
+    border-radius: 4px;
+}
+.preview-section-inner::-webkit-scrollbar-thumb:hover {
+    background-color: #888;
+}
+
+.preview-section-inner h2 { margin: 0 0 15px; text-align: center; color: var(--accent-color); flex-shrink: 0; }
+.preview-section-inner .preview-group { 
+    display: flex; 
+    flex-direction: column; 
+    gap: 8px; 
+    margin-bottom: 15px; 
+    min-height: 0; /* 允许flex子元素收缩 */
+    flex: 1 1 0; /* 公平分配空间，每个区域占据相等的空间 */
+}
+/* 标题包装器：确保标题和图标按钮在同一行水平对齐 */
+.preview-section-inner .preview-group .preview-group-title {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 8px;
+}
+.preview-section-inner .preview-group .preview-group-title strong {
+    display: inline-block;
+    margin: 0;
+}
+.preview-section-inner .preview-group .preview-group-title .timeline-editor-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+/* 正面内容区域：与背面相当的高度 */
+.preview-section-inner .preview-group:not(.stretch) {
+    flex: 1 1 0; /* 占据50%的空间 */
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+}
+.preview-section-inner .preview-group:not(.stretch) .preview-content,
+.preview-section-inner .preview-group:not(.stretch) .interactive-sentence {
+    flex: 1;
+    min-height: 200px; /* 设置最小高度，确保有足够空间 */
+    overflow-y: auto; /* 内容超出时滚动 */
+}
+/* 背面内容区域：与正面相当的高度 */
+.preview-section-inner .preview-group.stretch { 
+    flex: 1 1 0; /* 占据50%的空间，与正面相同 */
+    min-height: 0; 
+    display: flex; 
+    flex-direction: column; 
+}
+.preview-section-inner .preview-content { 
+    background-color: var(--bg-main); 
+    border: 1px solid var(--border-color); 
+    border-radius: 5px; 
+    padding: 15px; 
+    line-height: 1.6; 
+    word-wrap: break-word; /* 长单词自动换行 */
+    overflow-wrap: break-word;
+}
+/* 背面内容区域：占据分配的空间并可滚动 */
+.preview-section-inner .preview-group.stretch .preview-content {
+    flex: 1;
+    min-height: 200px; /* 设置最小高度，确保有足够空间 */
+    overflow-y: auto; /* 内容超出时滚动 */
+}
+/* 音频容器不占用flex空间 */
+.preview-section-inner .preview-audio-container {
+    flex-shrink: 0;
+    margin-top: 15px;
+}
+/* 音频标题和控制按钮包装器 */
+.preview-section-inner .preview-audio-container .audio-title-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 8px;
+}
+.preview-section-inner .preview-audio-container .audio-title-wrapper strong {
+    display: inline-block;
+    margin: 0;
+}
+.preview-section-inner .preview-audio-container .audio-controls-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-left: auto;
+}
+.preview-section-inner .preview-audio-container .audio-control-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    transition: background-color 0.2s;
+}
+.preview-section-inner .preview-audio-container .audio-control-btn:hover {
+    background-color: #666 !important;
+}
+.preview-section-inner .preview-audio-container .audio-speed-select {
+    flex-shrink: 0;
+}
+.preview-section-inner .preview-audio-container .audio-speed-select option {
+    background-color: #333;
+    color: white;
+}
+/* 添加到Anki按钮不占用flex空间 */
+.preview-section-inner .add-to-anki-btn {
+    flex-shrink: 0;
+}
+/* ▲▲▲ 核心修改区域结束 ▲▲▲ */
+
+.preview-section-inner .preview-audio { width: 100%; margin-top: 5px; }
+.preview-section-inner .add-to-anki-btn { margin-top: 15px; /* 调整与上方内容的间距 */ background-color: var(--success-color); color: white; width: 100%; flex-shrink: 0; /* 防止按钮被压缩 */ }
+.preview-section-inner .add-to-anki-btn:hover:not(:disabled) { background-color: #45a049; }
+
+/* --- 5. 交互式播放器样式 (保持不变) --- */
+.interactive-sentence { 
+    font-size: 1.4em; 
+    line-height: 1.8; 
+    padding: 10px; 
+    border: 1px solid var(--border-color); 
+    border-radius: 5px; 
+    overflow-y: auto; 
+    display: none; 
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    white-space: normal;
+}
+.interactive-words-container {
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    white-space: normal;
+    display: block;
+    width: 100%;
+}
+.interactive-word { 
+    cursor: pointer; 
+    transition: background-color 0.15s ease-out, color 0.15s ease-out; 
+    padding: 2px 4px; 
+    margin: 0 1px; 
+    border-radius: 4px; 
+    display: inline-block; 
+    word-break: keep-all;
+    white-space: nowrap;
+}
+.interactive-word:hover { background-color: var(--bg-active); }
+.interactive-word.highlight { background-color: var(--accent-color); color: var(--bg-main); }
+
+/* 时间轴编辑器样式 */
+.timestamp-edit-controls {
+    margin-bottom: 10px;
+    padding: 10px;
+    background-color: #3a3a3a;
+    border-radius: 5px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.timestamp-edit-controls button {
+    padding: 6px 12px;
+    font-size: 0.9em;
+    background-color: #00aaff;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.timestamp-edit-controls button:hover {
+    background-color: #0088cc;
+}
+
+#timestampAdjustDialog {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 100vw !important;
+    height: 100vh !important;
+    background-color: rgba(0, 0, 0, 0.9);
+    z-index: 99999 !important;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 !important;
+    padding: 0 !important;
+}
+
+.timeline-dialog-content {
+    width: 90%;
+    max-width: 1400px;
+    height: 90%;
+    background-color: #2a2a2a;
+    border-radius: 8px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.timeline-dialog-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px 20px;
+    border-bottom: 1px solid var(--border-color);
+    background-color: #1a1a1a;
+}
+
+.timeline-dialog-header h3 {
+    margin: 0;
+    color: var(--accent-color);
+}
+
+.close-btn {
+    background: none;
+    border: none;
+    color: var(--fg-text);
+    font-size: 24px;
+    cursor: pointer;
+    padding: 0;
+    width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 4px;
+    transition: background-color 0.2s;
+}
+
+.close-btn:hover {
+    background-color: var(--bg-control);
+}
+
+.timeline-dialog-body {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    padding: 20px;
+    overflow: hidden;
+}
+
+.timeline-controls {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    padding: 10px;
+    background-color: #1a1a1a;
+    border-radius: 4px;
+    margin-bottom: 15px;
+    flex-shrink: 0;
+}
+
+.timeline-btn {
+    padding: 8px 16px;
+    background-color: #3a3a3a;
+    color: var(--fg-text);
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.9em;
+    transition: all 0.2s;
+}
+
+.timeline-btn:hover {
+    background-color: var(--bg-control);
+}
+
+.timeline-btn.primary {
+    background-color: var(--accent-color);
+    color: white;
+    border-color: var(--accent-color);
+}
+
+.timeline-btn.primary:hover {
+    background-color: #0088cc;
+}
+
+.timeline-seekbar {
+    flex: 1;
+    height: 6px;
+    background-color: #1a1a1a;
+    border-radius: 3px;
+    outline: none;
+    cursor: pointer;
+}
+
+.timeline-seekbar::-webkit-slider-thumb {
+    appearance: none;
+    width: 16px;
+    height: 16px;
+    background-color: var(--accent-color);
+    border-radius: 50%;
+    cursor: pointer;
+}
+
+.timeline-container {
+    flex: 1;
+    background-color: #1a1a1a;
+    border-radius: 4px;
+    overflow: auto;
+    position: relative;
+    min-height: 400px;
+}
+
+.timeline-content {
+    width: 100%;
+    height: 100%;
+    position: relative;
+}
+
+#timelineCanvas {
+    display: block;
+    width: 100%;
+    height: 100%;
+}
+
+.timeline-dialog-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    padding: 15px 20px;
+    border-top: 1px solid var(--border-color);
+    background-color: #1a1a1a;
+    flex-shrink: 0;
+}
+
+/* --- 6. Tab 和设置页面样式 (重构) --- */
+.tab-bar { display: flex; border-bottom: 1px solid var(--border-color); flex-shrink: 0; }
+.tab-button { padding: 12px 20px; cursor: pointer; background: none; border: none; color: var(--fg-text); font-size: 1.1em; border-bottom: 3px solid transparent; transition: all 0.2s ease; }
+.tab-button:hover { background-color: var(--bg-control); }
+.tab-button.active { color: var(--accent-color); border-bottom-color: var(--accent-color); }
+.tab-content-wrapper { flex-grow: 1; position: relative; min-height: 0; margin-top: 20px; }
+.tab-content { display: none; flex-direction: column; height: 100%; width: 100%; position: absolute; top: 0; left: 0; box-sizing: border-box; }
+.tab-content.active { display: flex; }
+.settings-grid { display: flex; flex-direction: column; gap: 20px; overflow-y: auto; padding: 0 20px; flex-grow: 1; }
+.settings-grid h3, .settings-grid h4 { color: var(--accent-color); margin: 10px 0 0; border-bottom: 1px solid var(--border-color); padding-bottom: 5px; }
+.form-row { display: grid; grid-template-columns: 180px 1fr; align-items: center; gap: 15px; }
+.form-row label { text-align: right; font-size: 1.1em; }
+.form-row.checkbox-style { grid-template-columns: 1fr; justify-content: flex-start; }
+.form-row small { grid-column: 2 / -1; color: #aaa; }
+.settings-actions { padding: 20px 0 0; border-top: 1px solid var(--border-color); flex-shrink: 0; margin-top: 20px; }
+.settings-actions .styled-button { max-width: 200px; margin: 0 auto; display: block; }
+
+/* --- 7. 新增: 历史记录 和 牌组浏览 布局样式 --- */
+.history-layout {
+    display: flex;
+    gap: 0; /* 移除gap，使用resizer作为分隔 */
+    width: 100%;
+    height: 100%;
+    min-height: 0; /* <<< 新增: 确保flex布局正常工作 */
+    position: relative;
+}
+.history-list-panel {
+    width: 300px; /* 默认宽度，可通过拖动调整 */
+    min-width: 200px; /* 最小宽度 */
+    max-width: 60%; /* 最大宽度不超过60% */
+    display: flex;
+    flex-direction: column;
+    border: 1px dashed var(--border-color);
+    border-radius: 8px;
+    padding: 15px;
+    box-sizing: border-box;
+    flex-shrink: 0; /* 防止被压缩 */
+}
+/* 可拖动分隔条 */
+.resizer {
+    width: 4px;
+    background-color: var(--border-color);
+    cursor: col-resize;
+    flex-shrink: 0;
+    position: relative;
+    transition: background-color 0.2s ease;
+    margin: 0 10px; /* 左右留出间距 */
+}
+.resizer:hover {
+    background-color: var(--accent-color);
+}
+.resizer::before {
+    content: '';
+    position: absolute;
+    left: -2px;
+    right: -2px;
+    top: 0;
+    bottom: 0;
+    cursor: col-resize;
+}
+.resizer.resizing {
+    background-color: var(--accent-color);
+}
+.history-list-panel h3 {
+    margin: 0 0 10px 0;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--border-color);
+    text-align: center;
+    color: var(--accent-color);
+    flex-shrink: 0;
+}
+.history-list {
+    list-style-type: none;
+    padding: 0;
+    margin: 0;
+    overflow-y: auto; /* 列表内容可滚动 */
+    flex-grow: 1;
+    min-height: 0; /* 确保可以滚动 */
+}
+.history-list li {
+    padding: 12px 15px;
+    cursor: pointer;
+    border-radius: 6px;
+    margin-bottom: 8px;
+    background-color: var(--bg-control);
+    border: 1px solid transparent;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis; /* 超出部分显示省略号 */
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+}
+.history-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+}
+.history-item-text {
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.history-delete-btn {
+    flex-shrink: 0;
+    width: 20px;
+    height: 20px;
+    border: none;
+    background-color: transparent;
+    color: #999;
+    font-size: 18px;
+    line-height: 1;
+    cursor: pointer;
+    border-radius: 3px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    transition: all 0.2s ease;
+}
+.history-delete-btn:hover {
+    background-color: rgba(255, 0, 0, 0.1);
+    color: #ff4444;
+}
+.history-list li:hover .history-delete-btn {
+    color: #ff6666;
+}
+.history-list li:hover {
+    background-color: var(--bg-active);
+}
+.history-list li.selected {
+    background-color: var(--accent-color);
+    color: var(--bg-main);
+    font-weight: bold;
+}
+.history-list li.placeholder {
+    text-align: center;
+    color: #888;
+    background-color: transparent;
+    cursor: default;
+}
+.history-preview-panel {
+    flex: 1;
+    border: 1px dashed var(--border-color);
+    border-radius: 8px;
+    padding: 20px;
+    box-sizing: border-box;
+    display: flex; /* 让内部占位符居中 */
+    flex-direction: column;
+    min-width: 0;
+    min-height: 0; /* <<< 新增: 确保flex布局正常工作 */
+}
+
+/* --- 8. 新增: 牌组浏览 特定样式 --- */
+.browser-controls {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    padding-bottom: 15px;
+    border-bottom: 1px solid var(--border-color);
+    flex-shrink: 0;
+    margin-bottom: 20px;
+}
+.browser-controls label {
+    font-size: 1.1em;
+    flex-shrink: 0;
+}
+.browser-controls .styled-select {
+    flex-grow: 1;
+}
+/* #browserTab .history-layout 的高度需要由JS或更灵活的布局来控制，这里先移除硬编码的高度 */
+#browserTab .browser-body {
+    flex-grow: 1;
+    min-height: 0;
+}
+
+/* --- 9. 底部状态栏和加载指示器 --- */
+.footer-bar {
+    text-align: center;
+    min-height: 1.5em;
+    flex-shrink: 0;
+    margin-top: 20px; /* 与 tab-content-wrapper 保持间距 */
+}
+.status-message.status-red { color: var(--error-color); }
+.status-message.status-green { color: var(--success-color); }
+.status-message.status-blue { color: var(--accent-color); }
+#loadingIndicator {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.75);
+    color: white;
+    display: none; /* 由 JS 控制 */
+    justify-content: center;
+    align-items: center;
+    font-size: 1.5em;
+    z-index: 1000;
+}
+
+/* --- 10. 全屏模式样式 (已修改) --- */
+/* 全屏容器的基础样式，注意这里不再设置 display: none */
+.fullscreen-container {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 100vw !important;
+    height: 100vh !important;
+    background-color: var(--bg-main) !important;
+    z-index: 99999 !important;
+    display: flex; /* 默认就是flex，让JS只控制它的显示与否 */
+    flex-direction: column;
+    overflow: hidden;
+    margin: 0 !important;
+    padding: 0 !important;
+}
+
+.fullscreen-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 15px; /* 减小内边距 */
+    border-bottom: 1px solid var(--border-color);
+    flex-shrink: 0;
+    background-color: var(--bg-control);
+}
+
+.fullscreen-counter {
+    color: var(--accent-color);
+    font-size: 1.2em;
+    font-weight: bold;
+}
+
+.fullscreen-preview {
+    flex: 1 1 auto;
+    display: flex !important;
+    flex-direction: column !important;
+    padding: 15px !important; /* 减小内边距，显示更多内容 */
+    overflow-y: auto !important;
+    min-height: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+    box-sizing: border-box !important;
+}
+
+.fullscreen-preview .preview-section-inner {
+    max-width: 100%; /* 移除最大宽度限制，使用全宽 */
+    margin: 0 auto;
+    width: 100%;
+    color: var(--fg-text) !important; /* 确保文字颜色可见 */
+}
+
+.fullscreen-preview .preview-section-inner h2 {
+    font-size: 1em; /* 与非全屏模式保持一致 */
+    margin-bottom: 15px; /* 减小间距 */
+    color: var(--accent-color) !important;
+}
+
+.fullscreen-preview .preview-group {
+    margin-bottom: 15px; /* 减小间距 */
+}
+
+.fullscreen-preview .preview-group strong {
+    color: var(--fg-text) !important;
+    font-size: 1.1em; /* 与非全屏模式保持一致 */
+    margin-bottom: 8px; /* 减小间距 */
+    display: block;
+}
+
+.fullscreen-preview .preview-content {
+    font-size: 1em; /* 与非全屏模式保持一致 */
+    padding: 15px; /* 减小内边距 */
+    line-height: 1.6; /* 与非全屏模式保持一致 */
+    color: var(--fg-text) !important;
+    background-color: var(--bg-control) !important;
+}
+
+.fullscreen-preview .interactive-sentence {
+    font-size: 1.4em; /* 与非全屏模式保持一致 */
+    padding: 10px; /* 减小内边距 */
+    line-height: 1.8; /* 与非全屏模式保持一致 */
+    color: var(--fg-text) !important;
+    background-color: var(--bg-control) !important;
+}
+
+.fullscreen-preview .interactive-word {
+    font-size: 1em;
+    padding: 4px 6px;
+    margin: 0 2px;
+    cursor: pointer; /* 确保鼠标指针显示为手型 */
+    pointer-events: auto; /* 确保可以点击 */
+}
+
+.fullscreen-preview .preview-audio {
+    width: 100%;
+    margin-top: 20px;
+}
+
+/* 全屏模式下隐藏背景内容。注意：这里不再隐藏 .container */
+body.fullscreen-mode > *:not(#fullscreenContainer) {
+    visibility: hidden; /* 使用 visibility 代替 display，有时更稳定 */
+}
+
+/* ▼▼▼ 最终修复！强制让全屏容器可见！▼▼▼ */
+body.fullscreen-mode #fullscreenContainer {
+    visibility: visible !important;
+}
+
+/* 同时确保全屏容器内的所有元素都可见 */
+body.fullscreen-mode #fullscreenContainer,
+body.fullscreen-mode #fullscreenContainer * {
+    visibility: visible !important;
+}

@@ -1,0 +1,282 @@
+<!-- anki-gpt-addon/webview_ui.html (Upgraded Version) -->
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Anki-GPT</title>
+    <link rel="stylesheet" href="webview_styles.css">
+</head>
+<body>
+    <div class="container">
+        <!-- 1. Tab 栏扩展 -->
+        <div class="tab-bar">
+            <button class="tab-button active" data-tab="generatorTab">生成器</button>
+            <button class="tab-button" data-tab="asrTab">音频转文字</button>
+            <button class="tab-button" data-tab="settingsTab">设置</button>
+            <button class="tab-button" data-tab="browserTab">牌组浏览</button>
+        </div>
+
+        <!-- Tab 内容区域 -->
+        <div class="tab-content-wrapper">
+
+            <!-- Tab 1: 生成器 (整合会话历史) -->
+            <div id="generatorTab" class="tab-content active">
+                <div class="main-layout three-column-layout">
+                    <!-- 左侧面板：输入区 -->
+                    <div class="left-panel">
+                        <div class="section">
+                            <label for="cardType" class="hint-label">卡片类型:</label>
+                            <select id="cardType" class="styled-select"></select>
+                        </div>
+                        <div class="section">
+                            <label for="deckName" class="hint-label">目标牌组:</label>
+                            <div class="input-with-arrow-container">
+                                <input type="text" id="deckName" class="styled-input" list="deckOptions" placeholder="输入或选择牌组..." autocomplete="off">
+                                <div class="input-arrow"></div>
+                            </div>
+                            <datalist id="deckOptions"></datalist>
+                        </div>
+                        <div class="section input-section">
+                            <label for="inputText" class="hint-label">在此输入日文 (Ctrl/Cmd+Enter):</label>
+                            <textarea id="inputText" class="styled-textarea" placeholder="在此输入日文..."></textarea>
+                        </div>
+                        <div class="section checkbox-section">
+                            <input type="checkbox" id="includePronunciation" class="styled-checkbox" checked>
+                            <label for="includePronunciation" class="checkbox-label">包含发音</label>
+                        </div>
+                        <div class="section">
+                            <button id="generateButton" class="styled-button primary">生成预览</button>
+                        </div>
+                    </div>
+                    <!-- 中间分隔条（左侧和中间之间） -->
+                    <div class="resizer resizer-left" id="resizerLeft"></div>
+                    <!-- 中间面板：预览区 -->
+                    <div class="middle-panel" id="generatorPreviewPanel">
+                        <div class="preview-placeholder">
+                            <p>生成的内容将在此处预览</p>
+                        </div>
+                    </div>
+                    <!-- 中间分隔条（中间和右侧之间） -->
+                    <div class="resizer resizer-right" id="resizerRight"></div>
+                    <!-- 右侧面板：牌组卡片列表 -->
+                    <div class="right-panel history-panel" id="deckCardsPanel">
+                        <div class="history-header">
+                            <h3 class="history-title">牌组卡片</h3>
+                            <button id="refreshDeckCardsBtn" class="icon-button" title="刷新">
+                                <span class="icon-toggle">↻</span>
+                            </button>
+                        </div>
+                        <ul id="deckCardsList" class="history-list">
+                            <li class="placeholder">请先选择目标牌组</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tab 2: 音频转文字 -->
+            <div id="asrTab" class="tab-content">
+                <div class="main-layout three-column-layout">
+                    <!-- 左侧面板：输入区 -->
+                    <div class="left-panel">
+                        <div class="section">
+                            <label for="asrCardType" class="hint-label">卡片类型:</label>
+                            <select id="asrCardType" class="styled-select"></select>
+                        </div>
+                        <div class="section">
+                            <label for="asrDeckName" class="hint-label">目标牌组:</label>
+                            <div class="input-with-arrow-container">
+                                <input type="text" id="asrDeckName" class="styled-input" list="deckOptions" placeholder="输入或选择牌组..." autocomplete="off">
+                                <div class="input-arrow"></div>
+                            </div>
+                            <datalist id="deckOptions"></datalist>
+                        </div>
+                        <div class="section input-section">
+                            <label for="asrAudioUrl" class="hint-label">音频地址 (URL):</label>
+                            <textarea id="asrAudioUrl" class="styled-textarea" placeholder="请输入音频文件的URL地址..."></textarea>
+                        </div>
+                        <div class="section">
+                            <button id="asrGenerateButton" class="styled-button primary">开始转写</button>
+                        </div>
+                    </div>
+                    <!-- 中间分隔条（左侧和中间之间） -->
+                    <div class="resizer resizer-left" id="asrResizerLeft"></div>
+                    <!-- 中间面板：预览区 -->
+                    <div class="middle-panel" id="asrPreviewPanel">
+                        <div class="preview-placeholder">
+                            <p>转写结果将在此处预览</p>
+                        </div>
+                    </div>
+                    <!-- 中间分隔条（中间和右侧之间） -->
+                    <div class="resizer resizer-right" id="asrResizerRight"></div>
+                    <!-- 右侧面板：牌组卡片列表 -->
+                    <div class="right-panel history-panel" id="asrDeckCardsPanel">
+                        <div class="history-header">
+                            <h3 class="history-title">牌组卡片</h3>
+                            <button id="asrRefreshDeckCardsBtn" class="icon-button" title="刷新">
+                                <span class="icon-toggle">↻</span>
+                            </button>
+                        </div>
+                        <ul id="asrDeckCardsList" class="history-list">
+                            <li class="placeholder">请先选择目标牌组</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tab 3: 设置 (保持不变) -->
+            <div id="settingsTab" class="tab-content">
+                <div class="settings-grid">
+                    <h3>通用设置</h3>
+                    <div class="form-row">
+                        <label for="settingsApiKey">DashScope API Key:</label>
+                        <input type="password" id="settingsApiKey" class="styled-input">
+                    </div>
+                    <div class="form-row">
+                        <label for="settingsDefaultCardType">默认卡片类型:</label>
+                        <select id="settingsDefaultCardType" class="styled-select"></select>
+                    </div>
+                    <div class="form-row">
+                        <label for="settingsDefaultDeckName">默认目标牌组:</label>
+                        <input type="text" id="settingsDefaultDeckName" class="styled-input" list="deckOptions">
+                    </div>
+                    <div class="form-row checkbox-style">
+                        <input type="checkbox" id="settingsInteractivePlayer" class="styled-checkbox">
+                        <label for="settingsInteractivePlayer" class="checkbox-label">启用交互式句子播放器</label>
+                    </div>
+                    <h3>TTS 设置</h3>
+                    <div class="form-row">
+                        <label for="settingsTtsProvider">TTS 服务商:</label>
+                        <select id="settingsTtsProvider" class="styled-select">
+                            <option value="qwen-tts">Qwen-TTS</option>
+                            <option value="cosyvoice-v2">CosyVoice-v2</option>
+                        </select>
+                    </div>
+                    <div id="qwenTtsOptionsGroup" class="tts-options-group">
+                        <h4>Qwen-TTS 选项</h4>
+                        <div class="form-row">
+                            <label for="settingsQwenModel">模型:</label>
+                            <select id="settingsQwenModel" class="styled-select">
+                                <option value="qwen3-tts-flash">qwen3-tts-flash (推荐)</option>
+                                <option value="qwen3-tts-flash-2025-09-18">qwen3-tts-flash-2025-09-18 (快照版)</option>
+                            </select>
+                        </div>
+                        <div class="form-row">
+                            <label for="settingsQwenVoice">音色:</label>
+                            <select id="settingsQwenVoice" class="styled-select">
+                                <option value="Cherry">Cherry (女声)</option>
+                                <option value="Amber">Amber (女声)</option>
+                            </select>
+                        </div>
+                        <div class="form-row">
+                            <label for="settingsQwenLanguage">语言:</label>
+                            <input type="text" id="settingsQwenLanguage" class="styled-input" value="Japanese">
+                        </div>
+                    </div>
+                    <div id="cosyvoiceTtsOptionsGroup" class="tts-options-group" style="display: none;">
+                        <h4>CosyVoice-v2 选项</h4>
+                        <div class="form-row">
+                            <label for="settingsCosyvoiceModel">模型:</label>
+                            <select id="settingsCosyvoiceModel" class="styled-select">
+                                <option value="cosyvoice-v2">cosyvoice-v2 (推荐)</option>
+                            </select>
+                        </div>
+                        <div class="form-row">
+                            <label for="settingsCosyvoiceVoice">音色:</label>
+                            <select id="settingsCosyvoiceVoice" class="styled-select">
+                                <option value="loongyuuna_v2">loongyuuna_v2 (推荐)</option>
+                                <option value="zhimiao_emo">zhimiao_emo</option>
+                                <option value="zhiyan_emo">zhiyan_emo</option>
+                                <option value="zhitian_emo">zhitian_emo</option>
+                                <option value="zhibei_emo">zhibei_emo</option>
+                            </select>
+                        </div>
+                    </div>
+                    <h3 id="ssmlSettingsGroup">高级设置 (SSML)</h3>
+                     <div class="form-row checkbox-style">
+                        <input type="checkbox" id="settingsSsmlEnabled" class="styled-checkbox">
+                        <label for="settingsSsmlEnabled" class="checkbox-label">启用 SSML 停顿规则</label>
+                        <small id="ssmlHint" style="display: block; margin-top: 5px; color: #666;">仅 CosyVoice-v2 支持 SSML</small>
+                    </div>
+                    <div class="form-row">
+                        <label for="settingsSsmlRules">停顿规则 (JSON格式):</label>
+                        <textarea id="settingsSsmlRules" class="styled-textarea" rows="4"></textarea>
+                        <small>用于 CosyVoice-v2 TTS 服务自定义停顿。</small>
+                    </div>
+                </div>
+                <div class="settings-actions">
+                    <button id="saveSettingsButton" class="styled-button primary">保存设置</button>
+                </div>
+            </div>
+
+            <!-- 3. 牌组浏览 Tab -->
+            <div id="browserTab" class="tab-content">
+                <!-- 顶部控制栏 -->
+                <div class="browser-controls">
+                    <label for="deckBrowserSelect">选择牌组:</label>
+                    <select id="deckBrowserSelect" class="styled-select">
+                        <option value="">-- 请选择一个牌组 --</option>
+                    </select>
+                    <button id="fullscreenToggleBtn" class="icon-button" title="全屏模式" style="margin-left: 10px;">
+                        <span class="icon-fullscreen">⛶</span>
+                    </button>
+                </div>
+                <!-- 主体布局 -->
+                <div class="history-layout browser-body">
+                    <!-- 左侧: 卡片列表 -->
+                    <div class="history-list-panel" id="deckCardListPanel">
+                        <h3 id="deckCardListHeader">请先选择一个牌组</h3>
+                        <ul id="deckCardList" class="history-list">
+                            <li class="placeholder">...</li>
+                        </ul>
+                    </div>
+                    <!-- 可拖动分隔条 -->
+                    <div class="resizer" id="browserResizer"></div>
+                    <!-- 右侧: 卡片预览 -->
+                    <div class="history-preview-panel" id="deckCardPreview">
+                         <div class="preview-placeholder">
+                            <p>请在左侧选择一张卡片进行预览</p>
+                         </div>
+                    </div>
+                </div>
+            </div>
+            
+        </div>
+        
+            <!-- 全屏模式容器（放在最外层，确保覆盖整个窗口） -->
+            <div id="fullscreenContainer" class="fullscreen-container" style="display: none;">
+                <div class="fullscreen-header">
+                    <button id="exitFullscreenBtn" class="icon-button" title="退出全屏 (ESC)">
+                        <span class="icon-exit-fullscreen">✕</span>
+                    </button>
+                    <span id="fullscreenCardCounter" class="fullscreen-counter"></span>
+                </div>
+            <div id="fullscreenPreview" class="fullscreen-preview">
+                <div class="preview-placeholder">
+                    <p>加载中...</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- 底部状态栏 -->
+        <div class="footer-bar">
+            <div class="status-bar">
+                <span id="statusLabel" class="status-message"></span>
+            </div>
+        </div>
+    </div>
+
+    <!-- 加载指示器 -->
+    <div id="loadingIndicator">正在处理...</div>
+
+    <!-- 脚本模块（按依赖顺序加载） -->
+    <script src="webview_utils.js"></script>
+    <script src="webview_interactive_player.js"></script>
+    <script src="webview_preview.js"></script>
+    <script src="webview_history.js"></script>
+    <script src="webview_deck_browser.js"></script>
+    <script src="webview_fullscreen.js"></script>
+    <script src="webview_config.js"></script>
+    <script src="webview_main.js"></script>
+</body>
+</html>
