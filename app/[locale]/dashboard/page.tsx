@@ -194,6 +194,35 @@ export default function DashboardPage() {
       </nav>
 
       <div className="container mx-auto px-4 py-8">
+        {/* 功能导航 */}
+        <div className="max-w-3xl mx-auto mb-6">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4">
+            <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
+              {t('dashboard.features')}
+            </h3>
+            <div className="flex flex-wrap gap-3">
+              <Link
+                href="/dashboard"
+                className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors text-sm font-medium"
+              >
+                {t('dashboard.textToSpeech')}
+              </Link>
+              <Link
+                href="/cards/generate"
+                className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors text-sm font-medium"
+              >
+                {t('dashboard.generateCard')}
+              </Link>
+              <Link
+                href="/cards"
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
+              >
+                {t('dashboard.viewCards')}
+              </Link>
+            </div>
+          </div>
+        </div>
+
         <div className="max-w-3xl mx-auto">
           {paymentSuccess && (
             <div className="mb-4 p-4 bg-green-100 dark:bg-green-900 border border-green-400 dark:border-green-700 text-green-700 dark:text-green-300 rounded-lg">
