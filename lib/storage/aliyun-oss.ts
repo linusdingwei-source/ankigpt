@@ -12,7 +12,7 @@ export async function uploadToAliyunOSS(
     const requireModule = new Function('moduleName', 'return require(moduleName)');
     const ossModule = requireModule('ali-oss');
     OSS = ossModule.default || ossModule;
-  } catch (error) {
+  } catch {
     throw new Error('ali-oss package is not installed. Run: npm install ali-oss');
   }
 

@@ -13,7 +13,7 @@ export async function uploadToAWSS3(
     const s3Module = requireModule('@aws-sdk/client-s3');
     S3Client = s3Module.S3Client;
     PutObjectCommand = s3Module.PutObjectCommand;
-  } catch (error) {
+  } catch {
     throw new Error('@aws-sdk/client-s3 package is not installed. Run: npm install @aws-sdk/client-s3');
   }
 
