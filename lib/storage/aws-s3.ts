@@ -5,11 +5,12 @@ export async function uploadToAWSS3(
   filename: string,
   contentType: string
 ): Promise<UploadResult> {
-  // 动态导入，避免构建时错误
+  // 使用 require 动态加载，避免 webpack 在构建时检查
   let S3Client, PutObjectCommand;
   try {
-    // 使用字符串形式的动态导入，避免 webpack 在构建时检查
-    const s3Module = await import('@aws-sdk/client-s3');
+    // 使用 Function 构造器来避免 webpack 静态分析
+    const requireModule = new Function('moduleName', 'return require(moduleName)');
+    const s3Module = requireModule('@aws-sdk/client-s3');
     S3Client = s3Module.S3Client;
     PutObjectCommand = s3Module.PutObjectCommand;
   } catch (error) {
