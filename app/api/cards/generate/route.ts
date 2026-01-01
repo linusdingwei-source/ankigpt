@@ -101,8 +101,11 @@ export async function POST(request: NextRequest) {
           audioUrl = ttsData.audio.url;
           // 使用 TTS API 返回的文件名（如果已上传到云存储）
           audioFilename = ttsData.audio.filename || (() => {
-            const urlParts = audioUrl.split('/');
-            return urlParts[urlParts.length - 1] || 'audio.mp3';
+            if (audioUrl) {
+              const urlParts = audioUrl.split('/');
+              return urlParts[urlParts.length - 1] || 'audio.mp3';
+            }
+            return 'audio.mp3';
           })();
           timestamps = ttsData.audio.timestamps || null;
         }
