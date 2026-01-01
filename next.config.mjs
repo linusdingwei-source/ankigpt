@@ -25,6 +25,26 @@ const nextConfig = {
         }
       )
     );
+
+    // 将可选存储依赖标记为外部依赖，避免构建时检查
+    // 这些依赖只在运行时动态导入
+    if (isServer) {
+      config.externals = config.externals || [];
+      // 如果 externals 是数组，添加新的外部依赖
+      if (Array.isArray(config.externals)) {
+        config.externals.push({
+          'ali-oss': 'commonjs ali-oss',
+          '@aws-sdk/client-s3': 'commonjs @aws-sdk/client-s3',
+        });
+      } else {
+        // 如果 externals 是对象，合并
+        config.externals = {
+          ...config.externals,
+          'ali-oss': 'commonjs ali-oss',
+          '@aws-sdk/client-s3': 'commonjs @aws-sdk/client-s3',
+        };
+      }
+    }
     
     return config;
   },
