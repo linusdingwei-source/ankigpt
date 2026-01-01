@@ -94,8 +94,14 @@ async function uploadToAliyunOSS(
   filename: string,
   contentType: string
 ): Promise<UploadResult> {
-  // 需要安装: npm install ali-oss
-  const OSS = (await import('ali-oss')).default;
+  // 动态导入，避免构建时错误
+  let OSS;
+  try {
+    const ossModule = await import('ali-oss');
+    OSS = ossModule.default || ossModule;
+  } catch (error) {
+    throw new Error('ali-oss package is not installed. Run: npm install ali-oss');
+  }
 
   if (!process.env.OSS_REGION || !process.env.OSS_BUCKET || 
       !process.env.OSS_ACCESS_KEY_ID || !process.env.OSS_ACCESS_KEY_SECRET) {
@@ -131,8 +137,15 @@ async function uploadToAWSS3(
   filename: string,
   contentType: string
 ): Promise<UploadResult> {
-  // 需要安装: npm install @aws-sdk/client-s3
-  const { S3Client, PutObjectCommand } = await import('@aws-sdk/client-s3');
+  // 动态导入，避免构建时错误
+  let S3Client, PutObjectCommand;
+  try {
+    const s3Module = await import('@aws-sdk/client-s3');
+    S3Client = s3Module.S3Client;
+    PutObjectCommand = s3Module.PutObjectCommand;
+  } catch (error) {
+    throw new Error('@aws-sdk/client-s3 package is not installed. Run: npm install @aws-sdk/client-s3');
+  }
 
   if (!process.env.S3_REGION || !process.env.S3_BUCKET || 
       !process.env.S3_ACCESS_KEY_ID || !process.env.S3_SECRET_ACCESS_KEY) {
@@ -177,9 +190,16 @@ async function uploadToCloudflareR2(
   filename: string,
   contentType: string
 ): Promise<UploadResult> {
-  // 需要安装: npm install @aws-sdk/client-s3
+  // 动态导入，避免构建时错误
   // R2 使用 S3 兼容的 API
-  const { S3Client, PutObjectCommand } = await import('@aws-sdk/client-s3');
+  let S3Client, PutObjectCommand;
+  try {
+    const s3Module = await import('@aws-sdk/client-s3');
+    S3Client = s3Module.S3Client;
+    PutObjectCommand = s3Module.PutObjectCommand;
+  } catch (error) {
+    throw new Error('@aws-sdk/client-s3 package is not installed. Run: npm install @aws-sdk/client-s3');
+  }
 
   if (!process.env.R2_ACCOUNT_ID || !process.env.R2_BUCKET || 
       !process.env.R2_ACCESS_KEY_ID || !process.env.R2_SECRET_ACCESS_KEY) {
