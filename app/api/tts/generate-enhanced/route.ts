@@ -98,9 +98,16 @@ export async function POST(request: NextRequest) {
           if (audioResponse.ok) {
             const audioBuffer = Buffer.from(await audioResponse.arrayBuffer());
             
-            // 从 URL 提取原始文件名
-            const urlParts = dashscopeAudioUrl.split('/');
-            const originalFilename = urlParts[urlParts.length - 1] || 'audio.mp3';
+            // 从 URL 提取原始文件名，移除查询参数
+            const urlObj = new URL(dashscopeAudioUrl);
+            let originalFilename = urlObj.pathname.split('/').pop() || 'audio.mp3';
+            // 如果文件名包含扩展名，确保只保留文件名和扩展名
+            // 移除任何查询参数或特殊字符
+            originalFilename = originalFilename.split('?')[0].split('#')[0];
+            // 如果没有扩展名，添加 .mp3
+            if (!originalFilename.includes('.')) {
+              originalFilename = `${originalFilename}.mp3`;
+            }
             
             // 上传到云存储
             const { uploadToStorage } = await import('@/lib/storage');
