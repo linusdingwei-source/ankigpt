@@ -97,12 +97,13 @@ export async function POST(request: NextRequest) {
       if (ttsResponse.ok) {
         const ttsData = await ttsResponse.json();
         if (ttsData.success && ttsData.audio?.url) {
+          // 使用 TTS API 返回的 URL（可能已经上传到云存储）
           audioUrl = ttsData.audio.url;
-          // 从 URL 提取文件名
-          if (audioUrl) {
+          // 使用 TTS API 返回的文件名（如果已上传到云存储）
+          audioFilename = ttsData.audio.filename || (() => {
             const urlParts = audioUrl.split('/');
-            audioFilename = urlParts[urlParts.length - 1] || 'audio.mp3';
-          }
+            return urlParts[urlParts.length - 1] || 'audio.mp3';
+          })();
           timestamps = ttsData.audio.timestamps || null;
         }
       }

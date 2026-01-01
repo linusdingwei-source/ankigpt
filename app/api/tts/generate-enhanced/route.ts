@@ -83,11 +83,46 @@ export async function POST(request: NextRequest) {
     
     // Qwen-TTS 返回音频 URL
     if (data.output?.audio?.url) {
-      const audioUrl = data.output.audio.url;
+      const dashscopeAudioUrl = data.output.audio.url;
       
-      // 下载音频文件（可选：保存到云存储）
-      // 这里先返回 URL，客户端可以直接使用
-      // 如果需要保存，可以下载后上传到 S3/OSS 等
+      // 下载音频文件并上传到云存储（如果配置了）
+      let finalAudioUrl = dashscopeAudioUrl;
+      let audioFilename: string | null = null;
+      
+      // 检查是否配置了云存储
+      const storageProvider = process.env.STORAGE_PROVIDER;
+      if (storageProvider && storageProvider !== 'none') {
+        try {
+          // 下载 DashScope 返回的音频
+          const audioResponse = await fetch(dashscopeAudioUrl);
+          if (audioResponse.ok) {
+            const audioBuffer = Buffer.from(await audioResponse.arrayBuffer());
+            
+            // 从 URL 提取原始文件名
+            const urlParts = dashscopeAudioUrl.split('/');
+            const originalFilename = urlParts[urlParts.length - 1] || 'audio.mp3';
+            
+            // 上传到云存储
+            const { uploadToStorage } = await import('@/lib/storage');
+            const uploadResult = await uploadToStorage(
+              audioBuffer,
+              originalFilename,
+              'audio/mpeg'
+            );
+            
+            finalAudioUrl = uploadResult.url;
+            audioFilename = uploadResult.filename;
+            
+            console.log(`Audio uploaded to cloud storage: ${finalAudioUrl}`);
+          } else {
+            console.warn('Failed to download audio from DashScope, using original URL');
+          }
+        } catch (uploadError) {
+          console.error('Failed to upload audio to cloud storage:', uploadError);
+          // 如果上传失败，使用 DashScope 的原始 URL
+          console.warn('Falling back to DashScope audio URL');
+        }
+      }
       
       // 消耗 credits
       await consumeCredits(userId, TTS_CREDITS_COST);
@@ -97,7 +132,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({
         success: true,
         audio: {
-          url: audioUrl,
+          url: finalAudioUrl,
+          filename: audioFilename,
           // 如果需要时间戳，需要调用支持时间戳的 API
           // timestamps: data.output.timestamps || null,
         },
