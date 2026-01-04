@@ -40,6 +40,8 @@ Resend 是一个现代化的邮件服务，提供：
 
 ### 步骤 3: 使用测试邮箱（开发环境）
 
+**⚠️ 重要限制**：Resend 的免费测试账户只能发送邮件到**注册时使用的邮箱地址**（例如：`linus.dingwei@gmail.com`）。
+
 **快速开始**：Resend 提供了测试邮箱 `onboarding@resend.dev`，可以直接使用，无需验证。
 
 在 `.env` 文件中：
@@ -48,7 +50,11 @@ RESEND_API_KEY="re_你的API密钥"
 RESEND_FROM_EMAIL="onboarding@resend.dev"  # Resend 提供的测试邮箱
 ```
 
-**验证自定义邮箱**（可选）：
+**⚠️ 限制说明**：
+- 使用 `onboarding@resend.dev` 时，只能发送到注册 Resend 账户时使用的邮箱
+- 要发送到其他邮箱（如用户注册邮箱），**必须验证域名**
+
+**验证单个邮箱地址**（快速解决方案）：
 1. 在 Resend Dashboard，进入 **Domains**（域名）
 2. 点击 **"Add Domain"**（添加域名）
 3. 选择 **"Single Email Address"**（单个邮箱地址）
@@ -56,8 +62,9 @@ RESEND_FROM_EMAIL="onboarding@resend.dev"  # Resend 提供的测试邮箱
 5. 点击 **"Add"**（添加）
 6. Resend 会发送验证邮件到该邮箱
 7. 点击邮件中的验证链接完成验证
+8. 验证后，更新 `RESEND_FROM_EMAIL` 为已验证的邮箱地址
 
-> **注意**：开发环境可以使用 `onboarding@resend.dev` 测试邮箱，生产环境建议验证整个域名。
+> **注意**：开发环境可以使用 `onboarding@resend.dev` 测试邮箱，但只能发送到注册邮箱。生产环境**必须验证域名**才能发送到任意邮箱。
 
 ### 步骤 4: 验证域名（生产环境，推荐）
 
@@ -241,6 +248,45 @@ node test-resend.js
 2. 确认发件人邮箱/域名已验证
 3. 检查 `RESEND_FROM_EMAIL` 环境变量是否正确
 4. 如果使用域名，确保 DNS 记录已正确配置
+
+### 问题 2.5: "You can only send testing emails to your own email address" 错误
+
+**原因**：使用 `onboarding@resend.dev` 测试邮箱时，只能发送到注册 Resend 账户时使用的邮箱地址
+
+**错误信息示例**：
+```
+You can only send testing emails to your own email address (linus.dingwei@gmail.com). 
+To send emails to other recipients, please verify a domain at resend.com/domains, 
+and change the `from` address to an email using this domain.
+```
+
+**解决方案**：
+
+**方案 1：验证域名（推荐，生产环境必需）**
+1. 在 Resend Dashboard，进入 **Domains**
+2. 点击 **"Add Domain"**（添加域名）
+3. 输入你的域名（如 `ankigpt.com`）
+4. 点击 **"Add"**（添加）
+5. 按照提示添加 DNS 记录：
+   - **SPF 记录**：`v=spf1 include:_spf.resend.com ~all`
+   - **DKIM 记录**：Resend 会提供具体的 DKIM 记录
+6. 在域名 DNS 管理面板添加这些记录
+7. 等待 DNS 验证完成（通常几分钟到几小时）
+8. 验证后，更新 `RESEND_FROM_EMAIL` 为 `noreply@yourdomain.com`
+
+**方案 2：验证单个邮箱地址（快速测试）**
+1. 在 Resend Dashboard，进入 **Domains**
+2. 点击 **"Add Domain"**（添加域名）
+3. 选择 **"Single Email Address"**（单个邮箱地址）
+4. 输入你的邮箱地址（如 `noreply@yourdomain.com`）
+5. 点击 **"Add"**（添加）
+6. Resend 会发送验证邮件到该邮箱
+7. 点击邮件中的验证链接完成验证
+8. 验证后，更新 `RESEND_FROM_EMAIL` 为已验证的邮箱地址
+
+**方案 3：临时解决方案（仅用于开发测试）**
+- 暂时只允许发送到注册 Resend 账户时使用的邮箱
+- 不适用于生产环境
 
 ### 问题 3: 邮件进入垃圾箱
 
