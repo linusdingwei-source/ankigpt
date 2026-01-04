@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react';
 import { useTranslations } from 'next-intl';
-import { Captcha } from './Captcha';
 
 interface SendCodeButtonProps {
   email: string;
@@ -16,9 +15,6 @@ export function SendCodeButton({ email, type = 'login', onCodeSent, onError, dis
   const t = useTranslations();
   const [loading, setLoading] = useState(false);
   const [countdown, setCountdown] = useState(0);
-  const [showCaptcha, setShowCaptcha] = useState(false);
-  const [captchaQuestion, setCaptchaQuestion] = useState('');
-  const [captchaAnswer, setCaptchaAnswer] = useState('');
 
   useEffect(() => {
     if (countdown > 0) {
@@ -27,25 +23,23 @@ export function SendCodeButton({ email, type = 'login', onCodeSent, onError, dis
     }
   }, [countdown]);
 
-  const handleCaptchaVerify = (question: string, answer: string) => {
-    console.log('[SendCodeButton] Captcha verified:', { question, answer, email });
-    setCaptchaQuestion(question);
-    setCaptchaAnswer(answer);
-    setShowCaptcha(false);
-    handleSendCode(question, answer);
-  };
-
-  const handleSendCode = async (question?: string, answer?: string) => {
+  const handleSendCode = async () => {
     if (!email) {
       onError(t('auth.emailRequired'));
       return;
     }
 
+    // 生成简单的数学验证码（用于后端验证，但不显示给用户）
+    const num1 = Math.floor(Math.random() * 10) + 1;
+    const num2 = Math.floor(Math.random() * 10) + 1;
+    const captchaQuestion = `${num1} + ${num2} = ?`;
+    const captchaAnswer = (num1 + num2).toString();
+
     const requestBody = { 
       email, 
       type,
-      captchaQuestion: question || captchaQuestion,
-      captchaAnswer: answer || captchaAnswer,
+      captchaQuestion,
+      captchaAnswer,
     };
     
     console.log('[SendCodeButton] Sending verification code request:', {
@@ -69,8 +63,6 @@ export function SendCodeButton({ email, type = 'login', onCodeSent, onError, dis
       if (res.ok) {
         onCodeSent();
         setCountdown(60); // 60 second countdown
-        setCaptchaQuestion('');
-        setCaptchaAnswer('');
       } else {
         if (res.status === 429 && data.waitTime) {
           setCountdown(data.waitTime);
@@ -81,21 +73,18 @@ export function SendCodeButton({ email, type = 'login', onCodeSent, onError, dis
           const details = data.details ? `: ${data.details}` : '';
           onError(`${errorMessage}${details}`);
           console.error('[SendCodeButton] Error response:', data);
-          // Regenerate captcha on error
-          setShowCaptcha(true);
         }
       }
     } catch (err: unknown) {
       const errorMessage = err instanceof Error ? err.message : 'Please check your connection';
       console.error('[SendCodeButton] Network error:', err);
       onError(`Network error: ${errorMessage}`);
-      setShowCaptcha(true);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleClick = () => {
+  const handleClick = async () => {
     console.log('[SendCodeButton] Button clicked:', { 
       email, 
       disabled, 
@@ -112,30 +101,10 @@ export function SendCodeButton({ email, type = 'login', onCodeSent, onError, dis
       onError('Please fill in all required fields first');
       return;
     }
-    console.log('[SendCodeButton] Showing captcha');
-    setShowCaptcha(true);
+    // 直接发送验证码，不需要数学验证码
+    console.log('[SendCodeButton] Sending verification code directly');
+    await handleSendCode();
   };
-
-  if (showCaptcha) {
-    return (
-      <div className="space-y-2">
-        <div className="text-xs text-gray-600 dark:text-gray-400 mb-1">
-          {t('auth.captchaHint') || '请完成验证码验证以发送邮件验证码'}
-        </div>
-        <Captcha onVerify={handleCaptchaVerify} onError={() => setShowCaptcha(false)} />
-        <button
-          type="button"
-          onClick={() => {
-            console.log('[SendCodeButton] Cancel clicked');
-            setShowCaptcha(false);
-          }}
-          className="text-sm text-gray-600 dark:text-gray-400 hover:underline"
-        >
-          {t('common.cancel')}
-        </button>
-      </div>
-    );
-  }
 
   return (
     <button
