@@ -28,11 +28,14 @@ export function Captcha({ onVerify, onError }: CaptchaProps) {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    console.log('[Captcha] Form submitted:', { num1, num2, answer });
     const correctAnswer = (num1 + num2).toString();
     if (answer.trim() === correctAnswer.trim()) {
+      console.log('[Captcha] Answer correct, calling onVerify');
       onVerify(`${num1} + ${num2} = ?`, correctAnswer);
       generateNew();
     } else {
+      console.log('[Captcha] Answer incorrect:', { answer, correctAnswer });
       setError('Incorrect answer');
       if (onError) onError();
       generateNew();
@@ -62,9 +65,21 @@ export function Captcha({ onVerify, onError }: CaptchaProps) {
             setAnswer(e.target.value);
             setError('');
           }}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') {
+              e.preventDefault();
+              handleSubmit(e as unknown as React.FormEvent);
+            }
+          }}
           className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent dark:bg-gray-700 dark:border-gray-600 dark:text-white"
           placeholder="Enter answer"
         />
+        <button
+          type="submit"
+          className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
+        >
+          验证
+        </button>
       </form>
       {error && (
         <p className="text-sm text-red-600 dark:text-red-400">{error}</p>

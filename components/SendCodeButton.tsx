@@ -28,6 +28,7 @@ export function SendCodeButton({ email, type = 'login', onCodeSent, onError, dis
   }, [countdown]);
 
   const handleCaptchaVerify = (question: string, answer: string) => {
+    console.log('[SendCodeButton] Captcha verified:', { question, answer, email });
     setCaptchaQuestion(question);
     setCaptchaAnswer(answer);
     setShowCaptcha(false);
@@ -95,7 +96,23 @@ export function SendCodeButton({ email, type = 'login', onCodeSent, onError, dis
   };
 
   const handleClick = () => {
-    if (countdown > 0) return;
+    console.log('[SendCodeButton] Button clicked:', { 
+      email, 
+      disabled, 
+      loading, 
+      countdown,
+      showCaptcha 
+    });
+    if (countdown > 0) {
+      console.log('[SendCodeButton] Countdown active, ignoring click');
+      return;
+    }
+    if (disabled) {
+      console.log('[SendCodeButton] Button disabled, ignoring click');
+      onError('Please fill in all required fields first');
+      return;
+    }
+    console.log('[SendCodeButton] Showing captcha');
     setShowCaptcha(true);
   };
 
