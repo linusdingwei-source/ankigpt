@@ -99,27 +99,53 @@ export async function POST(request: NextRequest) {
     // Send email
     const subject = type === 'reset' 
       ? 'Password Reset Verification Code'
+      : type === 'register'
+      ? 'Registration Verification Code'
       : 'Login Verification Code';
 
-    await sendEmail({
-      to: email,
-      subject,
-      html: `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-          <h2>${subject}</h2>
-          <p>Your verification code is:</p>
-          <h1 style="color: #4F46E5; font-size: 32px; letter-spacing: 4px;">${code}</h1>
-          <p>This code will expire in 10 minutes.</p>
-          <p>If you didn't request this code, please ignore this email.</p>
-        </div>
-      `,
-    });
+    try {
+      await sendEmail({
+        to: email,
+        subject,
+        html: `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+            <h2>${subject}</h2>
+            <p>Your verification code is:</p>
+            <h1 style="color: #4F46E5; font-size: 32px; letter-spacing: 4px;">${code}</h1>
+            <p>This code will expire in 10 minutes.</p>
+            <p>If you didn't request this code, please ignore this email.</p>
+          </div>
+        `,
+      });
 
-    return NextResponse.json({ success: true });
-  } catch (error) {
-    console.error('Error sending verification code:', error);
+      console.log('[Verification Code] Email sent successfully to:', email);
+      return NextResponse.json({ success: true });
+    } catch (emailError: any) {
+      console.error('[Verification Code] Email sending failed:', {
+        email,
+        error: emailError.message || emailError,
+        stack: emailError.stack,
+      });
+      
+      // Return more detailed error message
+      return NextResponse.json(
+        { 
+          error: emailError.message || 'Failed to send verification code',
+          details: process.env.NODE_ENV === 'development' ? emailError.message : undefined,
+        },
+        { status: 500 }
+      );
+    }
+  } catch (error: any) {
+    console.error('[Verification Code] Error:', {
+      error: error.message || error,
+      stack: error.stack,
+    });
     return NextResponse.json(
-      { error: 'Failed to send verification code' },
+      { 
+        error: error.message || 'Failed to send verification code',
+        details: process.env.NODE_ENV === 'development' ? error.message : undefined,
+      },
       { status: 500 }
     );
   }

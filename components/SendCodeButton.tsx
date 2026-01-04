@@ -65,13 +65,18 @@ export function SendCodeButton({ email, type = 'login', onCodeSent, onError, dis
           setCountdown(data.waitTime);
           onError(`${data.error} (${data.waitTime}s)`);
         } else {
-          onError(data.error || 'Failed to send code');
+          // Show detailed error message
+          const errorMessage = data.error || 'Failed to send code';
+          const details = data.details ? `: ${data.details}` : '';
+          onError(`${errorMessage}${details}`);
+          console.error('[SendCodeButton] Error response:', data);
           // Regenerate captcha on error
           setShowCaptcha(true);
         }
       }
-    } catch {
-      onError('Network error');
+    } catch (err: any) {
+      console.error('[SendCodeButton] Network error:', err);
+      onError(`Network error: ${err.message || 'Please check your connection'}`);
       setShowCaptcha(true);
     } finally {
       setLoading(false);
