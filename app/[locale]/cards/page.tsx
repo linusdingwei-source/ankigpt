@@ -12,7 +12,7 @@ interface Card {
   cardType: string;
   audioUrl?: string;
   audioFilename?: string;
-  timestamps?: any;
+  timestamps?: Array<{ text: string; begin_time: number; end_time: number }> | null;
   deckName: string;
   tags?: string[];
   createdAt: string;
@@ -90,13 +90,12 @@ export default function CardsPage() {
           setSelectedCardId(null);
         }
       }
-    } catch (err) {
-      console.error('Failed to fetch cards:', err);
+    } catch {
       setError(t('fetchCardsFailed'));
     } finally {
       setLoading(false);
     }
-  }, [selectedDeck, page, debouncedSearchQuery, t]);
+  }, [selectedDeck, page, debouncedSearchQuery, selectedCardId, t]);
 
   useEffect(() => {
     if (status === 'unauthenticated') {
@@ -237,6 +236,11 @@ export default function CardsPage() {
 
             {/* 卡片列表 */}
             <div className="flex-1 overflow-y-auto">
+              {error && (
+                <div className="p-4 m-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
+                  <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
+                </div>
+              )}
               {loading ? (
                 <div className="flex justify-center items-center h-32">
                   <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
