@@ -23,7 +23,8 @@ export async function sendEmail({ to, subject, html, from }: SendEmailOptions) {
   }
 
   const resend = new Resend(process.env.RESEND_API_KEY);
-  const fromEmail = from || process.env.RESEND_FROM_EMAIL || 'onboarding@resend.dev';
+  // 优先使用传入的 from 参数，其次使用环境变量，最后使用已验证的域名邮箱
+  const fromEmail = from || process.env.RESEND_FROM_EMAIL || 'AnkiGPT Team <noreply@nihogogpt.com>';
   
   console.log('[Email] Attempting to send email:', {
     to,
