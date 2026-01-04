@@ -2,10 +2,10 @@
 
 import { useState, useEffect } from 'react';
 import { useTranslations } from 'next-intl';
-import { useRouter, usePathname } from '@/i18n/routing';
+import { useRouter, usePathname, Link } from '@/i18n/routing';
 import { signIn } from 'next-auth/react';
-import Link from 'next/link';
 import { SendCodeButton } from '@/components/SendCodeButton';
+import LanguageSwitcher from '@/components/LanguageSwitcher';
 import { trackPageViewEvent, trackButtonClick, trackRegistrationSuccess } from '@/lib/analytics';
 
 export default function RegisterPage() {
@@ -86,8 +86,7 @@ export default function RegisterPage() {
           setError('Registration successful but login failed. Please login manually.');
         } else {
           trackRegistrationSuccess('email');
-          router.push(`/${locale}/dashboard`);
-          router.refresh();
+          router.push('/dashboard');
         }
       } else {
         setError(data.error || 'Registration failed');
@@ -102,11 +101,16 @@ export default function RegisterPage() {
   const handleGoogleSignUp = async () => {
     setLoading(true);
     trackButtonClick('GOOGLE_LOGIN', 'register_page');
-    await signIn('google', { callbackUrl: `/${locale}/dashboard` });
+    // 使用当前 locale 构建 callback URL
+    const callbackUrl = `/${locale}/dashboard`;
+    await signIn('google', { callbackUrl });
   };
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 px-4">
+      <div className="absolute top-4 right-4">
+        <LanguageSwitcher />
+      </div>
       <div className="max-w-md w-full bg-white dark:bg-gray-800 rounded-lg shadow-lg p-8">
         <h1 className="text-2xl font-bold mb-6 text-center text-gray-900 dark:text-white">
           {t('auth.registerTitle')}
@@ -214,7 +218,7 @@ export default function RegisterPage() {
           <div className="text-sm text-gray-600 dark:text-gray-400">
             {t('auth.hasAccount')}{' '}
             <Link
-              href={`/${locale}/login`}
+              href="/login"
               className="text-indigo-600 hover:underline dark:text-indigo-400"
             >
               {t('auth.signIn')}

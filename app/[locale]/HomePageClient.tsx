@@ -2,7 +2,7 @@
 
 import { useEffect } from 'react';
 import { useTranslations } from 'next-intl';
-import Link from 'next/link';
+import { Link } from '@/i18n/routing';
 import LanguageSwitcher from '@/components/LanguageSwitcher';
 import { trackPageViewEvent, trackButtonClick } from '@/lib/analytics';
 
@@ -39,21 +39,21 @@ export function HomePageClient({ locale, faqs }: HomePageClientProps) {
           
           <div className="flex gap-4 justify-center flex-wrap">
             <Link
-              href={`/${locale}/login`}
+              href="/login"
               onClick={() => handleButtonClick('LOGIN')}
               className="px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
             >
               {t('common.login')}
             </Link>
             <Link
-              href={`/${locale}/register`}
+              href="/register"
               onClick={() => handleButtonClick('REGISTER')}
               className="px-6 py-3 bg-white text-indigo-600 border-2 border-indigo-600 rounded-lg hover:bg-indigo-50 transition-colors"
             >
               {t('common.register')}
             </Link>
             <Link
-              href={`/${locale}/pricing`}
+              href="/pricing"
               onClick={() => handleButtonClick('PRICING')}
               className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
             >

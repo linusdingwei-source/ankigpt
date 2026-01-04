@@ -2,9 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import { useTranslations } from 'next-intl';
-import { useRouter, usePathname } from '@/i18n/routing';
+import { useRouter, usePathname, Link } from '@/i18n/routing';
 import { signIn } from 'next-auth/react';
-import Link from 'next/link';
 import { SendCodeButton } from '@/components/SendCodeButton';
 import LanguageSwitcher from '@/components/LanguageSwitcher';
 import { trackPageViewEvent, trackButtonClick, trackLoginSuccess } from '@/lib/analytics';
@@ -256,7 +255,7 @@ export default function LoginPage() {
 
         <div className="mt-6 text-center space-y-2">
           <Link
-            href={`/${locale}/forgot-password`}
+            href="/forgot-password"
             className="text-sm text-indigo-600 hover:underline dark:text-indigo-400"
           >
             {t('auth.forgotPassword')}
@@ -264,7 +263,7 @@ export default function LoginPage() {
           <div className="text-sm text-gray-600 dark:text-gray-400">
             {t('auth.noAccount')}{' '}
             <Link
-              href={`/${locale}/register`}
+              href="/register"
               className="text-indigo-600 hover:underline dark:text-indigo-400"
             >
               {t('auth.signUp')}

@@ -2,8 +2,7 @@
 
 import { useState } from 'react';
 import { useTranslations } from 'next-intl';
-import { useRouter, usePathname } from '@/i18n/routing';
-import Link from 'next/link';
+import { useRouter, usePathname, Link } from '@/i18n/routing';
 
 export default function ForgotPasswordPage() {
   const t = useTranslations();
@@ -185,7 +184,7 @@ export default function ForgotPasswordPage() {
 
         <div className="mt-6 text-center">
           <Link
-            href={`/${locale}/login`}
+            href="/login"
             className="text-sm text-indigo-600 hover:underline dark:text-indigo-400"
           >
             {t('common.back')} {t('common.login')}

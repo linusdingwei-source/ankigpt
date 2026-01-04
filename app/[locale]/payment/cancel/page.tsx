@@ -1,8 +1,7 @@
 'use client';
 
 import { useTranslations } from 'next-intl';
-import { usePathname } from '@/i18n/routing';
-import Link from 'next/link';
+import { usePathname, Link } from '@/i18n/routing';
 
 export default function PaymentCancelPage() {
   const t = useTranslations();
@@ -21,13 +20,13 @@ export default function PaymentCancelPage() {
         </p>
         <div className="flex gap-4 justify-center">
           <Link
-            href={`/${locale}/pricing`}
+            href="/pricing"
             className="px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
           >
             {t('payment.backToPricing')}
           </Link>
           <Link
-            href={`/${locale}/dashboard`}
+            href="/dashboard"
             className="px-6 py-3 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
           >
             {t('payment.goToDashboard')}
