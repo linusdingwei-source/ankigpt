@@ -3,6 +3,7 @@
 import { useEffect } from 'react';
 import { useTranslations } from 'next-intl';
 import Link from 'next/link';
+import LanguageSwitcher from '@/components/LanguageSwitcher';
 import { trackPageViewEvent, trackButtonClick } from '@/lib/analytics';
 
 interface HomePageClientProps {
@@ -24,6 +25,9 @@ export function HomePageClient({ locale, faqs }: HomePageClientProps) {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800">
+      <div className="absolute top-4 right-4">
+        <LanguageSwitcher />
+      </div>
       <div className="container mx-auto px-4 py-16">
         <div className="max-w-4xl mx-auto text-center">
           <h1 className="text-5xl font-bold mb-6 text-gray-900 dark:text-white">

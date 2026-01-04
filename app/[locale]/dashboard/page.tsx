@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useTranslations } from 'next-intl';
 import { useRouter, usePathname, Link } from '@/i18n/routing';
 import { signOut, useSession } from 'next-auth/react';
+import LanguageSwitcher from '@/components/LanguageSwitcher';
 import {
   trackPageViewEvent,
   trackButtonClick,
@@ -174,6 +175,7 @@ export default function DashboardPage() {
               >
                 {t('dashboard.buyCredits')}
               </Link>
+              <LanguageSwitcher />
               <div className="text-sm text-gray-600 dark:text-gray-400">
                 {session.user?.email}
               </div>

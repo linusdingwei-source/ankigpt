@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useRouter, Link } from '@/i18n/routing';
 import { useSession } from 'next-auth/react';
 import { useTranslations } from 'next-intl';
+import LanguageSwitcher from '@/components/LanguageSwitcher';
 
 interface Card {
   id: string;
@@ -169,12 +170,15 @@ export default function CardsPage() {
             <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
               {t('myCardsTitle')}
             </h1>
-            <Link
-              href="/cards/generate"
-              className="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
-            >
-              {t('generateNewCardButton')}
-            </Link>
+            <div className="flex items-center gap-4">
+              <LanguageSwitcher />
+              <Link
+                href="/cards/generate"
+                className="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
+              >
+                {t('generateNewCardButton')}
+              </Link>
+            </div>
           </div>
         </div>
       </div>

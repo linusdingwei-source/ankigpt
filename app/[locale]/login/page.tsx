@@ -6,6 +6,7 @@ import { useRouter, usePathname } from '@/i18n/routing';
 import { signIn } from 'next-auth/react';
 import Link from 'next/link';
 import { SendCodeButton } from '@/components/SendCodeButton';
+import LanguageSwitcher from '@/components/LanguageSwitcher';
 import { trackPageViewEvent, trackButtonClick, trackLoginSuccess } from '@/lib/analytics';
 
 export default function LoginPage() {
@@ -106,6 +107,9 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 px-4">
+      <div className="absolute top-4 right-4">
+        <LanguageSwitcher />
+      </div>
       <div className="max-w-md w-full bg-white dark:bg-gray-800 rounded-lg shadow-lg p-8">
         <h1 className="text-2xl font-bold mb-6 text-center text-gray-900 dark:text-white">
           {t('auth.loginTitle')}
