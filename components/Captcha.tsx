@@ -67,12 +67,14 @@ export function Captcha({ onVerify, onError }: CaptchaProps) {
           }}
           onKeyDown={(e) => {
             if (e.key === 'Enter') {
+              console.log('[Captcha] Enter key pressed');
               e.preventDefault();
               handleSubmit(e as unknown as React.FormEvent);
             }
           }}
           className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent dark:bg-gray-700 dark:border-gray-600 dark:text-white"
           placeholder="Enter answer"
+          autoFocus
         />
         <button
           type="submit"
