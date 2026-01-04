@@ -140,10 +140,18 @@ export async function POST(request: NextRequest) {
         stack: errorStack,
       });
       
+      // 检查是否是 Resend 的限制错误
+      let userFriendlyError = errorMessage || 'Failed to send verification code';
+      if (errorMessage.includes('You can only send testing emails to your own email address')) {
+        userFriendlyError = '邮件服务配置错误：请验证域名后才能发送到该邮箱。请联系管理员。';
+      } else if (errorMessage.includes('validation_error')) {
+        userFriendlyError = '邮件服务配置错误：请检查发件人邮箱是否已验证。';
+      }
+      
       // Return more detailed error message
       return NextResponse.json(
         { 
-          error: errorMessage || 'Failed to send verification code',
+          error: userFriendlyError,
           details: process.env.NODE_ENV === 'development' ? errorMessage : undefined,
         },
         { status: 500 }
