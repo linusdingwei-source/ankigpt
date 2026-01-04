@@ -5,8 +5,6 @@ import { usePathname, Link } from '@/i18n/routing';
 
 export default function PaymentCancelPage() {
   const t = useTranslations();
-  const pathname = usePathname();
-  const locale = pathname.split('/')[1] || 'zh';
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 px-4">
