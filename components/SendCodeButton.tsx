@@ -89,8 +89,7 @@ export function SendCodeButton({ email, type = 'login', onCodeSent, onError, dis
       email, 
       disabled, 
       loading, 
-      countdown,
-      showCaptcha 
+      countdown
     });
     if (countdown > 0) {
       console.log('[SendCodeButton] Countdown active, ignoring click');
