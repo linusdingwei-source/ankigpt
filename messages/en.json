@@ -127,7 +127,16 @@
     "confirmDeleteMessage": "Are you sure you want to delete card '{frontContent}'?",
     "fetchCardsFailed": "Failed to fetch cards",
     "fetchDecksFailed": "Failed to fetch decks",
-    "deleteCardFailed": "Failed to delete card"
+    "deleteCardFailed": "Failed to delete card",
+    "searchPlaceholder": "Search cards (searches front and back content)",
+    "clearSearch": "Clear search",
+    "totalCards": "Total: {total} cards",
+    "noSearchResults": "No matching cards found",
+    "noCardSelected": "Please select a card from the list",
+    "selectCard": "Select a card",
+    "pageInfo": "Page {page} of {totalPages}",
+    "previousPage": "Previous",
+    "nextPage": "Next"
   }
 }
 

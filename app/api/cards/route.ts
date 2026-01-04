@@ -15,6 +15,7 @@ export async function GET(request: NextRequest) {
 
     const { searchParams } = new URL(request.url);
     const deckName = searchParams.get('deck');
+    const searchQuery = searchParams.get('search'); // 搜索关键词
     const page = parseInt(searchParams.get('page') || '1');
     const limit = Math.min(parseInt(searchParams.get('limit') || '20'), 100);
     const skip = (page - 1) * limit;
@@ -24,12 +25,34 @@ export async function GET(request: NextRequest) {
     const where: {
       userId: string;
       deckName?: string;
+      OR?: Array<{
+        frontContent?: { contains: string; mode: 'insensitive' };
+        backContent?: { contains: string; mode: 'insensitive' };
+      }>;
     } = {
       userId,
     };
 
     if (deckName) {
       where.deckName = deckName;
+    }
+
+    // 添加搜索功能：搜索正面和背面内容
+    if (searchQuery && searchQuery.trim()) {
+      where.OR = [
+        {
+          frontContent: {
+            contains: searchQuery.trim(),
+            mode: 'insensitive',
+          },
+        },
+        {
+          backContent: {
+            contains: searchQuery.trim(),
+            mode: 'insensitive',
+          },
+        },
+      ];
     }
 
     const [cards, total] = await Promise.all([
