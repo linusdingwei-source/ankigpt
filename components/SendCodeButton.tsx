@@ -40,20 +40,30 @@ export function SendCodeButton({ email, type = 'login', onCodeSent, onError, dis
       return;
     }
 
+    const requestBody = { 
+      email, 
+      type,
+      captchaQuestion: question || captchaQuestion,
+      captchaAnswer: answer || captchaAnswer,
+    };
+    
+    console.log('[SendCodeButton] Sending verification code request:', {
+      email,
+      type,
+      hasCaptcha: !!(requestBody.captchaQuestion && requestBody.captchaAnswer),
+    });
+
     setLoading(true);
     try {
       const res = await fetch('/api/auth/send-verification-code', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          email, 
-          type,
-          captchaQuestion: question || captchaQuestion,
-          captchaAnswer: answer || captchaAnswer,
-        }),
+        body: JSON.stringify(requestBody),
       });
 
+      console.log('[SendCodeButton] Response status:', res.status, res.statusText);
       const data = await res.json();
+      console.log('[SendCodeButton] Response data:', data);
 
       if (res.ok) {
         onCodeSent();

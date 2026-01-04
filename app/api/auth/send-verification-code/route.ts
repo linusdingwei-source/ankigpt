@@ -6,8 +6,16 @@ import { checkRateLimit } from '@/lib/rate-limit';
 import { sendEmail } from '@/lib/email';
 
 export async function POST(request: NextRequest) {
+  console.log('[Verification Code] Request received');
   try {
-    const { email, type = 'login', captchaAnswer, captchaQuestion } = await request.json();
+    const body = await request.json();
+    console.log('[Verification Code] Request body:', { 
+      email: body.email, 
+      type: body.type,
+      hasCaptcha: !!(body.captchaAnswer && body.captchaQuestion)
+    });
+    
+    const { email, type = 'login', captchaAnswer, captchaQuestion } = body;
 
     if (!email) {
       return NextResponse.json(
@@ -103,6 +111,8 @@ export async function POST(request: NextRequest) {
       ? 'Registration Verification Code'
       : 'Login Verification Code';
 
+    console.log('[Verification Code] About to send email:', { email, subject, code });
+    
     try {
       await sendEmail({
         to: email,
