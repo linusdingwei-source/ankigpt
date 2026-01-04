@@ -120,31 +120,37 @@ export async function POST(request: NextRequest) {
 
       console.log('[Verification Code] Email sent successfully to:', email);
       return NextResponse.json({ success: true });
-    } catch (emailError: any) {
+    } catch (emailError: unknown) {
+      const errorMessage = emailError instanceof Error ? emailError.message : String(emailError);
+      const errorStack = emailError instanceof Error ? emailError.stack : undefined;
+      
       console.error('[Verification Code] Email sending failed:', {
         email,
-        error: emailError.message || emailError,
-        stack: emailError.stack,
+        error: errorMessage,
+        stack: errorStack,
       });
       
       // Return more detailed error message
       return NextResponse.json(
         { 
-          error: emailError.message || 'Failed to send verification code',
-          details: process.env.NODE_ENV === 'development' ? emailError.message : undefined,
+          error: errorMessage || 'Failed to send verification code',
+          details: process.env.NODE_ENV === 'development' ? errorMessage : undefined,
         },
         { status: 500 }
       );
     }
-  } catch (error: any) {
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    const errorStack = error instanceof Error ? error.stack : undefined;
+    
     console.error('[Verification Code] Error:', {
-      error: error.message || error,
-      stack: error.stack,
+      error: errorMessage,
+      stack: errorStack,
     });
     return NextResponse.json(
       { 
-        error: error.message || 'Failed to send verification code',
-        details: process.env.NODE_ENV === 'development' ? error.message : undefined,
+        error: errorMessage || 'Failed to send verification code',
+        details: process.env.NODE_ENV === 'development' ? errorMessage : undefined,
       },
       { status: 500 }
     );

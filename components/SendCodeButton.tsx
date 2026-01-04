@@ -74,9 +74,10 @@ export function SendCodeButton({ email, type = 'login', onCodeSent, onError, dis
           setShowCaptcha(true);
         }
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : 'Please check your connection';
       console.error('[SendCodeButton] Network error:', err);
-      onError(`Network error: ${err.message || 'Please check your connection'}`);
+      onError(`Network error: ${errorMessage}`);
       setShowCaptcha(true);
     } finally {
       setLoading(false);
