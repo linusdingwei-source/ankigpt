@@ -37,7 +37,9 @@
     "codeSent": "Verification code sent",
     "enterCode": "Please enter verification code",
     "registerSuccess": "Registration successful, logging in...",
-    "resetSuccess": "Password reset successful, redirecting..."
+    "resetSuccess": "Password reset successful, redirecting...",
+    "captchaHint": "Please complete the math captcha verification, then the email verification code will be sent automatically",
+    "captchaRequired": "Please complete the captcha verification first"
   },
   "tts": {
     "title": "Japanese Text to Speech",

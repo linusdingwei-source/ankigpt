@@ -119,10 +119,16 @@ export function SendCodeButton({ email, type = 'login', onCodeSent, onError, dis
   if (showCaptcha) {
     return (
       <div className="space-y-2">
+        <div className="text-xs text-gray-600 dark:text-gray-400 mb-1">
+          {t('auth.captchaHint') || '请完成验证码验证以发送邮件验证码'}
+        </div>
         <Captcha onVerify={handleCaptchaVerify} onError={() => setShowCaptcha(false)} />
         <button
           type="button"
-          onClick={() => setShowCaptcha(false)}
+          onClick={() => {
+            console.log('[SendCodeButton] Cancel clicked');
+            setShowCaptcha(false);
+          }}
           className="text-sm text-gray-600 dark:text-gray-400 hover:underline"
         >
           {t('common.cancel')}

@@ -37,7 +37,9 @@
     "codeSent": "验证码已发送",
     "enterCode": "请输入验证码",
     "registerSuccess": "注册成功，正在登录...",
-    "resetSuccess": "密码重置成功，正在跳转..."
+    "resetSuccess": "密码重置成功，正在跳转...",
+    "captchaHint": "请完成数学验证码验证后，系统会自动发送邮件验证码",
+    "captchaRequired": "请先完成验证码验证"
   },
   "tts": {
     "title": "日语文本转语音",
