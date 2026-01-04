@@ -1,7 +1,7 @@
 'use client';
 
 import { useTranslations } from 'next-intl';
-import { usePathname, Link } from '@/i18n/routing';
+import { Link } from '@/i18n/routing';
 
 export default function PaymentCancelPage() {
   const t = useTranslations();
