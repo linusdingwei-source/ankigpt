@@ -163,7 +163,10 @@ export async function mergeAnonymousUserData(anonymousUserId: string, realUserId
  * @param request NextRequest 对象
  * @returns 用户 ID 或 null
  */
-export async function getUserId(session: any, request: Request): Promise<string | null> {
+export async function getUserId(
+  session: { user?: { id?: string } } | null, 
+  request: Request
+): Promise<string | null> {
   // 如果是登录用户，直接返回
   if (session?.user?.id) {
     return session.user.id as string;
