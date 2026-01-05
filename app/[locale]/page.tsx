@@ -48,9 +48,8 @@ export default async function HomePage({
   const session = await auth();
   const t = await getTranslations();
 
-  if (session?.user) {
-    redirect({ href: '/dashboard', locale });
-  }
+  // 移除自动重定向，允许未登录用户查看首页
+  // 如果已登录，仍然可以访问首页，但通常会自动跳转到 dashboard
 
   // FAQ data for structured data
   const faqs = [
@@ -61,10 +60,10 @@ export default async function HomePage({
         ? '日本語テキスト音声変換サービスはどのように使用しますか？'
         : 'How to use Japanese text-to-speech service?',
       answer: locale === 'zh'
-        ? '注册账户后，您将获得2个免费Credits。在仪表板中输入日语文本，点击生成即可获得语音文件，每次生成消耗1个Credit。'
+        ? '无需注册即可立即使用！未登录用户将获得50个免费Credits。在仪表板中输入日语文本，点击生成即可获得语音文件，每次生成消耗1个Credit。注册账户后可获得额外2个Credits，并保存您的数据。'
         : locale === 'ja'
-        ? 'アカウントを登録すると、2つの無料クレジットが付与されます。ダッシュボードで日本語テキストを入力し、生成をクリックすると音声ファイルが取得できます。各生成には1クレジット消費されます。'
-        : 'After registering an account, you will receive 2 free credits. Enter Japanese text in the dashboard and click generate to get the audio file. Each generation consumes 1 credit.',
+        ? '登録不要で今すぐ使用できます！未ログインユーザーには50の無料クレジットが付与されます。ダッシュボードで日本語テキストを入力し、生成をクリックすると音声ファイルが取得できます。各生成には1クレジット消費されます。アカウントを登録すると、追加で2クレジットが付与され、データが保存されます。'
+        : 'Start using immediately without registration! Unregistered users will receive 50 free credits. Enter Japanese text in the dashboard and click generate to get the audio file. Each generation consumes 1 credit. Register an account to get an additional 2 credits and save your data.',
     },
     {
       question: locale === 'zh'

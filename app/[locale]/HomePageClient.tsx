@@ -39,9 +39,16 @@ export function HomePageClient({ locale, faqs }: HomePageClientProps) {
           
           <div className="flex gap-4 justify-center flex-wrap">
             <Link
+              href="/dashboard"
+              onClick={() => handleButtonClick('START_USING')}
+              className="px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors text-lg font-semibold"
+            >
+              {locale === 'zh' ? '立即使用' : locale === 'ja' ? '今すぐ使用' : 'Start Using'}
+            </Link>
+            <Link
               href="/login"
               onClick={() => handleButtonClick('LOGIN')}
-              className="px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
+              className="px-6 py-3 bg-white text-indigo-600 border-2 border-indigo-600 rounded-lg hover:bg-indigo-50 transition-colors"
             >
               {t('common.login')}
             </Link>
