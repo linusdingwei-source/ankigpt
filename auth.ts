@@ -170,15 +170,6 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       }
       return true;
     },
-    async session({ session, user }) {
-      // 合并临时用户数据（如果存在）
-      if (session?.user?.email) {
-        const { mergeAnonymousUserData } = await import('./lib/anonymous-user');
-        // 这里需要从请求中获取 anonymousId，但 session callback 没有 request
-        // 所以我们在登录后的 redirect 中处理合并
-      }
-      return session;
-    },
     async redirect({ url, baseUrl }) {
       const locales = ['zh', 'en', 'ja'];
       
