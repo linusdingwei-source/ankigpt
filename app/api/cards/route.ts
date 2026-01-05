@@ -5,8 +5,12 @@ import { prisma } from '@/lib/prisma';
 export async function GET(request: NextRequest) {
   try {
     const session = await auth();
+    const { getUserId } = await import('@/lib/anonymous-user');
     
-    if (!session?.user) {
+    // 获取用户 ID（支持登录用户和临时用户）
+    const userId = await getUserId(session, request);
+    
+    if (!userId) {
       return NextResponse.json(
         { error: 'Unauthorized' },
         { status: 401 }
@@ -19,8 +23,6 @@ export async function GET(request: NextRequest) {
     const page = parseInt(searchParams.get('page') || '1');
     const limit = Math.min(parseInt(searchParams.get('limit') || '20'), 100);
     const skip = (page - 1) * limit;
-
-    const userId = session.user.id as string;
 
     const where: {
       userId: string;

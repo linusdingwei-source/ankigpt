@@ -73,3 +73,14 @@ export async function getCredits(userId: string): Promise<number> {
   return user?.credits || 0;
 }
 
+/**
+ * 获取或创建临时用户并返回 credits
+ * @param anonymousId 临时用户 ID
+ * @returns credits 数量
+ */
+export async function getAnonymousUserCredits(anonymousId: string): Promise<number> {
+  const { getOrCreateAnonymousUser } = await import('./anonymous-user');
+  const { userId } = await getOrCreateAnonymousUser(anonymousId);
+  return await getCredits(userId);
+}
+

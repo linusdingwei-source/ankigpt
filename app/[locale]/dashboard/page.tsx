@@ -30,9 +30,23 @@ export default function DashboardPage() {
   const [paymentSuccess, setPaymentSuccess] = useState(false);
 
   useEffect(() => {
-    if (status === 'unauthenticated') {
-      router.push(`/${locale}/login`);
-    } else if (status === 'authenticated' && session) {
+    // 无论是否登录，都尝试获取 credits（支持临时用户）
+    const fetchCredits = async () => {
+      const { getAnonymousHeaders } = await import('@/hooks/useAnonymousUser');
+      const headers = getAnonymousHeaders();
+      
+      try {
+        const res = await fetch('/api/user/credits', { headers });
+        const data = await res.json();
+        if (data.credits !== undefined) {
+          setCredits(data.credits);
+        }
+      } catch (err) {
+        console.error('Failed to fetch credits:', err);
+      }
+    };
+
+    if (status === 'authenticated' && session) {
       // Check for payment success parameter
       const searchParams = new URLSearchParams(window.location.search);
       if (searchParams.get('payment') === 'success') {
@@ -43,19 +57,12 @@ export default function DashboardPage() {
         setTimeout(() => setPaymentSuccess(false), 5000);
       }
 
-      // Fetch credits
-      fetch('/api/user/credits')
-        .then(res => res.json())
-        .then(data => {
-          if (data.credits !== undefined) {
-            setCredits(data.credits);
-          }
-        })
-        .catch(err => console.error('Failed to fetch credits:', err));
-
       // 追踪仪表板访问
       trackPageViewEvent('DASHBOARD', { locale });
     }
+
+    // 无论是否登录都获取 credits
+    fetchCredits();
   }, [status, router, locale, session]);
 
   const handleGenerate = async (e: React.FormEvent) => {
@@ -80,9 +87,12 @@ export default function DashboardPage() {
     trackButtonClick('GENERATE_AUDIO', 'dashboard');
 
     try {
+      const { getAnonymousHeaders } = await import('@/hooks/useAnonymousUser');
+      const headers = getAnonymousHeaders();
+      
       const res = await fetch('/api/tts/generate', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify({ text }),
       });
 
@@ -149,9 +159,7 @@ export default function DashboardPage() {
     );
   }
 
-  if (!session) {
-    return null;
-  }
+  // 移除 session 检查，允许未登录用户使用
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800">

@@ -21,6 +21,8 @@ model User {
   password      String?
   image         String?
   credits       Int       @default(0)
+  isAnonymous   Boolean   @default(false) // 是否为临时匿名用户
+  anonymousId   String?   @unique // 临时用户 ID（用于 localStorage/cookie 识别）
   accounts      Account[]
   sessions      Session[]
   orders        Order[]
@@ -28,6 +30,9 @@ model User {
   decks         Deck[]
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
+
+  @@index([isAnonymous])
+  @@index([anonymousId])
 }
 
 model Account {

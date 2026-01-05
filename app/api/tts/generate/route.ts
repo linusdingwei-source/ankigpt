@@ -7,8 +7,12 @@ const TTS_CREDITS_COST = 1; // TTS 生成消耗 1 credit
 export async function POST(request: NextRequest) {
   try {
     const session = await auth();
+    const { getUserId } = await import('@/lib/anonymous-user');
     
-    if (!session?.user) {
+    // 获取用户 ID（支持登录用户和临时用户）
+    const userId = await getUserId(session, request);
+    
+    if (!userId) {
       return NextResponse.json(
         { error: 'Unauthorized' },
         { status: 401 }
@@ -32,7 +36,6 @@ export async function POST(request: NextRequest) {
     }
 
     // Check and consume credits
-    const userId = session.user.id as string;
     const currentCredits = await getCredits(userId);
     
     if (currentCredits < TTS_CREDITS_COST) {
