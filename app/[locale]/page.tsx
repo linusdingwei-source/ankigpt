@@ -1,6 +1,4 @@
-import { redirect } from '@/i18n/routing';
 import { getTranslations } from 'next-intl/server';
-import { auth } from '@/auth';
 import { generateMetadata as generateSEOMetadata } from '@/lib/seo';
 import { generateServiceStructuredData, generateFAQStructuredData } from '@/lib/structured-data';
 import { HomePageClient } from './HomePageClient';
@@ -45,7 +43,6 @@ export default async function HomePage({
   params: Promise<{ locale: string }>;
 }) {
   const { locale } = await params;
-  const session = await auth();
   const t = await getTranslations();
 
   // 移除自动重定向，允许未登录用户查看首页
