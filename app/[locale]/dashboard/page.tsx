@@ -78,42 +78,6 @@ export default function DashboardPage() {
   const [credits, setCredits] = useState<number | null>(null);
   const [paymentSuccess, setPaymentSuccess] = useState(false);
 
-  useEffect(() => {
-    // 无论是否登录，都尝试获取 credits（支持临时用户）
-    const fetchCredits = async () => {
-      const { getAnonymousHeaders } = await import('@/hooks/useAnonymousUser');
-      const headers = getAnonymousHeaders();
-      
-      try {
-        const res = await fetch('/api/user/credits', { headers });
-        const data = await res.json();
-        if (data.credits !== undefined) {
-          setCredits(data.credits);
-        }
-      } catch (err) {
-        console.error('Failed to fetch credits:', err);
-      }
-    };
-
-    if (status === 'authenticated' && session) {
-      // Check for payment success parameter
-      const searchParams = new URLSearchParams(window.location.search);
-      if (searchParams.get('payment') === 'success') {
-        setPaymentSuccess(true);
-        // Remove parameter from URL
-        window.history.replaceState({}, '', `/${locale}/dashboard`);
-        // Hide success message after 5 seconds
-        setTimeout(() => setPaymentSuccess(false), 5000);
-      }
-
-      // 追踪仪表板访问
-      trackPageViewEvent('DASHBOARD', { locale });
-    }
-
-    // 无论是否登录都获取 credits
-    fetchCredits();
-  }, [status, router, locale, session]);
-
   // 防抖搜索
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -438,16 +402,19 @@ export default function DashboardPage() {
   }, []);
 
   useEffect(() => {
-    fetchCredits();
-    if (status === 'authenticated' && session) {
-      const searchParams = new URLSearchParams(window.location.search);
-      if (searchParams.get('payment') === 'success') {
-        setPaymentSuccess(true);
-        window.history.replaceState({}, '', `/${locale}/dashboard`);
-        setTimeout(() => setPaymentSuccess(false), 5000);
+    const initDashboard = async () => {
+      await fetchCredits();
+      if (status === 'authenticated' && session && typeof window !== 'undefined') {
+        const searchParams = new URLSearchParams(window.location.search);
+        if (searchParams.get('payment') === 'success') {
+          setPaymentSuccess(true);
+          window.history.replaceState({}, '', `/${locale}/dashboard`);
+          setTimeout(() => setPaymentSuccess(false), 5000);
+        }
+        trackPageViewEvent('DASHBOARD', { locale });
       }
-      trackPageViewEvent('DASHBOARD', { locale });
-    }
+    };
+    initDashboard();
   }, [status, locale, session, fetchCredits]);
 
   if (status === 'loading') {
