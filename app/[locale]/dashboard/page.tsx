@@ -34,7 +34,6 @@ type TabType = 'tts' | 'generate' | 'cards';
 export default function DashboardPage() {
   const t = useTranslations();
   const cardT = useTranslations('AnkiCard');
-  const router = useRouter();
   const pathname = usePathname();
   const locale = pathname.split('/')[1] || 'zh';
   const { data: session, status } = useSession();
