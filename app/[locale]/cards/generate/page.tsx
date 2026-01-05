@@ -6,7 +6,7 @@ import { useSession } from 'next-auth/react';
 
 export default function CardGeneratePage() {
   const router = useRouter();
-  const { data: session, status } = useSession();
+  const { status } = useSession();
 
   const [text, setText] = useState('');
   const [cardType, setCardType] = useState('问答题（附翻转卡片）');

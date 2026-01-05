@@ -1,8 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { useRouter, Link } from '@/i18n/routing';
-import { useSession } from 'next-auth/react';
+import { Link } from '@/i18n/routing';
 import { useTranslations } from 'next-intl';
 import LanguageSwitcher from '@/components/LanguageSwitcher';
 
@@ -22,8 +21,6 @@ interface Card {
 
 export default function CardsPage() {
   const t = useTranslations('AnkiCard');
-  const router = useRouter();
-  const { data: session, status } = useSession();
 
   const [cards, setCards] = useState<Card[]>([]);
   const [loading, setLoading] = useState(true);

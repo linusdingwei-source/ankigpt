@@ -138,7 +138,7 @@ export default function DashboardPage() {
           setSelectedCardId(null);
         }
       }
-    } catch (err) {
+    } catch {
       setCardsError(cardT('fetchCardsFailed'));
     } finally {
       setCardsLoading(false);
@@ -220,7 +220,7 @@ export default function DashboardPage() {
           trackAudioGenerationFailed(errorMsg, data.credits);
         }
       }
-    } catch (err) {
+    } catch {
       setTtsError('Network error');
     } finally {
       setTtsLoading(false);
