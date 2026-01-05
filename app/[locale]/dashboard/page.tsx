@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useTranslations } from 'next-intl';
-import { useRouter, usePathname, Link } from '@/i18n/routing';
+import { usePathname, Link } from '@/i18n/routing';
 import { signOut, useSession } from 'next-auth/react';
 import LanguageSwitcher from '@/components/LanguageSwitcher';
 import {
