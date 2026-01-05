@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import { prisma } from '@/lib/prisma';
+import { getUserId } from '@/lib/anonymous-user';
 
 export async function GET(
   request: NextRequest,
@@ -8,8 +9,9 @@ export async function GET(
 ) {
   try {
     const session = await auth();
+    const userId = await getUserId(session, request);
     
-    if (!session?.user) {
+    if (!userId) {
       return NextResponse.json(
         { error: 'Unauthorized' },
         { status: 401 }
@@ -17,7 +19,6 @@ export async function GET(
     }
 
     const { id } = await params;
-    const userId = session.user.id as string;
 
     const card = await prisma.card.findFirst({
       where: {
@@ -49,8 +50,9 @@ export async function PUT(
 ) {
   try {
     const session = await auth();
+    const userId = await getUserId(session, request);
     
-    if (!session?.user) {
+    if (!userId) {
       return NextResponse.json(
         { error: 'Unauthorized' },
         { status: 401 }
@@ -58,7 +60,6 @@ export async function PUT(
     }
 
     const { id } = await params;
-    const userId = session.user.id as string;
     const body = await request.json();
 
     // 检查卡片是否存在且属于当前用户
@@ -104,8 +105,9 @@ export async function DELETE(
 ) {
   try {
     const session = await auth();
+    const userId = await getUserId(session, request);
     
-    if (!session?.user) {
+    if (!userId) {
       return NextResponse.json(
         { error: 'Unauthorized' },
         { status: 401 }
@@ -113,7 +115,6 @@ export async function DELETE(
     }
 
     const { id } = await params;
-    const userId = session.user.id as string;
 
     // 检查卡片是否存在且属于当前用户
     const existingCard = await prisma.card.findFirst({

@@ -49,7 +49,9 @@ export default function CardsPage() {
 
   const fetchDecks = useCallback(async () => {
     try {
-      const res = await fetch('/api/decks');
+      const { getAnonymousHeaders } = await import('@/hooks/useAnonymousUser');
+      const headers = getAnonymousHeaders();
+      const res = await fetch('/api/decks', { headers });
       const data = await res.json();
       if (data.decks) {
         setDecks(data.decks);
@@ -62,6 +64,8 @@ export default function CardsPage() {
   const fetchCards = useCallback(async () => {
     setLoading(true);
     try {
+      const { getAnonymousHeaders } = await import('@/hooks/useAnonymousUser');
+      const headers = getAnonymousHeaders();
       const params = new URLSearchParams();
       if (selectedDeck) {
         params.append('deck', selectedDeck);
@@ -72,7 +76,7 @@ export default function CardsPage() {
       params.append('page', page.toString());
       params.append('limit', '50'); // 增加每页数量以便在侧边栏显示更多卡片
 
-      const res = await fetch(`/api/cards?${params.toString()}`);
+      const res = await fetch(`/api/cards?${params.toString()}`, { headers });
       const data = await res.json();
       
       if (data.cards) {
@@ -99,18 +103,14 @@ export default function CardsPage() {
   }, [selectedDeck, page, debouncedSearchQuery, selectedCardId, t]);
 
   useEffect(() => {
-    if (status === 'unauthenticated') {
-      router.push('/login');
-    } else if (status === 'authenticated') {
-      fetchDecks();
-    }
-  }, [status, router, fetchDecks]);
+    // 无论是否登录都获取数据
+    fetchDecks();
+  }, [fetchDecks]);
 
   useEffect(() => {
-    if (status === 'authenticated') {
-      fetchCards();
-    }
-  }, [status, fetchCards]);
+    // 无论是否登录都获取卡片
+    fetchCards();
+  }, [fetchCards]);
 
   const selectedCard = useMemo(() => {
     return cards.find(card => card.id === selectedCardId) || null;
@@ -122,8 +122,11 @@ export default function CardsPage() {
     }
 
     try {
+      const { getAnonymousHeaders } = await import('@/hooks/useAnonymousUser');
+      const headers = getAnonymousHeaders();
       const res = await fetch(`/api/cards/${cardId}`, {
         method: 'DELETE',
+        headers,
       });
 
       if (res.ok) {
@@ -157,9 +160,7 @@ export default function CardsPage() {
     );
   }
 
-  if (!session) {
-    return null;
-  }
+  // 移除登录检查，允许未登录用户使用
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800">

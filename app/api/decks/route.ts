@@ -1,19 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import { prisma } from '@/lib/prisma';
+import { getUserId } from '@/lib/anonymous-user';
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
     const session = await auth();
+    const userId = await getUserId(session, request);
     
-    if (!session?.user) {
+    if (!userId) {
       return NextResponse.json(
         { error: 'Unauthorized' },
         { status: 401 }
       );
     }
-
-    const userId = session.user.id as string;
 
     const decks = await prisma.deck.findMany({
       where: { userId },
@@ -46,8 +46,9 @@ export async function GET() {
 export async function POST(request: NextRequest) {
   try {
     const session = await auth();
+    const userId = await getUserId(session, request);
     
-    if (!session?.user) {
+    if (!userId) {
       return NextResponse.json(
         { error: 'Unauthorized' },
         { status: 401 }
@@ -62,8 +63,6 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       );
     }
-
-    const userId = session.user.id as string;
     const deckName = name.trim();
 
     // 检查牌组是否已存在

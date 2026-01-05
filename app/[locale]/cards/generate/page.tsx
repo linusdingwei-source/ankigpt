@@ -24,7 +24,9 @@ export default function CardGeneratePage() {
 
   const fetchCredits = useCallback(async () => {
     try {
-      const res = await fetch('/api/user/credits');
+      const { getAnonymousHeaders } = await import('@/hooks/useAnonymousUser');
+      const headers = getAnonymousHeaders();
+      const res = await fetch('/api/user/credits', { headers });
       const data = await res.json();
       if (data.credits !== undefined) {
         setCredits(data.credits);
@@ -36,7 +38,9 @@ export default function CardGeneratePage() {
 
   const fetchDecks = useCallback(async () => {
     try {
-      const res = await fetch('/api/decks');
+      const { getAnonymousHeaders } = await import('@/hooks/useAnonymousUser');
+      const headers = getAnonymousHeaders();
+      const res = await fetch('/api/decks', { headers });
       const data = await res.json();
       if (data.decks) {
         setDecks(data.decks);
@@ -50,13 +54,10 @@ export default function CardGeneratePage() {
   }, [deckName]);
 
   useEffect(() => {
-    if (status === 'unauthenticated') {
-      router.push('/login');
-    } else if (status === 'authenticated') {
-      fetchCredits();
-      fetchDecks();
-    }
-  }, [status, router, fetchCredits, fetchDecks]);
+    // 无论是否登录都获取数据
+    fetchCredits();
+    fetchDecks();
+  }, [fetchCredits, fetchDecks]);
 
 
   const handleGeneratePreview = async () => {
@@ -70,10 +71,13 @@ export default function CardGeneratePage() {
     setPreview(null);
 
     try {
+      const { getAnonymousHeaders } = await import('@/hooks/useAnonymousUser');
+      const headers = getAnonymousHeaders();
+      
       // 1. 调用 LLM 分析
       const llmRes = await fetch('/api/llm/analyze', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { ...headers, 'Content-Type': 'application/json' },
         body: JSON.stringify({ text }),
       });
 
@@ -91,9 +95,11 @@ export default function CardGeneratePage() {
 
       // 2. 如果需要发音，生成 TTS
       if (includePronunciation) {
+        const { getAnonymousHeaders } = await import('@/hooks/useAnonymousUser');
+        const headers = getAnonymousHeaders();
         const ttsRes = await fetch('/api/tts/generate-enhanced', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { ...headers, 'Content-Type': 'application/json' },
           body: JSON.stringify({
             text,
             kanaText: llmData.analysis.kanaText,
@@ -133,9 +139,11 @@ export default function CardGeneratePage() {
     setError('');
 
     try {
+      const { getAnonymousHeaders } = await import('@/hooks/useAnonymousUser');
+      const headers = getAnonymousHeaders();
       const res = await fetch('/api/cards/generate', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { ...headers, 'Content-Type': 'application/json' },
         body: JSON.stringify({
           text,
           cardType,
@@ -172,9 +180,7 @@ export default function CardGeneratePage() {
     );
   }
 
-  if (!session) {
-    return null;
-  }
+  // 移除登录检查，允许未登录用户使用
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 py-8 px-4">

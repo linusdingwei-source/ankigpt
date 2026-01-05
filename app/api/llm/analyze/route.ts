@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import { consumeCredits, getCredits } from '@/lib/credits';
 import { extractKanaFromLLMResult, markdownToHtml } from '@/lib/llm-utils';
+import { getUserId } from '@/lib/anonymous-user';
 
 const LLM_CREDITS_COST = 2; // LLM 分析消耗 2 credits
 
@@ -9,7 +10,10 @@ export async function POST(request: NextRequest) {
   try {
     const session = await auth();
     
-    if (!session?.user) {
+    // 获取用户 ID（支持登录用户和临时用户）
+    const userId = await getUserId(session, request);
+    
+    if (!userId) {
       return NextResponse.json(
         { error: 'Unauthorized' },
         { status: 401 }
@@ -33,7 +37,6 @@ export async function POST(request: NextRequest) {
     }
 
     // 检查 credits
-    const userId = session.user.id as string;
     const currentCredits = await getCredits(userId);
     
     if (currentCredits < LLM_CREDITS_COST) {
