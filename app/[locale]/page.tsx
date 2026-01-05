@@ -1,7 +1,4 @@
-import { getTranslations } from 'next-intl/server';
-import { generateMetadata as generateSEOMetadata } from '@/lib/seo';
-import { generateServiceStructuredData, generateFAQStructuredData } from '@/lib/structured-data';
-import { HomePageClient } from './HomePageClient';
+import { redirect } from '@/i18n/routing';
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://yourdomain.com';
 
@@ -43,74 +40,7 @@ export default async function HomePage({
   params: Promise<{ locale: string }>;
 }) {
   const { locale } = await params;
-  const t = await getTranslations();
-
-  // 移除自动重定向，允许未登录用户查看首页
-  // 如果已登录，仍然可以访问首页，但通常会自动跳转到 dashboard
-
-  // FAQ data for structured data
-  const faqs = [
-    {
-      question: locale === 'zh' 
-        ? '如何使用日语文本转语音服务？'
-        : locale === 'ja'
-        ? '日本語テキスト音声変換サービスはどのように使用しますか？'
-        : 'How to use Japanese text-to-speech service?',
-      answer: locale === 'zh'
-        ? '无需注册即可立即使用！未登录用户将获得50个免费Credits。在仪表板中输入日语文本，点击生成即可获得语音文件，每次生成消耗1个Credit。注册账户后可获得额外2个Credits，并保存您的数据。'
-        : locale === 'ja'
-        ? '登録不要で今すぐ使用できます！未ログインユーザーには50の無料クレジットが付与されます。ダッシュボードで日本語テキストを入力し、生成をクリックすると音声ファイルが取得できます。各生成には1クレジット消費されます。アカウントを登録すると、追加で2クレジットが付与され、データが保存されます。'
-        : 'Start using immediately without registration! Unregistered users will receive 50 free credits. Enter Japanese text in the dashboard and click generate to get the audio file. Each generation consumes 1 credit. Register an account to get an additional 2 credits and save your data.',
-    },
-    {
-      question: locale === 'zh'
-        ? '如何购买更多Credits？'
-        : locale === 'ja'
-        ? 'より多くのクレジットを購入するにはどうすればよいですか？'
-        : 'How to purchase more credits?',
-      answer: locale === 'zh'
-        ? '访问定价页面，选择适合的套餐。Starter套餐$5可获得7 Credits，Pro套餐$20可获得30 Credits，Premium套餐$100可获得150 Credits。所有套餐都包含额外赠送的Credits。'
-        : locale === 'ja'
-        ? '価格ページにアクセスし、適切なプランを選択してください。Starterプランは$5で7クレジット、Proプランは$20で30クレジット、Premiumプランは$100で150クレジットを獲得できます。すべてのプランには追加のボーナスクレジットが含まれています。'
-        : 'Visit the pricing page and choose a suitable package. Starter package $5 gets 7 credits, Pro package $20 gets 30 credits, Premium package $100 gets 150 credits. All packages include bonus credits.',
-    },
-    {
-      question: locale === 'zh'
-        ? '支持哪些支付方式？'
-        : locale === 'ja'
-        ? 'どのような支払い方法がサポートされていますか？'
-        : 'What payment methods are supported?',
-      answer: locale === 'zh'
-        ? '我们使用Stripe安全支付系统，支持所有主流信用卡和借记卡，包括Visa、Mastercard、American Express等。'
-        : locale === 'ja'
-        ? 'Stripeセキュア決済システムを使用しており、Visa、Mastercard、American Expressなどの主要なクレジットカードとデビットカードをサポートしています。'
-        : 'We use Stripe secure payment system, supporting all major credit and debit cards including Visa, Mastercard, American Express, etc.',
-    },
-  ];
-
-  const faqStructuredData = generateFAQStructuredData(faqs);
-  const serviceStructuredData = generateServiceStructuredData(
-    t('tts.title'),
-    t('tts.description'),
-    siteUrl
-  );
-
-  return (
-    <>
-      {/* Structured Data */}
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{
-          __html: JSON.stringify(faqStructuredData),
-        }}
-      />
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{
-          __html: JSON.stringify(serviceStructuredData),
-        }}
-      />
-      <HomePageClient locale={locale} faqs={faqs} />
-    </>
-  );
+  
+  // 直接重定向到 dashboard（试用页面）
+  redirect({ href: '/dashboard', locale });
 }
