@@ -7,6 +7,8 @@
     "build": "prisma generate && prisma db push --accept-data-loss && next build",
     "start": "next start",
     "lint": "next lint",
+    "type-check": "tsc --noEmit --skipLibCheck",
+    "check": "npm run lint && npm run type-check",
     "postinstall": "prisma generate"
   },
   "dependencies": {
