@@ -20,7 +20,7 @@ async function generateMobileToken(userId: string, email: string): Promise<strin
       email,
       sub: userId,
     },
-    secret: AUTH_SECRET,
+    secret: AUTH_SECRET as string,
     maxAge: 30 * 24 * 60 * 60, // 30 days
   });
   return token;
