@@ -305,7 +305,7 @@ export default function DashboardPage() {
 
       setPreview({
         frontContent: cardText,
-        backContent: llmData.analysis.html,
+        backContent: llmData?.analysis?.html || llmData?.html || '',
         audioUrl,
       });
 
@@ -445,29 +445,29 @@ export default function DashboardPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800">
       <nav className="bg-white dark:bg-gray-800 shadow-sm">
-        <div className="container mx-auto px-4 py-4">
+        <div className="container mx-auto px-3 py-2">
           <div className="flex justify-between items-center">
-            <h1 className="text-xl font-bold text-gray-900 dark:text-white">
+            <h1 className="text-lg font-bold text-gray-900 dark:text-white">
               {t('common.appName')}
             </h1>
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2">
               {credits !== null && (
-                <div className="flex items-center gap-2 px-4 py-2 bg-indigo-100 dark:bg-indigo-900 rounded-lg">
-                  <span className="text-sm font-semibold text-indigo-700 dark:text-indigo-300">
+                <div className="flex items-center gap-1 px-3 py-1 bg-indigo-100 dark:bg-indigo-900 rounded">
+                  <span className="text-xs font-semibold text-indigo-700 dark:text-indigo-300">
                     {t('dashboard.credits')}: {credits}
                   </span>
                 </div>
               )}
               <Link
                 href="/pricing"
-                className="px-4 py-2 text-sm bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+                className="px-3 py-1 text-xs bg-green-600 text-white rounded hover:bg-green-700 transition-colors"
               >
                 {t('dashboard.buyCredits')}
               </Link>
               <LanguageSwitcher />
               {session?.user ? (
                 <>
-                  <div className="text-sm text-gray-600 dark:text-gray-400">
+                  <div className="text-xs text-gray-600 dark:text-gray-400">
                     {session.user.email}
                   </div>
                   <button
@@ -477,7 +477,7 @@ export default function DashboardPage() {
                         redirect: true 
                       });
                     }}
-                    className="px-4 py-2 text-sm bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
+                    className="px-3 py-1 text-xs bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
                   >
                     {t('common.logout')}
                   </button>
@@ -495,14 +495,14 @@ export default function DashboardPage() {
         </div>
       </nav>
 
-      <div className="container mx-auto px-4 py-8">
+      <div className="container mx-auto px-3 py-2">
         {/* Tab 导航栏 */}
-        <div className="max-w-6xl mx-auto mb-6">
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md">
+        <div className="max-w-6xl mx-auto mb-2">
+          <div className="bg-white dark:bg-gray-800 rounded shadow-sm">
             <div className="flex border-b border-gray-200 dark:border-gray-700">
               <button
                 onClick={() => setActiveTab('tts')}
-                className={`px-6 py-3 text-sm font-medium transition-colors border-b-2 ${
+                className={`px-4 py-2 text-xs font-medium transition-colors border-b-2 ${
                   activeTab === 'tts'
                     ? 'border-indigo-600 text-indigo-600 dark:text-indigo-400 dark:border-indigo-400'
                     : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300'
@@ -512,7 +512,7 @@ export default function DashboardPage() {
               </button>
               <button
                 onClick={() => setActiveTab('generate')}
-                className={`px-6 py-3 text-sm font-medium transition-colors border-b-2 ${
+                className={`px-4 py-2 text-xs font-medium transition-colors border-b-2 ${
                   activeTab === 'generate'
                     ? 'border-purple-600 text-purple-600 dark:text-purple-400 dark:border-purple-400'
                     : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300'
@@ -522,7 +522,7 @@ export default function DashboardPage() {
               </button>
               <button
                 onClick={() => setActiveTab('cards')}
-                className={`px-6 py-3 text-sm font-medium transition-colors border-b-2 ${
+                className={`px-4 py-2 text-xs font-medium transition-colors border-b-2 ${
                   activeTab === 'cards'
                     ? 'border-blue-600 text-blue-600 dark:text-blue-400 dark:border-blue-400'
                     : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300'
@@ -536,7 +536,7 @@ export default function DashboardPage() {
 
         <div className="max-w-6xl mx-auto">
           {paymentSuccess && (
-            <div className="mb-4 p-4 bg-green-100 dark:bg-green-900 border border-green-400 dark:border-green-700 text-green-700 dark:text-green-300 rounded-lg">
+            <div className="mb-2 p-2 bg-green-100 dark:bg-green-900 border border-green-400 dark:border-green-700 text-green-700 dark:text-green-300 rounded text-sm">
               <div className="flex items-center justify-between">
                 <div className="flex items-center">
                   <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
@@ -556,15 +556,15 @@ export default function DashboardPage() {
 
           {/* Tab 1: 文本转语音 */}
           {activeTab === 'tts' && (
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-8">
-              <h2 className="text-2xl font-bold mb-4 text-gray-900 dark:text-white">
+            <div className="bg-white dark:bg-gray-800 rounded shadow-sm p-4">
+              <h2 className="text-lg font-bold mb-2 text-gray-900 dark:text-white">
                 {t('tts.title')}
               </h2>
-              <p className="text-gray-600 dark:text-gray-400 mb-6">
+              <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">
                 {t('tts.description')}
               </p>
 
-              <form onSubmit={handleTtsGenerate} className="space-y-4">
+              <form onSubmit={handleTtsGenerate} className="space-y-2">
                 <div>
                   <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
                     {t('tts.inputPlaceholder')}
@@ -572,12 +572,12 @@ export default function DashboardPage() {
                   <textarea
                     value={ttsText}
                     onChange={(e) => setTtsText(e.target.value)}
-                    rows={6}
+                    rows={4}
                     maxLength={500}
                     placeholder={t('tts.inputPlaceholder')}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent dark:bg-gray-700 dark:border-gray-600 dark:text-white resize-none"
+                    className="w-full px-3 py-2 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-indigo-500 focus:border-transparent dark:bg-gray-700 dark:border-gray-600 dark:text-white resize-none"
                   />
-                  <div className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                  <div className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
                     {ttsText.length}/500 {t('tts.maxLength')}
                   </div>
                 </div>
@@ -585,14 +585,14 @@ export default function DashboardPage() {
                 <button
                   type="submit"
                   disabled={ttsLoading || !ttsText.trim()}
-                  className="w-full py-3 px-4 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="w-full py-2 px-3 text-sm bg-indigo-600 text-white rounded hover:bg-indigo-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {ttsLoading ? t('tts.generating') : t('tts.generate')}
                 </button>
               </form>
 
               {ttsError && (
-                <div className="mt-4 p-3 bg-red-100 dark:bg-red-900 text-red-700 dark:text-red-300 rounded-lg text-sm">
+                <div className="mt-2 p-2 bg-red-100 dark:bg-red-900 text-red-700 dark:text-red-300 rounded text-xs">
                   {ttsError}
                   {ttsError.includes('Insufficient credits') && (
                     <div className="mt-2">
@@ -608,15 +608,15 @@ export default function DashboardPage() {
               )}
 
               {audioUrl && (
-                <div className="mt-6 space-y-4">
-                  <div className="p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                <div className="mt-3 space-y-2">
+                  <div className="p-2 bg-gray-50 dark:bg-gray-700 rounded">
                     <audio controls className="w-full" src={audioUrl}>
                       Your browser does not support the audio element.
                     </audio>
                   </div>
                   <button
                     onClick={handleDownload}
-                    className="w-full py-2 px-4 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+                    className="w-full py-1.5 px-3 text-sm bg-green-600 text-white rounded hover:bg-green-700 transition-colors"
                   >
                     {t('tts.download')}
                   </button>
@@ -627,29 +627,29 @@ export default function DashboardPage() {
 
           {/* Tab 2: 生成新卡片 */}
           {activeTab === 'generate' && (
-            <div className="space-y-6">
-              <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
-                <h2 className="text-2xl font-bold mb-4 text-gray-900 dark:text-white">
+            <div className="space-y-3">
+              <div className="bg-white dark:bg-gray-800 rounded shadow-sm p-4">
+                <h2 className="text-lg font-bold mb-2 text-gray-900 dark:text-white">
                   生成 Anki 卡片
                 </h2>
                 
                 {credits !== null && (
-                  <div className="mb-4 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
-                    <p className="text-sm text-gray-600 dark:text-gray-400">
+                  <div className="mb-2 p-2 bg-blue-50 dark:bg-blue-900/20 rounded text-xs">
+                    <p className="text-xs text-gray-600 dark:text-gray-400">
                       剩余 Credits: <span className="font-bold text-indigo-600 dark:text-indigo-400">{credits}</span>
                     </p>
                   </div>
                 )}
 
-                <div className="space-y-4">
+                <div className="space-y-2">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
                       卡片类型
                     </label>
                     <select
                       value={cardType}
                       onChange={(e) => setCardType(e.target.value)}
-                      className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                      className="w-full px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                       disabled={cardLoading}
                     >
                       <option value="问答题（附翻转卡片）">问答题（附翻转卡片）</option>
@@ -658,7 +658,7 @@ export default function DashboardPage() {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
                       目标牌组
                     </label>
                     <input
@@ -666,7 +666,7 @@ export default function DashboardPage() {
                       value={deckName}
                       onChange={(e) => setDeckName(e.target.value)}
                       list="deckOptions"
-                      className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                      className="w-full px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                       placeholder="输入牌组名称..."
                       disabled={cardLoading}
                     />
@@ -678,14 +678,14 @@ export default function DashboardPage() {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
                       日文句子
                     </label>
                     <textarea
                       value={cardText}
                       onChange={(e) => setCardText(e.target.value)}
-                      className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                      rows={4}
+                      className="w-full px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                      rows={3}
                       placeholder="在此输入日文句子..."
                       disabled={cardLoading}
                     />
@@ -697,25 +697,25 @@ export default function DashboardPage() {
                       id="includePronunciation"
                       checked={includePronunciation}
                       onChange={(e) => setIncludePronunciation(e.target.checked)}
-                      className="mr-2"
+                      className="mr-1.5"
                       disabled={cardLoading}
                     />
-                    <label htmlFor="includePronunciation" className="text-sm text-gray-700 dark:text-gray-300">
+                    <label htmlFor="includePronunciation" className="text-xs text-gray-700 dark:text-gray-300">
                       包含发音
                     </label>
                   </div>
 
                   {cardError && (
-                    <div className="p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
+                    <div className="p-2 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded text-xs">
                       <p className="text-sm text-red-600 dark:text-red-400">{cardError}</p>
                     </div>
                   )}
 
-                  <div className="flex gap-4">
+                  <div className="flex gap-2">
                     <button
                       onClick={handleGeneratePreview}
                       disabled={cardLoading || !cardText.trim()}
-                      className="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="px-3 py-1.5 text-sm bg-indigo-600 text-white rounded hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       {cardLoading ? '生成中...' : '生成预览'}
                     </button>
@@ -723,7 +723,7 @@ export default function DashboardPage() {
                       <button
                         onClick={handleSaveCard}
                         disabled={cardLoading}
-                        className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="px-3 py-1.5 text-sm bg-green-600 text-white rounded hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         {cardLoading ? '保存中...' : '保存卡片'}
                       </button>
@@ -733,28 +733,28 @@ export default function DashboardPage() {
               </div>
 
               {preview && (
-                <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
-                  <h2 className="text-xl font-bold mb-4 text-gray-900 dark:text-white">预览</h2>
+                <div className="bg-white dark:bg-gray-800 rounded shadow-sm p-4">
+                  <h2 className="text-base font-bold mb-2 text-gray-900 dark:text-white">预览</h2>
                   
-                  <div className="space-y-4">
+                  <div className="space-y-2">
                     <div>
-                      <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">正面（日文）</h3>
-                      <div className="p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                        <p className="text-lg">{preview.frontContent}</p>
+                      <h3 className="text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">正面（日文）</h3>
+                      <div className="p-2 bg-gray-50 dark:bg-gray-700 rounded">
+                        <p className="text-sm">{preview.frontContent}</p>
                       </div>
                     </div>
 
                     <div>
-                      <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">背面（分析）</h3>
+                      <h3 className="text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">背面（分析）</h3>
                       <div 
-                        className="p-4 bg-gray-50 dark:bg-gray-700 rounded-lg prose dark:prose-invert max-w-none"
+                        className="p-2 bg-gray-50 dark:bg-gray-700 rounded prose dark:prose-invert max-w-none prose-sm"
                         dangerouslySetInnerHTML={{ __html: preview.backContent }}
                       />
                     </div>
 
                     {preview.audioUrl && (
                       <div>
-                        <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">发音</h3>
+                        <h3 className="text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">发音</h3>
                         <audio controls className="w-full">
                           <source src={preview.audioUrl} type="audio/mpeg" />
                           您的浏览器不支持音频播放。
@@ -769,23 +769,23 @@ export default function DashboardPage() {
 
           {/* Tab 3: 查看卡片列表 */}
           {activeTab === 'cards' && (
-            <div className="flex gap-6 h-[calc(100vh-300px)]">
+            <div className="flex gap-3 h-[calc(100vh-250px)]">
               {/* 左侧边栏 - 卡片列表 */}
-              <div className="w-80 flex-shrink-0 bg-white dark:bg-gray-800 rounded-lg shadow-lg flex flex-col">
+              <div className="w-80 flex-shrink-0 bg-white dark:bg-gray-800 rounded shadow-sm flex flex-col">
                 {/* 搜索和筛选区域 */}
-                <div className="p-4 border-b border-gray-200 dark:border-gray-700 space-y-4">
+                <div className="p-3 border-b border-gray-200 dark:border-gray-700 space-y-2">
                   <div>
                     <input
                       type="text"
                       placeholder={t('AnkiCard.searchPlaceholder')}
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
-                      className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                      className="w-full px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
                     />
                     {searchQuery && (
                       <button
                         onClick={() => setSearchQuery('')}
-                        className="mt-2 text-sm text-indigo-600 dark:text-indigo-400 hover:underline"
+                        className="mt-1 text-xs text-indigo-600 dark:text-indigo-400 hover:underline"
                       >
                         {t('AnkiCard.clearSearch')}
                       </button>
@@ -793,7 +793,7 @@ export default function DashboardPage() {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
                       {t('AnkiCard.filterByDeck')}
                     </label>
                     <select
@@ -802,7 +802,7 @@ export default function DashboardPage() {
                         setSelectedDeck(e.target.value);
                         setPage(1);
                       }}
-                      className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                      className="w-full px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
                     >
                       <option value="">{t('AnkiCard.allDecks')}</option>
                       {decks.map((deck) => (
@@ -814,7 +814,7 @@ export default function DashboardPage() {
                   </div>
 
                   {total > 0 && (
-                    <div className="text-sm text-gray-600 dark:text-gray-400">
+                    <div className="text-xs text-gray-600 dark:text-gray-400">
                       {t('AnkiCard.totalCards', { total })}
                     </div>
                   )}
@@ -823,16 +823,16 @@ export default function DashboardPage() {
                 {/* 卡片列表 */}
                 <div className="flex-1 overflow-y-auto">
                   {cardsError && (
-                    <div className="p-4 m-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
-                      <p className="text-sm text-red-600 dark:text-red-400">{cardsError}</p>
+                    <div className="p-2 m-2 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded text-xs">
+                      <p className="text-xs text-red-600 dark:text-red-400">{cardsError}</p>
                     </div>
                   )}
                   {cardsLoading ? (
-                    <div className="flex justify-center items-center h-32">
-                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
+                    <div className="flex justify-center items-center h-24">
+                      <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-indigo-600"></div>
                     </div>
                   ) : cards.length === 0 ? (
-                    <div className="p-8 text-center text-gray-500 dark:text-gray-400">
+                    <div className="p-4 text-center text-xs text-gray-500 dark:text-gray-400">
                       {debouncedSearchQuery ? t('AnkiCard.noSearchResults') : t('AnkiCard.noCardsYet')}
                     </div>
                   ) : (
@@ -841,18 +841,18 @@ export default function DashboardPage() {
                         <button
                           key={card.id}
                           onClick={() => setSelectedCardId(card.id)}
-                          className={`w-full text-left p-4 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors ${
+                          className={`w-full text-left p-2 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors ${
                             selectedCardId === card.id
                               ? 'bg-indigo-50 dark:bg-indigo-900/20 border-l-4 border-indigo-600'
                               : ''
                           }`}
                         >
-                          <div className="flex justify-between items-start mb-2">
-                            <p className="text-sm font-medium text-gray-900 dark:text-white line-clamp-2 flex-1">
+                          <div className="flex justify-between items-start mb-1">
+                            <p className="text-xs font-medium text-gray-900 dark:text-white line-clamp-2 flex-1">
                               {card.frontContent}
                             </p>
                           </div>
-                          <div className="flex items-center justify-between mt-2">
+                          <div className="flex items-center justify-between mt-1">
                             <span className="text-xs text-gray-500 dark:text-gray-400">
                               {card.deckName}
                             </span>
@@ -866,7 +866,7 @@ export default function DashboardPage() {
                   )}
 
                   {totalPages > 1 && (
-                    <div className="p-4 border-t border-gray-200 dark:border-gray-700">
+                    <div className="p-2 border-t border-gray-200 dark:border-gray-700">
                       <div className="flex items-center justify-between">
                         <button
                           onClick={() => setPage(p => Math.max(1, p - 1))}
@@ -892,59 +892,59 @@ export default function DashboardPage() {
               </div>
 
               {/* 右侧主内容区 - 卡片详情 */}
-              <div className="flex-1 bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-y-auto">
+              <div className="flex-1 bg-white dark:bg-gray-800 rounded shadow-sm overflow-y-auto">
                 {selectedCard ? (
-                  <div className="p-6">
-                    <div className="flex justify-between items-start mb-6 pb-4 border-b border-gray-200 dark:border-gray-700">
+                  <div className="p-4">
+                    <div className="flex justify-between items-start mb-3 pb-2 border-b border-gray-200 dark:border-gray-700">
                       <div>
-                        <div className="flex items-center gap-2 mb-2">
-                          <span className="text-xs px-2 py-1 bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 rounded">
+                        <div className="flex items-center gap-1.5 mb-1">
+                          <span className="text-xs px-1.5 py-0.5 bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 rounded">
                             {selectedCard.deckName}
                           </span>
-                          <span className="text-xs px-2 py-1 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded">
+                          <span className="text-xs px-1.5 py-0.5 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded">
                             {selectedCard.cardType}
                           </span>
                         </div>
-                        <p className="text-sm text-gray-500 dark:text-gray-400">
+                        <p className="text-xs text-gray-500 dark:text-gray-400">
                           {new Date(selectedCard.createdAt).toLocaleString('zh-CN')}
                         </p>
                       </div>
                       <button
                         onClick={() => handleDeleteCard(selectedCard.id)}
-                        className="px-4 py-2 text-sm bg-red-100 dark:bg-red-900/20 text-red-600 dark:text-red-400 rounded-lg hover:bg-red-200 dark:hover:bg-red-900/40 transition-colors"
+                        className="px-2 py-1 text-xs bg-red-100 dark:bg-red-900/20 text-red-600 dark:text-red-400 rounded hover:bg-red-200 dark:hover:bg-red-900/40 transition-colors"
                       >
                         {t('AnkiCard.delete')}
                       </button>
                     </div>
 
-                    <div className="space-y-6">
+                    <div className="space-y-3">
                       <div>
-                        <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3 uppercase tracking-wide">
+                        <h3 className="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1.5 uppercase tracking-wide">
                           {t('AnkiCard.frontContent')}
                         </h3>
-                        <div className="p-4 bg-gray-50 dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600">
-                          <p className="text-xl text-gray-900 dark:text-white leading-relaxed">
+                        <div className="p-3 bg-gray-50 dark:bg-gray-700 rounded border border-gray-200 dark:border-gray-600">
+                          <p className="text-base text-gray-900 dark:text-white leading-relaxed">
                             {selectedCard.frontContent}
                           </p>
                         </div>
                       </div>
 
                       <div>
-                        <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3 uppercase tracking-wide">
+                        <h3 className="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1.5 uppercase tracking-wide">
                           {t('AnkiCard.backContent')}
                         </h3>
                         <div
-                          className="p-4 bg-gray-50 dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600 prose dark:prose-invert max-w-none"
+                          className="p-3 bg-gray-50 dark:bg-gray-700 rounded border border-gray-200 dark:border-gray-600 prose dark:prose-invert max-w-none prose-sm"
                           dangerouslySetInnerHTML={{ __html: selectedCard.backContent }}
                         />
                       </div>
 
                       {selectedCard.audioUrl && (
                         <div>
-                          <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3 uppercase tracking-wide">
+                          <h3 className="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1.5 uppercase tracking-wide">
                             {t('AnkiCard.pronunciationPreview')}
                           </h3>
-                          <div className="p-4 bg-gray-50 dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600">
+                          <div className="p-2 bg-gray-50 dark:bg-gray-700 rounded border border-gray-200 dark:border-gray-600">
                             <audio controls className="w-full">
                               <source src={selectedCard.audioUrl} type="audio/mpeg" />
                               {t('AnkiCard.audioNotSupported')}
@@ -955,14 +955,14 @@ export default function DashboardPage() {
 
                       {selectedCard.tags && selectedCard.tags.length > 0 && (
                         <div>
-                          <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3 uppercase tracking-wide">
+                          <h3 className="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1.5 uppercase tracking-wide">
                             标签
                           </h3>
-                          <div className="flex flex-wrap gap-2">
+                          <div className="flex flex-wrap gap-1.5">
                             {selectedCard.tags.map((tag, index) => (
                               <span
                                 key={index}
-                                className="px-3 py-1 text-sm bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-full"
+                                className="px-2 py-0.5 text-xs bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-full"
                               >
                                 {tag}
                               </span>
@@ -973,13 +973,13 @@ export default function DashboardPage() {
                     </div>
                   </div>
                 ) : (
-                  <div className="flex items-center justify-center h-full p-12">
+                  <div className="flex items-center justify-center h-full p-6">
                     <div className="text-center">
-                      <div className="text-6xl mb-4">📚</div>
-                      <p className="text-lg text-gray-600 dark:text-gray-400 mb-2">
+                      <div className="text-4xl mb-2">📚</div>
+                      <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">
                         {t('AnkiCard.noCardSelected')}
                       </p>
-                      <p className="text-sm text-gray-500 dark:text-gray-500">
+                      <p className="text-xs text-gray-500 dark:text-gray-500">
                         {t('AnkiCard.selectCard')}
                       </p>
                     </div>
