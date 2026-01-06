@@ -173,6 +173,7 @@ async function getUserIdFromToken(token: string): Promise<string | null> {
     const decoded = await decode({
       token,
       secret: AUTH_SECRET,
+      salt: '', // Empty salt for JWT decoding (must match encoding salt)
     });
 
     if (decoded && decoded.id) {
