@@ -5,10 +5,10 @@
 export interface ApiError {
   code: string;
   message: string;
-  details?: Record<string, any>;
+  details?: Record<string, unknown>;
 }
 
-export interface ApiSuccessResponse<T = any> {
+export interface ApiSuccessResponse<T = unknown> {
   success: true;
   data: T;
 }
@@ -18,7 +18,7 @@ export interface ApiErrorResponse {
   error: ApiError;
 }
 
-export type ApiResponse<T = any> = ApiSuccessResponse<T> | ApiErrorResponse;
+export type ApiResponse<T = unknown> = ApiSuccessResponse<T> | ApiErrorResponse;
 
 /**
  * 创建成功响应
@@ -36,7 +36,7 @@ export function successResponse<T>(data: T): ApiSuccessResponse<T> {
 export function errorResponse(
   code: string,
   message: string,
-  details?: Record<string, any>
+  details?: Record<string, unknown>
 ): ApiErrorResponse {
   return {
     success: false,

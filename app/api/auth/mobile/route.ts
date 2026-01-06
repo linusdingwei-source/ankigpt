@@ -265,7 +265,7 @@ export async function PUT(request: NextRequest) {
  * GET /api/auth/mobile/session
  * 获取当前 session 信息
  */
-export async function GET(request: NextRequest) {
+export async function GET(_request: NextRequest) {
   try {
     const session = await auth();
 
