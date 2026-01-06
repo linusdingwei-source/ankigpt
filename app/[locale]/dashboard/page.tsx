@@ -92,8 +92,10 @@ export default function DashboardPage() {
       const { getAnonymousHeaders } = await import('@/hooks/useAnonymousUser');
       const headers = getAnonymousHeaders();
       const res = await fetch('/api/decks', { headers });
-      const data = await res.json();
-      if (data.decks) {
+      const response = await res.json();
+      // 适配新的统一响应格式
+      const data = response.success ? response.data : response;
+      if (data?.decks) {
         setDecks(data.decks);
         if (data.decks.length > 0 && !deckName) {
           setDeckName(data.decks[0].name);
@@ -121,9 +123,12 @@ export default function DashboardPage() {
       params.append('limit', '50');
 
       const res = await fetch(`/api/cards?${params.toString()}`, { headers });
-      const data = await res.json();
+      const response = await res.json();
       
-      if (data.cards) {
+      // 适配新的统一响应格式
+      const data = response.success ? response.data : response;
+      
+      if (data?.cards) {
         setCards(data.cards);
         if (data.pagination) {
           setTotalPages(data.pagination.totalPages);
@@ -190,9 +195,12 @@ export default function DashboardPage() {
         body: JSON.stringify({ text: ttsText }),
       });
 
-      const data = await res.json();
+      const response = await res.json();
+      // 适配新的统一响应格式
+      const data = response.success ? response.data : response;
+      const errorData = response.success ? null : response.error;
 
-      if (res.ok && data.audio) {
+      if (res.ok && data?.audio) {
         try {
           const binaryString = atob(data.audio);
           const bytes = new Uint8Array(binaryString.length);
@@ -211,13 +219,13 @@ export default function DashboardPage() {
           setTtsError('Failed to process audio data');
         }
       } else {
-        const errorMsg = data.error || 'Failed to generate audio';
+        const errorMsg = errorData?.message || data?.error || 'Failed to generate audio';
         setTtsError(errorMsg);
-        if (res.status === 402 && data.credits !== undefined) {
+        if (res.status === 402 && data?.credits !== undefined) {
           setCredits(data.credits);
           trackInsufficientCredits(data.credits);
         } else {
-          trackAudioGenerationFailed(errorMsg, data.credits);
+          trackAudioGenerationFailed(errorMsg, data?.credits);
         }
       }
     } catch {
@@ -329,19 +337,22 @@ export default function DashboardPage() {
         }),
       });
 
+      const response = await res.json();
+      
       if (!res.ok) {
-        const errorData = await res.json();
-        throw new Error(errorData.error || '保存卡片失败');
+        // 适配新的统一响应格式
+        const errorData = response.success ? null : response.error;
+        throw new Error(errorData?.message || '保存卡片失败');
       }
 
-      const data = await res.json();
-      if (data.success) {
+      // 适配新的统一响应格式
+      if (response.success) {
         setActiveTab('cards');
         await fetchCards();
         setCardText('');
         setPreview(null);
       } else {
-        throw new Error('保存卡片失败');
+        throw new Error(response.error?.message || '保存卡片失败');
       }
     } catch (err) {
       console.error('Save card error:', err);
@@ -391,8 +402,10 @@ export default function DashboardPage() {
     const headers = getAnonymousHeaders();
     try {
       const res = await fetch('/api/user/credits', { headers });
-      const data = await res.json();
-      if (data.credits !== undefined) {
+      const response = await res.json();
+      // 适配新的统一响应格式
+      const data = response.success ? response.data : response;
+      if (data?.credits !== undefined) {
         setCredits(data.credits);
       }
     } catch (err) {
