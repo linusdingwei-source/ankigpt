@@ -268,14 +268,17 @@ export default function DashboardPage() {
         body: JSON.stringify({ text: cardText }),
       });
 
+      const llmResponse = await llmRes.json();
+      // 适配新的统一响应格式
+      const llmData = llmResponse.success ? llmResponse.data : llmResponse;
+      const llmError = llmResponse.success ? null : llmResponse.error;
+
       if (!llmRes.ok) {
-        const errorData = await llmRes.json();
-        throw new Error(errorData.error || 'LLM 分析失败');
+        throw new Error(llmError?.message || 'LLM 分析失败');
       }
 
-      const llmData = await llmRes.json();
-      if (!llmData.success) {
-        throw new Error('LLM 分析失败');
+      if (!llmResponse.success) {
+        throw new Error(llmError?.message || 'LLM 分析失败');
       }
 
       let audioUrl: string | undefined;
@@ -291,8 +294,10 @@ export default function DashboardPage() {
         });
 
         if (ttsRes.ok) {
-          const ttsData = await ttsRes.json();
-          if (ttsData.success && ttsData.audio?.url) {
+          const ttsResponse = await ttsRes.json();
+          // 适配新的统一响应格式
+          const ttsData = ttsResponse.success ? ttsResponse.data : ttsResponse;
+          if (ttsResponse.success && ttsData?.audio?.url) {
             audioUrl = ttsData.audio.url;
           }
         }
