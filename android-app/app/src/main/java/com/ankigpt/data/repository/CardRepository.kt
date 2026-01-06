@@ -1,0 +1,99 @@
+package com.ankigpt.data.repository
+
+import com.ankigpt.data.api.ApiService
+import com.ankigpt.data.api.RetrofitClient
+import com.ankigpt.data.model.*
+import com.ankigpt.util.Result
+
+/**
+ * 卡片 Repository
+ */
+class CardRepository(
+    private val apiService: ApiService = RetrofitClient.apiService
+) {
+    
+    /**
+     * 生成卡片
+     */
+    suspend fun generateCard(
+        token: String,
+        text: String,
+        cardType: String = "问答题（附翻转卡片）",
+        deckName: String = "default",
+        includePronunciation: Boolean = true
+    ): Result<CardData> {
+        return try {
+            val response = apiService.generateCard(
+                "Bearer $token",
+                CardGenerateRequest(text, cardType, deckName, includePronunciation)
+            )
+            if (response.isSuccessful && response.body()?.success == true) {
+                val data = response.body()?.data
+                if (data != null) {
+                    Result.Success(data)
+                } else {
+                    Result.Error("生成失败：数据为空")
+                }
+            } else {
+                val error = response.body()?.error
+                when (error?.code) {
+                    "INSUFFICIENT_CREDITS" -> Result.Error("Credits 不足")
+                    else -> Result.Error(error?.message ?: "生成失败")
+                }
+            }
+        } catch (e: Exception) {
+            Result.Error("网络错误：${e.message}")
+        }
+    }
+    
+    /**
+     * 获取卡片列表
+     */
+    suspend fun getCards(
+        token: String,
+        page: Int = 1,
+        limit: Int = 20,
+        search: String? = null,
+        deck: String? = null
+    ): Result<CardsResponse> {
+        return try {
+            val response = apiService.getCards("Bearer $token", page, limit, search, deck)
+            if (response.isSuccessful && response.body()?.success == true) {
+                val data = response.body()?.data
+                if (data != null) {
+                    Result.Success(data)
+                } else {
+                    Result.Error("获取失败：数据为空")
+                }
+            } else {
+                val error = response.body()?.error
+                Result.Error(error?.message ?: "获取失败")
+            }
+        } catch (e: Exception) {
+            Result.Error("网络错误：${e.message}")
+        }
+    }
+    
+    /**
+     * 获取单个卡片
+     */
+    suspend fun getCard(token: String, id: String): Result<CardData> {
+        return try {
+            val response = apiService.getCard("Bearer $token", id)
+            if (response.isSuccessful && response.body()?.success == true) {
+                val data = response.body()?.data
+                if (data != null) {
+                    Result.Success(data)
+                } else {
+                    Result.Error("获取失败：数据为空")
+                }
+            } else {
+                val error = response.body()?.error
+                Result.Error(error?.message ?: "获取失败")
+            }
+        } catch (e: Exception) {
+            Result.Error("网络错误：${e.message}")
+        }
+    }
+}
+

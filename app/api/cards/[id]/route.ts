@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import { prisma } from '@/lib/prisma';
 import { getUserId } from '@/lib/anonymous-user';
+import { successResponse, errorResponse, ErrorCodes } from '@/lib/api-response';
 
 export async function GET(
   request: NextRequest,
@@ -13,7 +14,7 @@ export async function GET(
     
     if (!userId) {
       return NextResponse.json(
-        { error: 'Unauthorized' },
+        errorResponse(ErrorCodes.UNAUTHORIZED, 'Unauthorized'),
         { status: 401 }
       );
     }
@@ -29,16 +30,16 @@ export async function GET(
 
     if (!card) {
       return NextResponse.json(
-        { error: 'Card not found' },
+        errorResponse(ErrorCodes.NOT_FOUND, 'Card not found'),
         { status: 404 }
       );
     }
 
-    return NextResponse.json({ card });
+    return NextResponse.json(successResponse({ card }));
   } catch (error) {
     console.error('Get card error:', error);
     return NextResponse.json(
-      { error: 'Failed to fetch card' },
+      errorResponse(ErrorCodes.INTERNAL_ERROR, 'Failed to fetch card'),
       { status: 500 }
     );
   }
@@ -54,7 +55,7 @@ export async function PUT(
     
     if (!userId) {
       return NextResponse.json(
-        { error: 'Unauthorized' },
+        errorResponse(ErrorCodes.UNAUTHORIZED, 'Unauthorized'),
         { status: 401 }
       );
     }
@@ -72,7 +73,7 @@ export async function PUT(
 
     if (!existingCard) {
       return NextResponse.json(
-        { error: 'Card not found' },
+        errorResponse(ErrorCodes.NOT_FOUND, 'Card not found'),
         { status: 404 }
       );
     }
@@ -89,11 +90,11 @@ export async function PUT(
       },
     });
 
-    return NextResponse.json({ card });
+    return NextResponse.json(successResponse({ card }));
   } catch (error) {
     console.error('Update card error:', error);
     return NextResponse.json(
-      { error: 'Failed to update card' },
+      errorResponse(ErrorCodes.INTERNAL_ERROR, 'Failed to update card'),
       { status: 500 }
     );
   }
@@ -109,7 +110,7 @@ export async function DELETE(
     
     if (!userId) {
       return NextResponse.json(
-        { error: 'Unauthorized' },
+        errorResponse(ErrorCodes.UNAUTHORIZED, 'Unauthorized'),
         { status: 401 }
       );
     }
@@ -126,7 +127,7 @@ export async function DELETE(
 
     if (!existingCard) {
       return NextResponse.json(
-        { error: 'Card not found' },
+        errorResponse(ErrorCodes.NOT_FOUND, 'Card not found'),
         { status: 404 }
       );
     }
@@ -135,11 +136,11 @@ export async function DELETE(
       where: { id },
     });
 
-    return NextResponse.json({ success: true });
+    return NextResponse.json(successResponse({ deleted: true }));
   } catch (error) {
     console.error('Delete card error:', error);
     return NextResponse.json(
-      { error: 'Failed to delete card' },
+      errorResponse(ErrorCodes.INTERNAL_ERROR, 'Failed to delete card'),
       { status: 500 }
     );
   }

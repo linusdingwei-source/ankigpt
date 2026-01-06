@@ -1,16 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import { consumeCredits, getCredits } from '@/lib/credits';
+import { getUserId } from '@/lib/anonymous-user';
+import { successResponse, errorResponse, ErrorCodes } from '@/lib/api-response';
 
 const TTS_CREDITS_COST = 1; // TTS 生成消耗 1 credit
 
 export async function POST(request: NextRequest) {
   try {
     const session = await auth();
+    const userId = await getUserId(session, request);
     
-    if (!session?.user) {
+    if (!userId) {
       return NextResponse.json(
-        { error: 'Unauthorized' },
+        errorResponse(ErrorCodes.UNAUTHORIZED, 'Unauthorized'),
         { status: 401 }
       );
     }
@@ -19,22 +22,21 @@ export async function POST(request: NextRequest) {
 
     if (!text || typeof text !== 'string') {
       return NextResponse.json(
-        { error: 'Text is required' },
+        errorResponse(ErrorCodes.BAD_REQUEST, 'Text is required'),
         { status: 400 }
       );
     }
 
     // 检查 credits
-    const userId = session.user.id as string;
     const currentCredits = await getCredits(userId);
     
     if (currentCredits < TTS_CREDITS_COST) {
       return NextResponse.json(
-        { 
-          error: 'Insufficient credits. Please purchase a package.',
-          credits: currentCredits,
-          required: TTS_CREDITS_COST
-        },
+        errorResponse(
+          ErrorCodes.INSUFFICIENT_CREDITS,
+          'Insufficient credits. Please purchase a package.',
+          { credits: currentCredits, required: TTS_CREDITS_COST }
+        ),
         { status: 402 }
       );
     }
@@ -42,7 +44,7 @@ export async function POST(request: NextRequest) {
     // 检查 DashScope API Key
     if (!process.env.DASHSCOPE_API_KEY) {
       return NextResponse.json(
-        { error: 'DashScope API key is not configured' },
+        errorResponse(ErrorCodes.INTERNAL_ERROR, 'DashScope API key is not configured'),
         { status: 500 }
       );
     }
@@ -74,7 +76,11 @@ export async function POST(request: NextRequest) {
       const errorData = await response.json().catch(() => ({}));
       console.error('DashScope TTS API error:', errorData);
       return NextResponse.json(
-        { error: 'TTS generation failed', details: errorData },
+        errorResponse(
+          ErrorCodes.INTERNAL_ERROR,
+          'TTS generation failed',
+          errorData
+        ),
         { status: response.status }
       );
     }
@@ -136,26 +142,27 @@ export async function POST(request: NextRequest) {
       
       const remainingCredits = await getCredits(userId);
 
-      return NextResponse.json({
-        success: true,
-        audio: {
-          url: finalAudioUrl,
-          filename: audioFilename,
-          // 如果需要时间戳，需要调用支持时间戳的 API
-          // timestamps: data.output.timestamps || null,
-        },
-        credits: remainingCredits,
-      });
+      return NextResponse.json(
+        successResponse({
+          audio: {
+            url: finalAudioUrl,
+            filename: audioFilename,
+            // 如果需要时间戳，需要调用支持时间戳的 API
+            // timestamps: data.output.timestamps || null,
+          },
+          credits: remainingCredits,
+        })
+      );
     } else {
       return NextResponse.json(
-        { error: 'Invalid response from TTS service' },
+        errorResponse(ErrorCodes.INTERNAL_ERROR, 'Invalid response from TTS service'),
         { status: 500 }
       );
     }
   } catch (error) {
     console.error('TTS generation error:', error);
     return NextResponse.json(
-      { error: 'Failed to generate audio' },
+      errorResponse(ErrorCodes.INTERNAL_ERROR, 'Failed to generate audio'),
       { status: 500 }
     );
   }

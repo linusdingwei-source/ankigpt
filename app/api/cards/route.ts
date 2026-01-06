@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import { prisma } from '@/lib/prisma';
+import { successResponse, errorResponse, ErrorCodes } from '@/lib/api-response';
 
 export async function GET(request: NextRequest) {
   try {
@@ -12,7 +13,7 @@ export async function GET(request: NextRequest) {
     
     if (!userId) {
       return NextResponse.json(
-        { error: 'Unauthorized' },
+        errorResponse(ErrorCodes.UNAUTHORIZED, 'Unauthorized'),
         { status: 401 }
       );
     }
@@ -81,19 +82,21 @@ export async function GET(request: NextRequest) {
       prisma.card.count({ where }),
     ]);
 
-    return NextResponse.json({
-      cards,
-      pagination: {
-        page,
-        limit,
-        total,
-        totalPages: Math.ceil(total / limit),
-      },
-    });
+    return NextResponse.json(
+      successResponse({
+        cards,
+        pagination: {
+          page,
+          limit,
+          total,
+          totalPages: Math.ceil(total / limit),
+        },
+      })
+    );
   } catch (error) {
     console.error('Get cards error:', error);
     return NextResponse.json(
-      { error: 'Failed to fetch cards' },
+      errorResponse(ErrorCodes.INTERNAL_ERROR, 'Failed to fetch cards'),
       { status: 500 }
     );
   }

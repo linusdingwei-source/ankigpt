@@ -3,6 +3,7 @@ import { auth } from '@/auth';
 import { consumeCredits, getCredits } from '@/lib/credits';
 import { extractKanaFromLLMResult, markdownToHtml } from '@/lib/llm-utils';
 import { getUserId } from '@/lib/anonymous-user';
+import { successResponse, errorResponse, ErrorCodes } from '@/lib/api-response';
 
 const LLM_CREDITS_COST = 2; // LLM 分析消耗 2 credits
 
@@ -15,7 +16,7 @@ export async function POST(request: NextRequest) {
     
     if (!userId) {
       return NextResponse.json(
-        { error: 'Unauthorized' },
+        errorResponse(ErrorCodes.UNAUTHORIZED, 'Unauthorized'),
         { status: 401 }
       );
     }
@@ -24,14 +25,14 @@ export async function POST(request: NextRequest) {
 
     if (!text || typeof text !== 'string') {
       return NextResponse.json(
-        { error: 'Text is required' },
+        errorResponse(ErrorCodes.BAD_REQUEST, 'Text is required'),
         { status: 400 }
       );
     }
 
     if (text.length > 1000) {
       return NextResponse.json(
-        { error: 'Text is too long (max 1000 characters)' },
+        errorResponse(ErrorCodes.BAD_REQUEST, 'Text is too long (max 1000 characters)'),
         { status: 400 }
       );
     }
@@ -41,11 +42,11 @@ export async function POST(request: NextRequest) {
     
     if (currentCredits < LLM_CREDITS_COST) {
       return NextResponse.json(
-        { 
-          error: 'Insufficient credits. Please purchase a package.',
-          credits: currentCredits,
-          required: LLM_CREDITS_COST
-        },
+        errorResponse(
+          ErrorCodes.INSUFFICIENT_CREDITS,
+          'Insufficient credits. Please purchase a package.',
+          { credits: currentCredits, required: LLM_CREDITS_COST }
+        ),
         { status: 402 }
       );
     }
@@ -53,7 +54,7 @@ export async function POST(request: NextRequest) {
     // 检查 DashScope API Key
     if (!process.env.DASHSCOPE_API_KEY) {
       return NextResponse.json(
-        { error: 'DashScope API key is not configured' },
+        errorResponse(ErrorCodes.INTERNAL_ERROR, 'DashScope API key is not configured'),
         { status: 500 }
       );
     }
@@ -106,7 +107,11 @@ ${text}`;
       const errorData = await response.json().catch(() => ({}));
       console.error('DashScope API error:', errorData);
       return NextResponse.json(
-        { error: 'LLM analysis failed', details: errorData },
+        errorResponse(
+          ErrorCodes.INTERNAL_ERROR,
+          'LLM analysis failed',
+          errorData
+        ),
         { status: response.status }
       );
     }
@@ -127,25 +132,26 @@ ${text}`;
       
       const remainingCredits = await getCredits(userId);
 
-      return NextResponse.json({
-        success: true,
-        analysis: {
-          markdown: markdownContent,
-          html: htmlContent,
-          kanaText: kanaText || text, // 如果没有提取到假名，使用原文
-        },
-        credits: remainingCredits,
-      });
+      return NextResponse.json(
+        successResponse({
+          analysis: {
+            markdown: markdownContent,
+            html: htmlContent,
+            kanaText: kanaText || text, // 如果没有提取到假名，使用原文
+          },
+          credits: remainingCredits,
+        })
+      );
     } else {
       return NextResponse.json(
-        { error: 'Invalid response from LLM service' },
+        errorResponse(ErrorCodes.INTERNAL_ERROR, 'Invalid response from LLM service'),
         { status: 500 }
       );
     }
   } catch (error) {
     console.error('LLM analysis error:', error);
     return NextResponse.json(
-      { error: 'Failed to analyze text' },
+      errorResponse(ErrorCodes.INTERNAL_ERROR, 'Failed to analyze text'),
       { status: 500 }
     );
   }

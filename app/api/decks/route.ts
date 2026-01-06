@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import { prisma } from '@/lib/prisma';
 import { getUserId } from '@/lib/anonymous-user';
+import { successResponse, errorResponse, ErrorCodes } from '@/lib/api-response';
 
 export async function GET(request: NextRequest) {
   try {
@@ -10,7 +11,7 @@ export async function GET(request: NextRequest) {
     
     if (!userId) {
       return NextResponse.json(
-        { error: 'Unauthorized' },
+        errorResponse(ErrorCodes.UNAUTHORIZED, 'Unauthorized'),
         { status: 401 }
       );
     }
@@ -25,19 +26,21 @@ export async function GET(request: NextRequest) {
       orderBy: { createdAt: 'desc' },
     });
 
-    return NextResponse.json({
-      decks: decks.map(deck => ({
-        id: deck.id,
-        name: deck.name,
-        cardCount: deck._count.cards,
-        createdAt: deck.createdAt,
-        updatedAt: deck.updatedAt,
-      })),
-    });
+    return NextResponse.json(
+      successResponse({
+        decks: decks.map(deck => ({
+          id: deck.id,
+          name: deck.name,
+          cardCount: deck._count.cards,
+          createdAt: deck.createdAt,
+          updatedAt: deck.updatedAt,
+        })),
+      })
+    );
   } catch (error) {
     console.error('Get decks error:', error);
     return NextResponse.json(
-      { error: 'Failed to fetch decks' },
+      errorResponse(ErrorCodes.INTERNAL_ERROR, 'Failed to fetch decks'),
       { status: 500 }
     );
   }
@@ -50,7 +53,7 @@ export async function POST(request: NextRequest) {
     
     if (!userId) {
       return NextResponse.json(
-        { error: 'Unauthorized' },
+        errorResponse(ErrorCodes.UNAUTHORIZED, 'Unauthorized'),
         { status: 401 }
       );
     }
@@ -59,7 +62,7 @@ export async function POST(request: NextRequest) {
 
     if (!name || typeof name !== 'string' || !name.trim()) {
       return NextResponse.json(
-        { error: 'Deck name is required' },
+        errorResponse(ErrorCodes.BAD_REQUEST, 'Deck name is required'),
         { status: 400 }
       );
     }
@@ -77,7 +80,7 @@ export async function POST(request: NextRequest) {
 
     if (existingDeck) {
       return NextResponse.json(
-        { error: 'Deck already exists' },
+        errorResponse(ErrorCodes.BAD_REQUEST, 'Deck already exists'),
         { status: 409 }
       );
     }
@@ -89,11 +92,11 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    return NextResponse.json({ deck });
+    return NextResponse.json(successResponse({ deck }));
   } catch (error) {
     console.error('Create deck error:', error);
     return NextResponse.json(
-      { error: 'Failed to create deck' },
+      errorResponse(ErrorCodes.INTERNAL_ERROR, 'Failed to create deck'),
       { status: 500 }
     );
   }

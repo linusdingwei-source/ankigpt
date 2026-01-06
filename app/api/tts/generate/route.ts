@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import { consumeCredits, getCredits } from '@/lib/credits';
+import { successResponse, errorResponse, ErrorCodes } from '@/lib/api-response';
 
 const TTS_CREDITS_COST = 1; // TTS 生成消耗 1 credit
 
@@ -14,7 +15,7 @@ export async function POST(request: NextRequest) {
     
     if (!userId) {
       return NextResponse.json(
-        { error: 'Unauthorized' },
+        errorResponse(ErrorCodes.UNAUTHORIZED, 'Unauthorized'),
         { status: 401 }
       );
     }
@@ -23,14 +24,14 @@ export async function POST(request: NextRequest) {
 
     if (!text || typeof text !== 'string') {
       return NextResponse.json(
-        { error: 'Text is required' },
+        errorResponse(ErrorCodes.BAD_REQUEST, 'Text is required'),
         { status: 400 }
       );
     }
 
     if (text.length > 500) {
       return NextResponse.json(
-        { error: 'Text is too long (max 500 characters)' },
+        errorResponse(ErrorCodes.BAD_REQUEST, 'Text is too long (max 500 characters)'),
         { status: 400 }
       );
     }
@@ -40,10 +41,11 @@ export async function POST(request: NextRequest) {
     
     if (currentCredits < TTS_CREDITS_COST) {
       return NextResponse.json(
-        { 
-          error: 'Insufficient credits. Please purchase a package.',
-          credits: currentCredits 
-        },
+        errorResponse(
+          ErrorCodes.INSUFFICIENT_CREDITS,
+          'Insufficient credits. Please purchase a package.',
+          { credits: currentCredits, required: TTS_CREDITS_COST }
+        ),
         { status: 402 }
       );
     }
@@ -51,7 +53,7 @@ export async function POST(request: NextRequest) {
     // Check DashScope API Key
     if (!process.env.DASHSCOPE_API_KEY) {
       return NextResponse.json(
-        { error: 'DashScope API key is not configured' },
+        errorResponse(ErrorCodes.INTERNAL_ERROR, 'DashScope API key is not configured'),
         { status: 500 }
       );
     }
@@ -80,10 +82,11 @@ export async function POST(request: NextRequest) {
       const errorData = await ttsResponse.json().catch(() => ({}));
       console.error('DashScope TTS API error:', errorData);
       return NextResponse.json(
-        { 
-          error: 'TTS generation failed', 
-          details: errorData 
-        },
+        errorResponse(
+          ErrorCodes.INTERNAL_ERROR,
+          'TTS generation failed',
+          errorData
+        ),
         { status: ttsResponse.status }
       );
     }
@@ -93,7 +96,7 @@ export async function POST(request: NextRequest) {
     // Qwen-TTS 返回音频 URL
     if (!ttsData.output?.audio?.url) {
       return NextResponse.json(
-        { error: 'Invalid response from TTS service' },
+        errorResponse(ErrorCodes.INTERNAL_ERROR, 'Invalid response from TTS service'),
         { status: 500 }
       );
     }
@@ -114,30 +117,31 @@ export async function POST(request: NextRequest) {
       const creditConsumed = await consumeCredits(userId, TTS_CREDITS_COST);
       if (!creditConsumed) {
         return NextResponse.json(
-          { error: 'Failed to consume credits' },
+          errorResponse(ErrorCodes.INTERNAL_ERROR, 'Failed to consume credits'),
           { status: 500 }
         );
       }
 
       const remainingCredits = await getCredits(userId);
 
-      return NextResponse.json({
-        success: true,
-        audio: base64Audio,
-        format: 'mp3',
-        credits: remainingCredits,
-      });
+      return NextResponse.json(
+        successResponse({
+          audio: base64Audio,
+          format: 'mp3',
+          credits: remainingCredits,
+        })
+      );
     } catch (downloadError) {
       console.error('Error downloading audio:', downloadError);
       return NextResponse.json(
-        { error: 'Failed to download audio from TTS service' },
+        errorResponse(ErrorCodes.INTERNAL_ERROR, 'Failed to download audio from TTS service'),
         { status: 500 }
       );
     }
   } catch (error) {
     console.error('TTS generation error:', error);
     return NextResponse.json(
-      { error: 'Failed to generate audio' },
+      errorResponse(ErrorCodes.INTERNAL_ERROR, 'Failed to generate audio'),
       { status: 500 }
     );
   }

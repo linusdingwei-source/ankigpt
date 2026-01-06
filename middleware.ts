@@ -11,6 +11,34 @@ export default auth((req) => {
   const pathname = req.nextUrl.pathname;
   const locales = ['zh', 'en', 'ja'];
   
+  // 处理 API 路由的 CORS
+  if (pathname.startsWith('/api/')) {
+    // 处理预检请求 (OPTIONS)
+    if (req.method === 'OPTIONS') {
+      return new NextResponse(null, {
+        status: 200,
+        headers: {
+          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+          'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Anonymous-Id',
+          'Access-Control-Max-Age': '86400',
+        },
+      });
+    }
+
+    // 对于 API 路由，跳过 auth 中间件的授权检查
+    // 让各个 API 端点自己处理认证（支持 Bearer Token）
+    // 但继续执行以添加 CORS 头
+    const response = NextResponse.next();
+    response.headers.set('Access-Control-Allow-Origin', '*');
+    response.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+    response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Anonymous-Id');
+    response.headers.set('Access-Control-Max-Age', '86400');
+    
+    // 对于 API 路由，直接返回（不进行国际化处理，也不进行 auth 授权检查）
+    return response;
+  }
+  
   // 修复错误的路径格式
   // 例如: /zh/dashboard/login -> /zh/login
   const pathParts = pathname.split('/').filter(Boolean);
@@ -42,7 +70,7 @@ export default auth((req) => {
 });
 
 export const config = {
-  // Match only internationalized pathnames
-  matcher: ['/', '/(zh|en|ja)/:path*']
+  // Match API routes and internationalized pathnames
+  matcher: ['/', '/(zh|en|ja)/:path*', '/api/:path*']
 };
 

@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <item
+        android:id="@+id/nav_tts"
+        android:icon="@android:drawable/ic_media_play"
+        android:title="@string/tts_title" />
+    <item
+        android:id="@+id/nav_generate"
+        android:icon="@android:drawable/ic_menu_add"
+        android:title="@string/generate_card" />
+    <item
+        android:id="@+id/nav_cards"
+        android:icon="@android:drawable/ic_menu_view"
+        android:title="@string/cards_title" />
+</menu>
+

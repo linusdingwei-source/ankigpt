@@ -1,5 +1,6 @@
 import { prisma } from './prisma';
 import { randomUUID } from 'crypto';
+import { decode } from 'next-auth/jwt';
 
 const ANONYMOUS_INITIAL_CREDITS = 50;
 
@@ -158,7 +159,48 @@ export async function mergeAnonymousUserData(anonymousUserId: string, realUserId
 }
 
 /**
- * 获取用户 ID（支持登录用户和临时用户）
+ * 从 Bearer Token 中获取用户 ID
+ * @param token JWT token
+ * @returns 用户 ID 或 null
+ */
+async function getUserIdFromToken(token: string): Promise<string | null> {
+  try {
+    const AUTH_SECRET = process.env.AUTH_SECRET;
+    if (!AUTH_SECRET) {
+      return null;
+    }
+
+    const decoded = await decode({
+      token,
+      secret: AUTH_SECRET,
+    });
+
+    if (decoded && decoded.id) {
+      return decoded.id as string;
+    }
+
+    return null;
+  } catch (error) {
+    console.error('Failed to decode token:', error);
+    return null;
+  }
+}
+
+/**
+ * 从请求中获取 Bearer Token
+ * @param request Request 对象
+ * @returns token 或 null
+ */
+export function getBearerTokenFromRequest(request: Request): string | null {
+  const authHeader = request.headers.get('authorization');
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return null;
+  }
+  return authHeader.substring(7);
+}
+
+/**
+ * 获取用户 ID（支持登录用户、Bearer Token 和临时用户）
  * @param session NextAuth session
  * @param request NextRequest 对象
  * @returns 用户 ID 或 null
@@ -167,9 +209,18 @@ export async function getUserId(
   session: { user?: { id?: string } } | null, 
   request: Request
 ): Promise<string | null> {
-  // 如果是登录用户，直接返回
+  // 如果是登录用户（通过 cookie），直接返回
   if (session?.user?.id) {
     return session.user.id as string;
+  }
+
+  // 尝试从 Bearer Token 获取用户 ID
+  const bearerToken = getBearerTokenFromRequest(request);
+  if (bearerToken) {
+    const userId = await getUserIdFromToken(bearerToken);
+    if (userId) {
+      return userId;
+    }
   }
 
   // 尝试获取临时用户 ID
