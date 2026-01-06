@@ -169,7 +169,7 @@ interface ApiService {
 
 // 使用
 val retrofit = Retrofit.Builder()
-    .baseUrl("https://your-domain.vercel.app")
+    .baseUrl("https://www.nihogogpt.com")
     .addConverterFactory(GsonConverterFactory.create())
     .build()
 
@@ -190,7 +190,7 @@ val client = OkHttpClient()
 
 // 登录
 val loginRequest = Request.Builder()
-    .url("https://your-domain.vercel.app/api/auth/mobile/login")
+    .url("https://www.nihogogpt.com/api/auth/mobile/login")
     .post(jsonRequestBody("""
         {
             "email": "user@example.com",
@@ -205,7 +205,7 @@ val token = loginData.getJSONObject("data").getString("token")
 
 // 使用 Token
 val ttsRequest = Request.Builder()
-    .url("https://your-domain.vercel.app/api/tts/generate")
+    .url("https://www.nihogogpt.com/api/tts/generate")
     .addHeader("Authorization", "Bearer $token")
     .post(jsonRequestBody("""
         {
@@ -255,12 +255,12 @@ val ttsResponse = client.newCall(ttsRequest).execute()
 
 ```bash
 # 登录
-curl -X POST https://your-domain.vercel.app/api/auth/mobile/login \
+curl -X POST https://www.nihogogpt.com/api/auth/mobile/login \
   -H "Content-Type: application/json" \
   -d '{"email":"user@example.com","password":"password123"}'
 
 # 使用 Token 调用 API
-curl -X POST https://your-domain.vercel.app/api/tts/generate \
+curl -X POST https://www.nihogogpt.com/api/tts/generate \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer <token>" \
   -d '{"text":"こんにちは"}'

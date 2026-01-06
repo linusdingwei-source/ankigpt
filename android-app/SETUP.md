@@ -27,15 +27,20 @@ cd /path/to/ankigpt-intel
 sdk.dir=/Users/YOUR_USERNAME/Library/Android/sdk
 ```
 
-### 3. 配置 API Base URL
+### 3. API Base URL 配置
 
-编辑 `app/src/main/java/com/ankigpt/data/api/RetrofitClient.kt`：
+API Base URL 已配置为生产环境：`https://www.nihogogpt.com`
+
+如需修改，编辑 `app/src/main/java/com/ankigpt/data/api/RetrofitClient.kt`：
 
 ```kotlin
-private const val BASE_URL = "https://your-domain.vercel.app"
+private const val BASE_URL = "https://www.nihogogpt.com"
 ```
 
-替换为你的 Vercel 部署地址。
+**可用域名：**
+- 主域名：`https://www.nihogogpt.com` (已配置)
+- Vercel 域名：`https://ankigpt-kappa.vercel.app`
+- 部署域名：`https://ankigpt-a94bjse7a-linus-dingweis-projects.vercel.app`
 
 ### 4. 构建项目
 

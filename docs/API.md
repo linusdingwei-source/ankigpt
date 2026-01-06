@@ -4,7 +4,8 @@
 
 ## 基础信息
 
-- **Base URL**: `https://your-domain.vercel.app` (生产环境) 或 `http://localhost:3000` (开发环境)
+- **Base URL**: `https://www.nihogogpt.com` (生产环境) 或 `http://localhost:3000` (开发环境)
+- **备用域名**: `https://ankigpt-kappa.vercel.app`
 - **Content-Type**: `application/json`
 - **字符编码**: UTF-8
 
@@ -488,7 +489,7 @@ X-Anonymous-Id: <uuid>
 ```kotlin
 // 登录
 val loginRequest = Request.Builder()
-    .url("https://your-domain.vercel.app/api/auth/mobile/login")
+    .url("https://www.nihogogpt.com/api/auth/mobile/login")
     .post(jsonRequestBody("""
         {
             "email": "user@example.com",
@@ -503,7 +504,7 @@ val token = loginData.getJSONObject("data").getString("token")
 
 // 使用 Token 调用 API
 val ttsRequest = Request.Builder()
-    .url("https://your-domain.vercel.app/api/tts/generate")
+    .url("https://www.nihogogpt.com/api/tts/generate")
     .addHeader("Authorization", "Bearer $token")
     .post(jsonRequestBody("""
         {
@@ -517,7 +518,7 @@ val ttsRequest = Request.Builder()
 
 ```javascript
 // 登录
-const loginResponse = await fetch('https://your-domain.vercel.app/api/auth/mobile/login', {
+const loginResponse = await fetch('https://www.nihogogpt.com/api/auth/mobile/login', {
   method: 'POST',
   headers: {
     'Content-Type': 'application/json',
@@ -532,7 +533,7 @@ const loginData = await loginResponse.json();
 const token = loginData.data.token;
 
 // 使用 Token 调用 API
-const ttsResponse = await fetch('https://your-domain.vercel.app/api/tts/generate', {
+const ttsResponse = await fetch('https://www.nihogogpt.com/api/tts/generate', {
   method: 'POST',
   headers: {
     'Content-Type': 'application/json',

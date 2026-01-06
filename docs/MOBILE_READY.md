@@ -133,19 +133,19 @@ Authorization: Bearer <token>
 
 ```bash
 # 1. 登录获取 Token
-TOKEN=$(curl -X POST https://your-domain.vercel.app/api/auth/mobile/login \
+TOKEN=$(curl -X POST https://www.nihogogpt.com/api/auth/mobile/login \
   -H "Content-Type: application/json" \
   -d '{"email":"user@example.com","password":"password123"}' \
   | jq -r '.data.token')
 
 # 2. 测试 TTS
-curl -X POST https://your-domain.vercel.app/api/tts/generate \
+curl -X POST https://www.nihogogpt.com/api/tts/generate \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer $TOKEN" \
   -d '{"text":"こんにちは"}'
 
 # 3. 测试卡片生成
-curl -X POST https://your-domain.vercel.app/api/cards/generate \
+curl -X POST https://www.nihogogpt.com/api/cards/generate \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer $TOKEN" \
   -d '{
@@ -156,7 +156,7 @@ curl -X POST https://your-domain.vercel.app/api/cards/generate \
   }'
 
 # 4. 测试卡片列表
-curl -X GET "https://your-domain.vercel.app/api/cards?page=1&limit=20" \
+curl -X GET "https://www.nihogogpt.com/api/cards?page=1&limit=20" \
   -H "Authorization: Bearer $TOKEN"
 ```
 

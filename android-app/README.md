@@ -45,13 +45,19 @@ android-app/
 
 ## 配置
 
-### 1. 更新 API Base URL
+### 1. API Base URL
 
-在 `app/src/main/java/com/ankigpt/data/api/RetrofitClient.kt` 中更新：
+已配置为生产环境地址：`https://www.nihogogpt.com`
+
+如需修改，在 `app/src/main/java/com/ankigpt/data/api/RetrofitClient.kt` 中更新：
 
 ```kotlin
-private const val BASE_URL = "https://your-domain.vercel.app"
+private const val BASE_URL = "https://www.nihogogpt.com"
 ```
+
+其他可用域名：
+- `https://ankigpt-kappa.vercel.app`
+- `https://ankigpt-a94bjse7a-linus-dingweis-projects.vercel.app`
 
 ### 2. 构建项目
 

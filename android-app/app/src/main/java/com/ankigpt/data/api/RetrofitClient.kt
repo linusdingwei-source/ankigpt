@@ -10,8 +10,10 @@ import java.util.concurrent.TimeUnit
  * Retrofit 客户端配置
  */
 object RetrofitClient {
-    // TODO: 替换为实际的 Vercel 部署地址
-    private const val BASE_URL = "https://your-domain.vercel.app"
+    // Vercel 生产环境地址
+    // 主域名：https://www.nihogogpt.com
+    // 备用域名：https://ankigpt-kappa.vercel.app
+    private const val BASE_URL = "https://www.nihogogpt.com"
     
     private val loggingInterceptor = HttpLoggingInterceptor().apply {
         level = HttpLoggingInterceptor.Level.BODY

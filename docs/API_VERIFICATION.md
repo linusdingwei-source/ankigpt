@@ -106,18 +106,18 @@
 
 ```bash
 # 1. 登录
-curl -X POST https://your-domain.vercel.app/api/auth/mobile/login \
+curl -X POST https://www.nihogogpt.com/api/auth/mobile/login \
   -H "Content-Type: application/json" \
   -d '{"email":"user@example.com","password":"password123"}'
 
 # 2. 使用返回的 token 调用 TTS API
-curl -X POST https://your-domain.vercel.app/api/tts/generate \
+curl -X POST https://www.nihogogpt.com/api/tts/generate \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer <token>" \
   -d '{"text":"こんにちは"}'
 
 # 3. 生成卡片
-curl -X POST https://your-domain.vercel.app/api/cards/generate \
+curl -X POST https://www.nihogogpt.com/api/cards/generate \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer <token>" \
   -d '{
@@ -128,11 +128,11 @@ curl -X POST https://your-domain.vercel.app/api/cards/generate \
   }'
 
 # 4. 获取卡片列表
-curl -X GET "https://your-domain.vercel.app/api/cards?page=1&limit=20" \
+curl -X GET "https://www.nihogogpt.com/api/cards?page=1&limit=20" \
   -H "Authorization: Bearer <token>"
 
 # 5. 获取 Credits
-curl -X GET https://your-domain.vercel.app/api/user/credits \
+curl -X GET https://www.nihogogpt.com/api/user/credits \
   -H "Authorization: Bearer <token>"
 ```
 
