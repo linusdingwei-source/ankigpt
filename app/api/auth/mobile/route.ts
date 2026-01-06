@@ -21,6 +21,7 @@ async function generateMobileToken(userId: string, email: string): Promise<strin
       sub: userId,
     },
     secret: AUTH_SECRET as string,
+    salt: '', // Empty salt for JWT encoding
     maxAge: 30 * 24 * 60 * 60, // 30 days
   });
   return token;
