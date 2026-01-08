@@ -61,9 +61,19 @@ class CardsFragment : Fragment() {
     }
     
     private fun setupObservers() {
-        lifecycleScope.launch {
+        // 使用 viewLifecycleOwner.lifecycleScope 确保当 view 被销毁时协程自动取消
+        viewLifecycleOwner.lifecycleScope.launch {
             viewModel.cardsState.collect { result ->
+                // 检查 binding 是否仍然有效
+                val binding = _binding ?: return@collect
+                
                 when (result) {
+                    null -> {
+                        // 初始状态：隐藏 loading，显示空状态提示
+                        binding.progressBar.visibility = View.GONE
+                        binding.errorText.visibility = View.GONE
+                        binding.emptyText.visibility = View.VISIBLE
+                    }
                     is Result.Loading -> {
                         binding.progressBar.visibility = View.VISIBLE
                         binding.errorText.visibility = View.GONE
@@ -98,9 +108,11 @@ class CardsFragment : Fragment() {
             override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
             
             override fun afterTextChanged(s: Editable?) {
-                // 防抖搜索
-                lifecycleScope.launch {
+                // 防抖搜索 - 使用 viewLifecycleOwner 确保当 view 被销毁时协程自动取消
+                viewLifecycleOwner.lifecycleScope.launch {
                     delay(500)
+                    // 检查 binding 是否仍然有效
+                    _binding ?: return@launch
                     val query = s?.toString()?.trim() ?: ""
                     viewModel.loadCards(page = 1, search = if (query.isEmpty()) null else query)
                 }

@@ -20,11 +20,13 @@ class CardViewModel(
     private val tokenManager: TokenManager
 ) : ViewModel() {
     
-    private val _generateState = MutableStateFlow<Result<CardData>>(Result.Loading)
-    val generateState: StateFlow<Result<CardData>> = _generateState.asStateFlow()
+    // 初始状态为 null，表示还没有进行任何操作
+    private val _generateState = MutableStateFlow<Result<CardData>?>(null)
+    val generateState: StateFlow<Result<CardData>?> = _generateState.asStateFlow()
     
-    private val _cardsState = MutableStateFlow<Result<CardsResponse>>(Result.Loading)
-    val cardsState: StateFlow<Result<CardsResponse>> = _cardsState.asStateFlow()
+    // 初始状态为 null，表示还没有进行任何操作
+    private val _cardsState = MutableStateFlow<Result<CardsResponse>?>(null)
+    val cardsState: StateFlow<Result<CardsResponse>?> = _cardsState.asStateFlow()
     
     private val _currentPage = MutableStateFlow(1)
     val currentPage: StateFlow<Int> = _currentPage.asStateFlow()

@@ -46,13 +46,25 @@ class TTSFragment : Fragment() {
     }
     
     private fun setupObservers() {
-        lifecycleScope.launch {
+        // 使用 viewLifecycleOwner.lifecycleScope 确保当 view 被销毁时协程自动取消
+        viewLifecycleOwner.lifecycleScope.launch {
             viewModel.ttsState.collect { result ->
+                // 检查 binding 是否仍然有效
+                val binding = _binding ?: return@collect
+                
                 when (result) {
+                    null -> {
+                        // 初始状态：隐藏 loading，启用按钮
+                        binding.progressBar.visibility = View.GONE
+                        binding.errorText.visibility = View.GONE
+                        binding.generateButton.isEnabled = true
+                        binding.playButton.isEnabled = false
+                    }
                     is Result.Loading -> {
                         binding.progressBar.visibility = View.VISIBLE
                         binding.errorText.visibility = View.GONE
                         binding.generateButton.isEnabled = false
+                        binding.playButton.isEnabled = false
                     }
                     is Result.Success -> {
                         binding.progressBar.visibility = View.GONE
@@ -99,7 +111,7 @@ class TTSFragment : Fragment() {
         
         binding.playButton.setOnClickListener {
             // 重新播放当前音频
-            lifecycleScope.launch {
+            viewLifecycleOwner.lifecycleScope.launch {
                 val result = viewModel.ttsState.value
                 if (result is Result.Success) {
                     result.data.audio?.let { audio ->

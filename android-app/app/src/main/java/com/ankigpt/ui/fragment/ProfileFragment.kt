@@ -1,30 +1,30 @@
 package com.ankigpt.ui.fragment
 
+import android.content.Intent
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.Toast
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
-import androidx.lifecycle.lifecycleScope
-import com.ankigpt.databinding.FragmentGenerateCardBinding
-import com.ankigpt.ui.viewmodel.CardViewModel
+import com.ankigpt.databinding.FragmentProfileBinding
+import com.ankigpt.ui.LoginActivity
+import com.ankigpt.ui.viewmodel.ProfileViewModel
 import com.ankigpt.util.Result
 import com.ankigpt.util.TokenManager
 import kotlinx.coroutines.launch
 
 /**
- * 卡片生成 Fragment
+ * 用户信息 Fragment
  */
-class GenerateCardFragment : Fragment() {
+class ProfileFragment : Fragment() {
     
-    private var _binding: FragmentGenerateCardBinding? = null
+    private var _binding: FragmentProfileBinding? = null
     private val binding get() = _binding!!
     
     private lateinit var tokenManager: TokenManager
-    private val viewModel: CardViewModel by viewModels {
-        CardViewModelFactory(tokenManager)
+    private val viewModel: ProfileViewModel by viewModels {
+        ProfileViewModelFactory(tokenManager)
     }
     
     override fun onCreateView(
@@ -32,7 +32,7 @@ class GenerateCardFragment : Fragment() {
         container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View {
-        _binding = FragmentGenerateCardBinding.inflate(inflater, container, false)
+        _binding = FragmentProfileBinding.inflate(inflater, container, false)
         tokenManager = TokenManager(requireContext())
         return binding.root
     }
@@ -42,47 +42,43 @@ class GenerateCardFragment : Fragment() {
         
         setupObservers()
         setupClickListeners()
+        
+        // 加载用户信息
+        viewModel.loadUserInfo()
     }
     
     private fun setupObservers() {
         // 使用 viewLifecycleOwner.lifecycleScope 确保当 view 被销毁时协程自动取消
         viewLifecycleOwner.lifecycleScope.launch {
-            viewModel.generateState.collect { result ->
+            viewModel.userState.collect { result ->
                 // 检查 binding 是否仍然有效
                 val binding = _binding ?: return@collect
                 
                 when (result) {
                     null -> {
-                        // 初始状态：隐藏 loading，启用按钮，隐藏预览
+                        // 初始状态：隐藏 loading，显示默认信息
                         binding.progressBar.visibility = View.GONE
                         binding.errorText.visibility = View.GONE
-                        binding.previewCard.visibility = View.GONE
-                        binding.generateButton.isEnabled = true
                     }
                     is Result.Loading -> {
                         binding.progressBar.visibility = View.VISIBLE
                         binding.errorText.visibility = View.GONE
-                        binding.previewCard.visibility = View.GONE
-                        binding.generateButton.isEnabled = false
                     }
                     is Result.Success -> {
                         binding.progressBar.visibility = View.GONE
                         binding.errorText.visibility = View.GONE
-                        binding.generateButton.isEnabled = true
                         
-                        // 显示预览
-                        binding.previewCard.visibility = View.VISIBLE
-                        binding.frontContentText.text = result.data.frontContent
-                        binding.backContentText.text = result.data.backContent
-                        
-                        Toast.makeText(requireContext(), "卡片生成成功", Toast.LENGTH_SHORT).show()
+                        // 显示用户信息
+                        val user = result.data
+                        binding.emailText.text = user.email
+                        binding.creditsText.text = user.credits.toString()
+                        binding.userIdText.text = "用户ID: ${user.id}"
+                        binding.userIdText.visibility = View.VISIBLE
                     }
                     is Result.Error -> {
                         binding.progressBar.visibility = View.GONE
                         binding.errorText.visibility = View.VISIBLE
                         binding.errorText.text = result.message
-                        binding.generateButton.isEnabled = true
-                        binding.previewCard.visibility = View.GONE
                     }
                 }
             }
@@ -90,18 +86,21 @@ class GenerateCardFragment : Fragment() {
     }
     
     private fun setupClickListeners() {
-        binding.generateButton.setOnClickListener {
-            val text = binding.textEditText.text.toString().trim()
-            if (text.isEmpty()) {
-                binding.textLayout.error = "请输入日文句子"
-                return@setOnClickListener
+        binding.refreshButton.setOnClickListener {
+            viewModel.loadUserInfo()
+        }
+        
+        binding.logoutButton.setOnClickListener {
+            // 清除 token 并跳转到登录页面
+            viewLifecycleOwner.lifecycleScope.launch {
+                tokenManager.clearToken()
+                
+                // 跳转到登录页面
+                val intent = Intent(requireContext(), LoginActivity::class.java)
+                intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+                startActivity(intent)
+                requireActivity().finish()
             }
-            
-            val includePronunciation = binding.includePronunciationCheckBox.isChecked
-            viewModel.generateCard(
-                text = text,
-                includePronunciation = includePronunciation
-            )
         }
     }
     
@@ -112,15 +111,15 @@ class GenerateCardFragment : Fragment() {
 }
 
 /**
- * Card ViewModel Factory
+ * Profile ViewModel Factory
  */
-class CardViewModelFactory(
+class ProfileViewModelFactory(
     private val tokenManager: TokenManager
 ) : androidx.lifecycle.ViewModelProvider.Factory {
     override fun <T : androidx.lifecycle.ViewModel> create(modelClass: Class<T>): T {
-        if (modelClass.isAssignableFrom(CardViewModel::class.java)) {
+        if (modelClass.isAssignableFrom(ProfileViewModel::class.java)) {
             @Suppress("UNCHECKED_CAST")
-            return CardViewModel(tokenManager = tokenManager) as T
+            return ProfileViewModel(tokenManager = tokenManager) as T
         }
         throw IllegalArgumentException("Unknown ViewModel class")
     }

@@ -9,6 +9,7 @@ import com.ankigpt.R
 import com.ankigpt.databinding.ActivityMainBinding
 import com.ankigpt.ui.fragment.CardsFragment
 import com.ankigpt.ui.fragment.GenerateCardFragment
+import com.ankigpt.ui.fragment.ProfileFragment
 import com.ankigpt.ui.fragment.TTSFragment
 import com.ankigpt.util.TokenManager
 import kotlinx.coroutines.launch
@@ -55,6 +56,10 @@ class MainActivity : AppCompatActivity() {
                 }
                 R.id.nav_cards -> {
                     replaceFragment(CardsFragment())
+                    true
+                }
+                R.id.nav_profile -> {
+                    replaceFragment(ProfileFragment())
                     true
                 }
                 else -> false

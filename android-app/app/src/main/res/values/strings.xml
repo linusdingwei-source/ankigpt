@@ -25,6 +25,14 @@
     <string name="preview">预览</string>
     <string name="save">保存</string>
     
+    <!-- Profile -->
+    <string name="profile_title">我的</string>
+    <string name="user_info">用户信息</string>
+    <string name="email_label">邮箱：</string>
+    <string name="credits_label">Credits：</string>
+    <string name="refresh_info">刷新信息</string>
+    <string name="logout">退出登录</string>
+    
     <!-- Common -->
     <string name="loading">加载中...</string>
     <string name="error">错误</string>

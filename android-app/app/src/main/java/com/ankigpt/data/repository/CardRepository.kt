@@ -37,7 +37,17 @@ class CardRepository(
             } else {
                 val error = response.body()?.error
                 when (error?.code) {
-                    "INSUFFICIENT_CREDITS" -> Result.Error("Credits 不足")
+                    "INSUFFICIENT_CREDITS" -> {
+                        val details = error.details
+                        val credits = details?.get("credits") as? Number
+                        val required = details?.get("required") as? Number
+                        val message = if (credits != null && required != null) {
+                            "Credits 不足（当前：$credits，需要：$required）"
+                        } else {
+                            error.message ?: "Credits 不足"
+                        }
+                        Result.Error(message)
+                    }
                     else -> Result.Error(error?.message ?: "生成失败")
                 }
             }

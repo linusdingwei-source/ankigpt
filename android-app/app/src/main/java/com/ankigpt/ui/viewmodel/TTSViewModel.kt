@@ -23,8 +23,9 @@ class TTSViewModel(
     private val tokenManager: TokenManager
 ) : ViewModel() {
     
-    private val _ttsState = MutableStateFlow<Result<TTSData>>(Result.Loading)
-    val ttsState: StateFlow<Result<TTSData>> = _ttsState.asStateFlow()
+    // 初始状态为 null，表示还没有进行任何操作
+    private val _ttsState = MutableStateFlow<Result<TTSData>?>(null)
+    val ttsState: StateFlow<Result<TTSData>?> = _ttsState.asStateFlow()
     
     private var mediaPlayer: MediaPlayer? = null
     private val _isPlaying = MutableStateFlow(false)

@@ -12,6 +12,7 @@ const ANONYMOUS_INITIAL_CREDITS = 50;
 export async function getOrCreateAnonymousUser(anonymousId?: string): Promise<{ userId: string; anonymousId: string }> {
   // 如果提供了 anonymousId，尝试查找现有用户
   if (anonymousId) {
+    // 先通过 anonymousId 查找
     const existingUser = await prisma.user.findUnique({
       where: { anonymousId },
       select: { id: true },
@@ -20,21 +21,66 @@ export async function getOrCreateAnonymousUser(anonymousId?: string): Promise<{ 
     if (existingUser) {
       return { userId: existingUser.id, anonymousId };
     }
+
+    // 如果 anonymousId 查找失败，尝试通过 email 查找（防止并发创建导致的问题）
+    const email = `anonymous_${anonymousId}@temp.local`;
+    const existingUserByEmail = await prisma.user.findUnique({
+      where: { email },
+      select: { id: true, anonymousId: true },
+    });
+
+    if (existingUserByEmail) {
+      // 如果找到用户但 anonymousId 不匹配，更新 anonymousId
+      if (existingUserByEmail.anonymousId !== anonymousId) {
+        await prisma.user.update({
+          where: { id: existingUserByEmail.id },
+          data: { anonymousId },
+        });
+      }
+      return { userId: existingUserByEmail.id, anonymousId };
+    }
   }
 
   // 创建新的临时用户
   const newAnonymousId = anonymousId || randomUUID();
-  const user = await prisma.user.create({
-    data: {
-      email: `anonymous_${newAnonymousId}@temp.local`,
-      name: 'Guest User',
-      isAnonymous: true,
-      anonymousId: newAnonymousId,
-      credits: ANONYMOUS_INITIAL_CREDITS,
-    },
-  });
+  const email = `anonymous_${newAnonymousId}@temp.local`;
+  
+  try {
+    const user = await prisma.user.create({
+      data: {
+        email,
+        name: 'Guest User',
+        isAnonymous: true,
+        anonymousId: newAnonymousId,
+        credits: ANONYMOUS_INITIAL_CREDITS,
+      },
+    });
 
-  return { userId: user.id, anonymousId: newAnonymousId };
+    return { userId: user.id, anonymousId: newAnonymousId };
+  } catch (error: unknown) {
+    // 如果创建失败（可能是唯一约束冲突），尝试查找现有用户
+    if (error && typeof error === 'object' && 'code' in error && error.code === 'P2002') {
+      // 唯一约束冲突，尝试查找现有用户
+      const existingUser = await prisma.user.findUnique({
+        where: { email },
+        select: { id: true, anonymousId: true },
+      });
+
+      if (existingUser) {
+        // 如果找到用户但 anonymousId 不匹配，更新 anonymousId
+        if (existingUser.anonymousId !== newAnonymousId) {
+          await prisma.user.update({
+            where: { id: existingUser.id },
+            data: { anonymousId: newAnonymousId },
+          });
+        }
+        return { userId: existingUser.id, anonymousId: newAnonymousId };
+      }
+    }
+    
+    // 如果无法处理，重新抛出错误
+    throw error;
+  }
 }
 
 /**
