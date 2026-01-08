@@ -1,5 +1,10 @@
 package com.ankigpt.data.api
 
+import android.content.Context
+import com.ankigpt.util.AnonymousIdManager
+import com.ankigpt.util.TokenManager
+import kotlinx.coroutines.runBlocking
+import okhttp3.Interceptor
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
@@ -19,8 +24,55 @@ object RetrofitClient {
     // 备用域名：https://ankigpt-kappa.vercel.app
     private const val BASE_URL = "https://www.nihogogpt.com"
     
+    private var context: Context? = null
+    
+    /**
+     * 初始化 Retrofit 客户端（需要 Context 来获取匿名 ID）
+     */
+    fun initialize(appContext: Context) {
+        context = appContext.applicationContext
+    }
+    
     private val loggingInterceptor = HttpLoggingInterceptor().apply {
         level = HttpLoggingInterceptor.Level.BODY
+    }
+    
+    // 创建认证拦截器，自动添加 Token 或匿名 ID
+    private val authInterceptor = Interceptor { chain ->
+        val originalRequest = chain.request()
+        val newRequestBuilder = originalRequest.newBuilder()
+        
+        // 检查请求是否已经有 Authorization header（避免重复添加）
+        val hasAuthHeader = originalRequest.header("Authorization") != null
+        
+        if (!hasAuthHeader) {
+            // 尝试添加 Bearer Token
+            val token = context?.let { ctx ->
+                val tokenManager = TokenManager(ctx)
+                kotlinx.coroutines.runBlocking {
+                    tokenManager.getTokenSync()
+                }
+            }
+            
+            if (token != null) {
+                // 如果已登录，添加 Bearer Token
+                newRequestBuilder.header("Authorization", "Bearer $token")
+            } else {
+                // 如果未登录，添加匿名 ID
+                val anonymousId = context?.let { ctx ->
+                    val anonymousIdManager = AnonymousIdManager(ctx)
+                    kotlinx.coroutines.runBlocking {
+                        anonymousIdManager.getOrCreateAnonymousId()
+                    }
+                }
+                
+                if (anonymousId != null) {
+                    newRequestBuilder.header("X-Anonymous-Id", anonymousId)
+                }
+            }
+        }
+        
+        chain.proceed(newRequestBuilder.build())
     }
     
     // 创建信任所有证书的 TrustManager（仅用于开发环境）
@@ -37,22 +89,38 @@ object RetrofitClient {
         init(null, trustAllCerts, java.security.SecureRandom())
     }
     
-    private val okHttpClient = OkHttpClient.Builder()
-        .addInterceptor(loggingInterceptor)
-        .sslSocketFactory(sslContext.socketFactory, trustAllCerts[0] as X509TrustManager)
-        .hostnameVerifier { _, _ -> true } // 信任所有主机名（仅用于开发）
-        .connectTimeout(30, TimeUnit.SECONDS)
-        .readTimeout(30, TimeUnit.SECONDS)
-        .writeTimeout(30, TimeUnit.SECONDS)
-        .build()
+    private var okHttpClient: OkHttpClient? = null
     
-    private val retrofit = Retrofit.Builder()
-        .baseUrl(BASE_URL)
-        .client(okHttpClient)
-        .addConverterFactory(GsonConverterFactory.create())
-        .build()
+    private fun getOkHttpClient(): OkHttpClient {
+        if (okHttpClient == null) {
+            okHttpClient = OkHttpClient.Builder()
+                .addInterceptor(authInterceptor) // 先添加认证拦截器
+                .addInterceptor(loggingInterceptor)
+                .sslSocketFactory(sslContext.socketFactory, trustAllCerts[0] as X509TrustManager)
+                .hostnameVerifier { _, _ -> true } // 信任所有主机名（仅用于开发）
+                .connectTimeout(30, TimeUnit.SECONDS)
+                .readTimeout(30, TimeUnit.SECONDS)
+                .writeTimeout(30, TimeUnit.SECONDS)
+                .build()
+        }
+        return okHttpClient!!
+    }
     
-    val apiService: ApiService = retrofit.create(ApiService::class.java)
+    private var retrofit: Retrofit? = null
+    
+    private fun getRetrofit(): Retrofit {
+        if (retrofit == null) {
+            retrofit = Retrofit.Builder()
+                .baseUrl(BASE_URL)
+                .client(getOkHttpClient())
+                .addConverterFactory(GsonConverterFactory.create())
+                .build()
+        }
+        return retrofit!!
+    }
+    
+    val apiService: ApiService
+        get() = getRetrofit().create(ApiService::class.java)
     
     /**
      * 更新 Base URL（用于切换环境）

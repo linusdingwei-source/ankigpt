@@ -9,6 +9,7 @@ import com.ankigpt.R
 import com.ankigpt.databinding.ActivityMainBinding
 import com.ankigpt.ui.fragment.CardsFragment
 import com.ankigpt.ui.fragment.GenerateCardFragment
+import com.ankigpt.data.api.RetrofitClient
 import com.ankigpt.ui.fragment.ProfileFragment
 import com.ankigpt.ui.fragment.TTSFragment
 import com.ankigpt.util.TokenManager
@@ -29,13 +30,8 @@ class MainActivity : AppCompatActivity() {
         
         tokenManager = TokenManager(this)
         
-        // 检查登录状态
-        lifecycleScope.launch {
-            if (!tokenManager.isLoggedIn()) {
-                navigateToLogin()
-                return@launch
-            }
-        }
+        // 初始化 Retrofit 客户端（需要 Context 来管理匿名 ID）
+        RetrofitClient.initialize(this)
         
         setSupportActionBar(binding.toolbar)
         
@@ -71,11 +67,5 @@ class MainActivity : AppCompatActivity() {
         supportFragmentManager.beginTransaction()
             .replace(R.id.fragmentContainer, fragment)
             .commit()
-    }
-    
-    private fun navigateToLogin() {
-        val intent = Intent(this, LoginActivity::class.java)
-        startActivity(intent)
-        finish()
     }
 }

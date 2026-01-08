@@ -37,13 +37,9 @@ class TTSViewModel(
     fun generateTTS(text: String) {
         viewModelScope.launch {
             _ttsState.value = Result.Loading
-            val token = tokenManager.getTokenSync()
-            if (token == null) {
-                _ttsState.value = Result.Error("请先登录")
-                return@launch
-            }
             
-            when (val result = ttsRepository.generateTTS(token, text)) {
+            // 拦截器会自动处理认证（Token 或匿名 ID）
+            when (val result = ttsRepository.generateTTS("", text)) {
                 is Result.Success -> {
                     _ttsState.value = result
                 }

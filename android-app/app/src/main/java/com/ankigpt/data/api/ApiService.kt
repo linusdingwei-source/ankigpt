@@ -18,13 +18,12 @@ interface ApiService {
     suspend fun register(@Body request: RegisterRequest): Response<ApiResponse<LoginData>>
     
     @GET("/api/mobile/auth/session")
-    suspend fun getSession(@Header("Authorization") token: String): Response<ApiResponse<SessionData>>
+    suspend fun getSession(): Response<ApiResponse<SessionData>>
     
     // ========== TTS 相关 ==========
     
     @POST("/api/tts/generate")
     suspend fun generateTTS(
-        @Header("Authorization") token: String,
         @Body request: TTSRequest
     ): Response<ApiResponse<TTSData>>
     
@@ -32,13 +31,11 @@ interface ApiService {
     
     @POST("/api/cards/generate")
     suspend fun generateCard(
-        @Header("Authorization") token: String,
         @Body request: CardGenerateRequest
     ): Response<ApiResponse<CardData>>
     
     @GET("/api/cards")
     suspend fun getCards(
-        @Header("Authorization") token: String,
         @Query("page") page: Int = 1,
         @Query("limit") limit: Int = 20,
         @Query("search") search: String? = null,
@@ -47,16 +44,13 @@ interface ApiService {
     
     @GET("/api/cards/{id}")
     suspend fun getCard(
-        @Header("Authorization") token: String,
         @Path("id") id: String
     ): Response<ApiResponse<CardData>>
     
     // ========== 用户相关 ==========
     
     @GET("/api/user/credits")
-    suspend fun getCredits(
-        @Header("Authorization") token: String
-    ): Response<ApiResponse<CreditsData>>
+    suspend fun getCredits(): Response<ApiResponse<CreditsData>>
 }
 
 data class CreditsData(

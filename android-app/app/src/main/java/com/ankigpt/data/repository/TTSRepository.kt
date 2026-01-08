@@ -18,7 +18,8 @@ class TTSRepository(
      */
     suspend fun generateTTS(token: String, text: String): Result<TTSData> {
         return try {
-            val response = apiService.generateTTS("Bearer $token", TTSRequest(text))
+            // 拦截器会自动添加 Authorization 或 X-Anonymous-Id
+            val response = apiService.generateTTS(TTSRequest(text))
             if (response.isSuccessful && response.body()?.success == true) {
                 val data = response.body()?.data
                 if (data != null) {

@@ -42,11 +42,9 @@ class CardViewModel(
     ) {
         viewModelScope.launch {
             _generateState.value = Result.Loading
-            val token = tokenManager.getTokenSync()
-            if (token == null) {
-                _generateState.value = Result.Error("请先登录")
-                return@launch
-            }
+            
+            // 拦截器会自动处理认证（Token 或匿名 ID）
+            val token = tokenManager.getTokenSync() ?: ""
             
             when (val result = cardRepository.generateCard(
                 token, text, cardType, deckName, includePronunciation
@@ -70,11 +68,9 @@ class CardViewModel(
     fun loadCards(page: Int = 1, search: String? = null, deck: String? = null) {
         viewModelScope.launch {
             _cardsState.value = Result.Loading
-            val token = tokenManager.getTokenSync()
-            if (token == null) {
-                _cardsState.value = Result.Error("请先登录")
-                return@launch
-            }
+            
+            // 拦截器会自动处理认证（Token 或匿名 ID）
+            val token = tokenManager.getTokenSync() ?: ""
             
             when (val result = cardRepository.getCards(token, page, 20, search, deck)) {
                 is Result.Success -> {

@@ -44,13 +44,33 @@ class ProfileFragment : Fragment() {
         setupObservers()
         setupClickListeners()
         
-        // 加载用户信息
-        viewModel.loadUserInfo()
+        // 如果已登录，加载用户信息
+        viewLifecycleOwner.lifecycleScope.launch {
+            if (tokenManager.isLoggedIn()) {
+                viewModel.loadUserInfo()
+            }
+        }
     }
     
     private fun setupObservers() {
         // 使用 viewLifecycleOwner.lifecycleScope 确保当 view 被销毁时协程自动取消
         viewLifecycleOwner.lifecycleScope.launch {
+            // 检查登录状态
+            val isLoggedIn = tokenManager.isLoggedIn()
+            
+            if (!isLoggedIn) {
+                // 未登录状态：显示登录提示
+                val binding = _binding ?: return@launch
+                binding.progressBar.visibility = View.GONE
+                binding.errorText.visibility = View.GONE
+                binding.emailText.text = "未登录"
+                binding.creditsText.text = "-"
+                binding.userIdText.visibility = View.GONE
+                binding.logoutButton.text = "登录"
+                return@launch
+            }
+            
+            // 已登录：加载用户信息
             viewModel.userState.collect { result ->
                 // 检查 binding 是否仍然有效
                 val binding = _binding ?: return@collect
@@ -92,15 +112,23 @@ class ProfileFragment : Fragment() {
         }
         
         binding.logoutButton.setOnClickListener {
-            // 清除 token 并跳转到登录页面
             viewLifecycleOwner.lifecycleScope.launch {
-                tokenManager.clearToken()
+                val isLoggedIn = tokenManager.isLoggedIn()
                 
-                // 跳转到登录页面
-                val intent = Intent(requireContext(), LoginActivity::class.java)
-                intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
-                startActivity(intent)
-                requireActivity().finish()
+                if (isLoggedIn) {
+                    // 已登录：退出登录
+                    tokenManager.clearToken()
+                    
+                    // 跳转到登录页面
+                    val intent = Intent(requireContext(), LoginActivity::class.java)
+                    intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+                    startActivity(intent)
+                    requireActivity().finish()
+                } else {
+                    // 未登录：跳转到登录页面
+                    val intent = Intent(requireContext(), LoginActivity::class.java)
+                    startActivity(intent)
+                }
             }
         }
     }

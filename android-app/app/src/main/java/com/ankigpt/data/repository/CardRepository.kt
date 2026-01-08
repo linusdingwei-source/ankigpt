@@ -23,8 +23,8 @@ class CardRepository(
         includePronunciation: Boolean = true
     ): Result<CardData> {
         return try {
+            // 拦截器会自动添加 Authorization 或 X-Anonymous-Id
             val response = apiService.generateCard(
-                "Bearer $token",
                 CardGenerateRequest(text, cardType, deckName, includePronunciation)
             )
             if (response.isSuccessful && response.body()?.success == true) {
@@ -67,7 +67,8 @@ class CardRepository(
         deck: String? = null
     ): Result<CardsResponse> {
         return try {
-            val response = apiService.getCards("Bearer $token", page, limit, search, deck)
+            // 拦截器会自动添加 Authorization 或 X-Anonymous-Id
+            val response = apiService.getCards(page, limit, search, deck)
             if (response.isSuccessful && response.body()?.success == true) {
                 val data = response.body()?.data
                 if (data != null) {
@@ -89,7 +90,8 @@ class CardRepository(
      */
     suspend fun getCard(token: String, id: String): Result<CardData> {
         return try {
-            val response = apiService.getCard("Bearer $token", id)
+            // 拦截器会自动添加 Authorization 或 X-Anonymous-Id
+            val response = apiService.getCard(id)
             if (response.isSuccessful && response.body()?.success == true) {
                 val data = response.body()?.data
                 if (data != null) {

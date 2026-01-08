@@ -17,7 +17,8 @@ class UserRepository(
      */
     suspend fun getUserInfo(token: String): Result<UserInfo> {
         return try {
-            val response = apiService.getSession("Bearer $token")
+            // 拦截器会自动添加 Authorization 或 X-Anonymous-Id
+            val response = apiService.getSession()
             if (response.isSuccessful && response.body()?.success == true) {
                 val data = response.body()?.data
                 if (data != null && data.user != null) {
@@ -39,7 +40,8 @@ class UserRepository(
      */
     suspend fun getCredits(token: String): Result<Int> {
         return try {
-            val response = apiService.getCredits("Bearer $token")
+            // 拦截器会自动添加 Authorization 或 X-Anonymous-Id
+            val response = apiService.getCredits()
             if (response.isSuccessful && response.body()?.success == true) {
                 val data = response.body()?.data
                 if (data != null) {

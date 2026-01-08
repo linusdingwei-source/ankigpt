@@ -29,11 +29,9 @@ class ProfileViewModel(
     fun loadUserInfo() {
         viewModelScope.launch {
             _userState.value = Result.Loading
-            val token = tokenManager.getTokenSync()
-            if (token == null) {
-                _userState.value = Result.Error("请先登录")
-                return@launch
-            }
+            
+            // 拦截器会自动处理认证（Token 或匿名 ID）
+            val token = tokenManager.getTokenSync() ?: ""
             
             when (val result = userRepository.getUserInfo(token)) {
                 is Result.Success -> {
