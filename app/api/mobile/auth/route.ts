@@ -5,6 +5,10 @@ import bcrypt from 'bcryptjs';
 import { encode } from 'next-auth/jwt';
 import { successResponse, errorResponse, ErrorCodes } from '@/lib/api-response';
 
+// 强制该路由为动态路由，不进行缓存
+// 这对于处理 POST、PUT 等会改变数据的请求至关重要
+export const dynamic = 'force-dynamic';
+
 const AUTH_SECRET = process.env.AUTH_SECRET;
 if (!AUTH_SECRET) {
   throw new Error('AUTH_SECRET is not configured');
