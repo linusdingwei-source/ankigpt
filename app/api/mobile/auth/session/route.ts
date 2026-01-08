@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import { prisma } from '@/lib/prisma';
+import { getUserId } from '@/lib/anonymous-user';
 import { successResponse, errorResponse, ErrorCodes } from '@/lib/api-response';
 
 // 强制该路由为动态路由，不进行缓存
@@ -8,14 +9,15 @@ export const dynamic = 'force-dynamic';
 
 /**
  * GET /api/mobile/auth/session
- * 获取当前 session 信息
+ * 获取当前 session 信息（支持 Bearer Token 和 Cookie Session）
  */
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-export async function GET(_request: NextRequest) {
+export async function GET(request: NextRequest) {
   try {
     const session = await auth();
+    // 使用 getUserId 支持 Bearer Token 和 Cookie Session
+    const userId = await getUserId(session, request);
 
-    if (!session?.user) {
+    if (!userId) {
       return NextResponse.json(
         errorResponse(ErrorCodes.UNAUTHORIZED, 'Not authenticated'),
         { status: 401 }
@@ -23,7 +25,7 @@ export async function GET(_request: NextRequest) {
     }
 
     const user = await prisma.user.findUnique({
-      where: { id: session.user.id as string },
+      where: { id: userId },
       select: {
         id: true,
         email: true,
