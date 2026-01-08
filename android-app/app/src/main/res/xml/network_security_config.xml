@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<network-security-config>
+    <!-- 开发环境：信任所有证书（仅用于开发测试） -->
+    <base-config cleartextTrafficPermitted="true">
+        <trust-anchors>
+            <!-- 信任系统证书 -->
+            <certificates src="system" />
+            <!-- 信任用户安装的证书（用于开发测试） -->
+            <certificates src="user" />
+        </trust-anchors>
+    </base-config>
+    
+    <!-- 生产环境配置（如果需要） -->
+    <domain-config cleartextTrafficPermitted="false">
+        <domain includeSubdomains="true">www.nihogogpt.com</domain>
+        <domain includeSubdomains="true">ankigpt-kappa.vercel.app</domain>
+        <trust-anchors>
+            <certificates src="system" />
+        </trust-anchors>
+    </domain-config>
+</network-security-config>
+

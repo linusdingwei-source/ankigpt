@@ -78,7 +78,7 @@ X-Anonymous-Id: <uuid>
 
 ### 移动端登录
 
-**POST** `/api/auth/mobile/login`
+**POST** `/api/mobile/auth/login`
 
 请求体：
 ```json
@@ -115,7 +115,7 @@ X-Anonymous-Id: <uuid>
 
 ### 移动端注册
 
-**PUT** `/api/auth/mobile/register`
+**PUT** `/api/mobile/auth/register`
 
 请求体：
 ```json
@@ -145,7 +145,7 @@ X-Anonymous-Id: <uuid>
 
 ### 获取当前 Session
 
-**GET** `/api/auth/mobile/session`
+**GET** `/api/mobile/auth/session`
 
 需要认证：是（Bearer Token 或 Session Cookie）
 
@@ -489,7 +489,7 @@ X-Anonymous-Id: <uuid>
 ```kotlin
 // 登录
 val loginRequest = Request.Builder()
-    .url("https://www.nihogogpt.com/api/auth/mobile/login")
+    .url("https://www.nihogogpt.com/api/mobile/auth/login")
     .post(jsonRequestBody("""
         {
             "email": "user@example.com",
@@ -518,7 +518,7 @@ val ttsRequest = Request.Builder()
 
 ```javascript
 // 登录
-const loginResponse = await fetch('https://www.nihogogpt.com/api/auth/mobile/login', {
+const loginResponse = await fetch('https://www.nihogogpt.com/api/mobile/auth/login', {
   method: 'POST',
   headers: {
     'Content-Type': 'application/json',

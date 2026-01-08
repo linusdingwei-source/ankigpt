@@ -78,8 +78,8 @@ cd android-app
 
 所有 API 端点都支持 Bearer Token 认证：
 
-- `POST /api/auth/mobile/login` - 登录
-- `PUT /api/auth/mobile/register` - 注册
+- `POST /api/mobile/auth/login` - 登录
+- `PUT /api/mobile/auth/register` - 注册
 - `POST /api/tts/generate` - TTS 生成
 - `POST /api/cards/generate` - 卡片生成
 - `GET /api/cards` - 卡片列表

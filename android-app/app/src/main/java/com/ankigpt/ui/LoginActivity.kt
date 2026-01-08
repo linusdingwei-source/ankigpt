@@ -42,29 +42,68 @@ class LoginActivity : AppCompatActivity() {
         
         setupObservers()
         setupClickListeners()
+        setupInputListeners()
+        
+        // 确保输入框可以正常使用
+        binding.emailEditText.isEnabled = true
+        binding.emailEditText.isFocusable = true
+        binding.emailEditText.isFocusableInTouchMode = true
+        binding.passwordEditText.isEnabled = true
+        binding.passwordEditText.isFocusable = true
+        binding.passwordEditText.isFocusableInTouchMode = true
+        
+        // 确保按钮初始状态是启用的
+        binding.loginButton.isEnabled = true
+    }
+    
+    private fun setupInputListeners() {
+        // 监听输入变化，动态启用/禁用登录按钮
+        binding.emailEditText.addTextChangedListener(object : android.text.TextWatcher {
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
+                updateLoginButtonState()
+            }
+            override fun afterTextChanged(s: android.text.Editable?) {}
+        })
+        
+        binding.passwordEditText.addTextChangedListener(object : android.text.TextWatcher {
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
+                updateLoginButtonState()
+            }
+            override fun afterTextChanged(s: android.text.Editable?) {}
+        })
+    }
+    
+    private fun updateLoginButtonState() {
+        val email = binding.emailEditText.text.toString().trim()
+        val password = binding.passwordEditText.text.toString().trim()
+        binding.loginButton.isEnabled = email.isNotEmpty() && password.isNotEmpty()
     }
     
     private fun setupObservers() {
         lifecycleScope.launch {
             viewModel.loginState.collect { result ->
-                when (result) {
-                    is Result.Loading -> {
-                        binding.progressBar.visibility = View.VISIBLE
-                        binding.errorText.visibility = View.GONE
-                        binding.loginButton.isEnabled = false
-                    }
-                    is Result.Success -> {
-                        binding.progressBar.visibility = View.GONE
-                        binding.errorText.visibility = View.GONE
-                        binding.loginButton.isEnabled = true
-                        Toast.makeText(this@LoginActivity, "登录成功", Toast.LENGTH_SHORT).show()
-                        navigateToMain()
-                    }
-                    is Result.Error -> {
-                        binding.progressBar.visibility = View.GONE
-                        binding.errorText.visibility = View.VISIBLE
-                        binding.errorText.text = result.message
-                        binding.loginButton.isEnabled = true
+                result?.let {
+                    when (it) {
+                        is Result.Loading -> {
+                            binding.progressBar.visibility = View.VISIBLE
+                            binding.errorText.visibility = View.GONE
+                            binding.loginButton.isEnabled = false
+                        }
+                        is Result.Success -> {
+                            binding.progressBar.visibility = View.GONE
+                            binding.errorText.visibility = View.GONE
+                            binding.loginButton.isEnabled = true
+                            Toast.makeText(this@LoginActivity, "登录成功", Toast.LENGTH_SHORT).show()
+                            navigateToMain()
+                        }
+                        is Result.Error -> {
+                            binding.progressBar.visibility = View.GONE
+                            binding.errorText.visibility = View.VISIBLE
+                            binding.errorText.text = it.message
+                            updateLoginButtonState()
+                        }
                     }
                 }
             }

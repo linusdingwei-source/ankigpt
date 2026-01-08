@@ -9,6 +9,7 @@ import androidx.datastore.preferences.preferencesDataStore
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.runBlocking
 
 /**
  * Token 管理器
@@ -70,7 +71,7 @@ class TokenManager(private val context: Context) {
      * 阻塞式获取 Token（用于非协程环境，不推荐使用）
      */
     fun getTokenBlocking(): String? {
-        return runBlocking {
+        return kotlinx.coroutines.runBlocking {
             getTokenSync()
         }
     }

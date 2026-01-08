@@ -10,7 +10,7 @@ Next.js 后端已经完全 API 化，所有核心功能都通过 REST API 暴露
 
 #### 登录
 ```
-POST /api/auth/mobile/login
+POST /api/mobile/auth/login
 Content-Type: application/json
 
 {
@@ -36,7 +36,7 @@ Content-Type: application/json
 
 #### 注册
 ```
-PUT /api/auth/mobile/register
+PUT /api/mobile/auth/register
 Content-Type: application/json
 
 {
@@ -143,7 +143,7 @@ X-Anonymous-Id: <uuid>
 ```kotlin
 // ApiService.kt
 interface ApiService {
-    @POST("/api/auth/mobile/login")
+    @POST("/api/mobile/auth/login")
     suspend fun login(@Body request: LoginRequest): ApiResponse<LoginData>
     
     @POST("/api/tts/generate")
@@ -190,7 +190,7 @@ val client = OkHttpClient()
 
 // 登录
 val loginRequest = Request.Builder()
-    .url("https://www.nihogogpt.com/api/auth/mobile/login")
+    .url("https://www.nihogogpt.com/api/mobile/auth/login")
     .post(jsonRequestBody("""
         {
             "email": "user@example.com",
@@ -255,7 +255,7 @@ val ttsResponse = client.newCall(ttsRequest).execute()
 
 ```bash
 # 登录
-curl -X POST https://www.nihogogpt.com/api/auth/mobile/login \
+curl -X POST https://www.nihogogpt.com/api/mobile/auth/login \
   -H "Content-Type: application/json" \
   -d '{"email":"user@example.com","password":"password123"}'
 

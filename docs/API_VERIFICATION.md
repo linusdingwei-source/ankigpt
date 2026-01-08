@@ -40,10 +40,10 @@
 ### 2. 认证系统
 
 #### ✅ 移动端认证端点
-- [x] `POST /api/auth/mobile/login` - 密码登录 ✅
-- [x] `POST /api/auth/mobile/login` - 验证码登录 ✅
-- [x] `PUT /api/auth/mobile/register` - 注册 ✅
-- [x] `GET /api/auth/mobile/session` - 获取 Session ✅
+- [x] `POST /api/mobile/auth/login` - 密码登录 ✅
+- [x] `POST /api/mobile/auth/login` - 验证码登录 ✅
+- [x] `PUT /api/mobile/auth/register` - 注册 ✅
+- [x] `GET /api/mobile/auth/session` - 获取 Session ✅
 - [x] 所有端点返回 JWT Token ✅
 
 #### ✅ Bearer Token 支持
@@ -79,9 +79,9 @@
 ## API 端点总览
 
 ### 认证相关
-- `POST /api/auth/mobile/login` - 登录
-- `PUT /api/auth/mobile/register` - 注册
-- `GET /api/auth/mobile/session` - 获取 Session
+- `POST /api/mobile/auth/login` - 登录
+- `PUT /api/mobile/auth/register` - 注册
+- `GET /api/mobile/auth/session` - 获取 Session
 
 ### 核心功能
 - `POST /api/tts/generate` - TTS 生成
@@ -106,7 +106,7 @@
 
 ```bash
 # 1. 登录
-curl -X POST https://www.nihogogpt.com/api/auth/mobile/login \
+curl -X POST https://www.nihogogpt.com/api/mobile/auth/login \
   -H "Content-Type: application/json" \
   -d '{"email":"user@example.com","password":"password123"}'
 

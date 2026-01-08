@@ -28,7 +28,7 @@ async function generateMobileToken(userId: string, email: string): Promise<strin
 }
 
 /**
- * POST /api/auth/mobile/login
+ * POST /api/mobile/auth/login
  * 移动端登录
  */
 export async function POST(request: NextRequest) {
@@ -173,7 +173,7 @@ export async function POST(request: NextRequest) {
 }
 
 /**
- * POST /api/auth/mobile/register
+ * PUT /api/mobile/auth/register
  * 移动端注册
  */
 export async function PUT(request: NextRequest) {
@@ -263,7 +263,7 @@ export async function PUT(request: NextRequest) {
 }
 
 /**
- * GET /api/auth/mobile/session
+ * GET /api/mobile/auth/session
  * 获取当前 session 信息
  */
 // eslint-disable-next-line @typescript-eslint/no-unused-vars

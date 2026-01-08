@@ -86,9 +86,9 @@ Authorization: Bearer <token>
 所有 API 端点都支持 `Authorization: Bearer <token>` 认证方式。
 
 ### ✅ 移动端登录端点
-- `POST /api/auth/mobile/login` - 返回 JWT Token
-- `PUT /api/auth/mobile/register` - 注册并返回 Token
-- `GET /api/auth/mobile/session` - 获取当前用户信息
+- `POST /api/mobile/auth/login` - 返回 JWT Token
+- `PUT /api/mobile/auth/register` - 注册并返回 Token
+- `GET /api/mobile/auth/session` - 获取当前用户信息
 
 ## CORS 配置
 
@@ -133,7 +133,7 @@ Authorization: Bearer <token>
 
 ```bash
 # 1. 登录获取 Token
-TOKEN=$(curl -X POST https://www.nihogogpt.com/api/auth/mobile/login \
+TOKEN=$(curl -X POST https://www.nihogogpt.com/api/mobile/auth/login \
   -H "Content-Type: application/json" \
   -d '{"email":"user@example.com","password":"password123"}' \
   | jq -r '.data.token')

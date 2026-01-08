@@ -19,8 +19,8 @@ class AuthViewModel(
     private val tokenManager: TokenManager
 ) : ViewModel() {
     
-    private val _loginState = MutableStateFlow<Result<LoginData>>(Result.Loading)
-    val loginState: StateFlow<Result<LoginData>> = _loginState.asStateFlow()
+    private val _loginState = MutableStateFlow<Result<LoginData>?>(null)
+    val loginState: StateFlow<Result<LoginData>?> = _loginState.asStateFlow()
     
     private val _registerState = MutableStateFlow<Result<LoginData>>(Result.Loading)
     val registerState: StateFlow<Result<LoginData>> = _registerState.asStateFlow()

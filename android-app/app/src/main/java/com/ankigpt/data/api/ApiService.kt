@@ -11,13 +11,13 @@ interface ApiService {
     
     // ========== 认证相关 ==========
     
-    @POST("/api/auth/mobile/login")
+    @POST("/api/mobile/auth/login")
     suspend fun login(@Body request: LoginRequest): Response<ApiResponse<LoginData>>
     
-    @PUT("/api/auth/mobile/register")
+    @PUT("/api/mobile/auth/register")
     suspend fun register(@Body request: RegisterRequest): Response<ApiResponse<LoginData>>
     
-    @GET("/api/auth/mobile/session")
+    @GET("/api/mobile/auth/session")
     suspend fun getSession(@Header("Authorization") token: String): Response<ApiResponse<SessionData>>
     
     // ========== TTS 相关 ==========
