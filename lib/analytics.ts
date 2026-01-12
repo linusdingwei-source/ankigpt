@@ -50,6 +50,8 @@ export const FunnelEvents = {
   PRICING_VIEW: 'pricing_view',
   // 仪表板访问
   DASHBOARD_VIEW: 'dashboard_view',
+  // 管理员页面访问
+  ADMIN_VIEW: 'admin_view',
   
   // 按钮点击
   LOGIN_BUTTON_CLICK: 'login_button_click',
@@ -74,6 +76,13 @@ export const FunnelEvents = {
   AUDIO_GENERATION_SUCCESS: 'audio_generation_success',
   AUDIO_GENERATION_FAILED: 'audio_generation_failed',
   AUDIO_DOWNLOAD: 'audio_download',
+  
+  // 卡片生成事件
+  CARD_GENERATION_START: 'card_generation_start',
+  CARD_GENERATION_SUCCESS: 'card_generation_success',
+  CARD_GENERATION_FAILED: 'card_generation_failed',
+  CARD_VIEW: 'card_view',
+  CARD_DOWNLOAD: 'card_download',
   
   // 错误事件
   INSUFFICIENT_CREDITS: 'insufficient_credits',
@@ -195,6 +204,56 @@ export function trackAudioDownload() {
 export function trackInsufficientCredits(currentCredits: number) {
   trackEvent(FunnelEvents.INSUFFICIENT_CREDITS, 'Error', 'insufficient_credits', currentCredits);
   trackEvent('credits_exhausted', 'Error', 'credits', currentCredits);
+}
+
+// 卡片生成开始追踪
+export function trackCardGenerationStart(textLength: number) {
+  trackEvent(FunnelEvents.CARD_GENERATION_START, 'Card Generation', 'start', textLength);
+}
+
+// 卡片生成成功追踪
+export function trackCardGenerationSuccess(textLength: number, creditsRemaining: number) {
+  trackEvent(FunnelEvents.CARD_GENERATION_SUCCESS, 'Card Generation', 'success', textLength);
+  trackEvent('card_conversion_success', 'Conversion', 'card_generation', creditsRemaining);
+}
+
+// 卡片生成失败追踪
+export function trackCardGenerationFailed(reason: string, creditsRemaining?: number) {
+  trackEvent(FunnelEvents.CARD_GENERATION_FAILED, 'Card Generation', reason);
+  trackEvent('card_conversion_failed', 'Error', reason, creditsRemaining);
+}
+
+// 卡片查看追踪
+export function trackCardView(cardId: string) {
+  trackEvent(FunnelEvents.CARD_VIEW, 'Engagement', cardId);
+}
+
+// 卡片下载追踪
+export function trackCardDownload(cardId: string, format?: string) {
+  trackEvent(FunnelEvents.CARD_DOWNLOAD, 'Engagement', cardId);
+  if (format) {
+    trackEvent('card_download_format', 'Engagement', format);
+  }
+}
+
+// 管理员操作追踪
+export function trackAdminAction(action: string, details?: Record<string, unknown>) {
+  trackEvent('admin_action', 'Admin', action);
+  if (details) {
+    Object.entries(details).forEach(([key, value]) => {
+      trackEvent('admin_action_detail', 'Admin', `${key}: ${value}`);
+    });
+  }
+}
+
+// 用户属性设置（用于用户识别）
+export function setUserProperties(userId: string, properties?: Record<string, unknown>) {
+  if (typeof window !== 'undefined' && window.gtag) {
+    window.gtag('set', 'user_properties', {
+      user_id: userId,
+      ...properties,
+    });
+  }
 }
 
 // 转化漏斗分析辅助函数

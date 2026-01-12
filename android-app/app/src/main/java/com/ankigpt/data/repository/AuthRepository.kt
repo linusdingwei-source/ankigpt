@@ -83,7 +83,8 @@ class AuthRepository(
      */
     suspend fun getSession(token: String): Result<SessionData> {
         return try {
-            val response = apiService.getSession("Bearer $token")
+            // 拦截器会自动添加 Authorization 或 X-Anonymous-Id
+            val response = apiService.getSession()
             if (response.isSuccessful && response.body()?.success == true) {
                 val data = response.body()?.data
                 if (data != null) {
