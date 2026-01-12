@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useTranslations } from 'next-intl';
 import { usePathname, useRouter } from '@/i18n/routing';
 import { useSession } from 'next-auth/react';
 import { signOut } from 'next-auth/react';
@@ -51,7 +50,6 @@ interface AdminStats {
 }
 
 export default function AdminPage() {
-  const t = useTranslations();
   const pathname = usePathname();
   const router = useRouter();
   const locale = pathname.split('/')[1] || 'zh';
