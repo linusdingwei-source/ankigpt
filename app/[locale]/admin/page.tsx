@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useLocale } from 'next-intl';
-import { usePathname, useRouter, Link } from '@/i18n/routing';
+import { usePathname, useRouter } from '@/i18n/routing';
 import { useSession } from 'next-auth/react';
 import LanguageSwitcher from '@/components/LanguageSwitcher';
 import UserMenu from '@/components/UserMenu';
@@ -51,7 +51,6 @@ interface AdminStats {
 }
 
 export default function AdminPage() {
-  const pathname = usePathname();
   const router = useRouter();
   const locale = useLocale();
   const { data: session, status } = useSession();

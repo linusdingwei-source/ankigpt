@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
-import { usePathname, Link, useRouter } from '@/i18n/routing';
+import { Link, useRouter } from '@/i18n/routing';
 import { useSession } from 'next-auth/react';
 import { trackPageViewEvent, trackButtonClick, trackCheckoutStarted } from '@/lib/analytics';
 
@@ -40,7 +40,6 @@ const packages = [
 export default function PricingPage() {
   const t = useTranslations();
   const router = useRouter();
-  const pathname = usePathname();
   const locale = useLocale();
   const { data: session } = useSession();
   const [loading, setLoading] = useState<string | null>(null);

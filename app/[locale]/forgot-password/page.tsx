@@ -1,14 +1,12 @@
 'use client';
 
 import { useState } from 'react';
-import { useTranslations, useLocale } from 'next-intl';
-import { useRouter, usePathname, Link } from '@/i18n/routing';
+import { useTranslations } from 'next-intl';
+import { useRouter, Link } from '@/i18n/routing';
 
 export default function ForgotPasswordPage() {
   const t = useTranslations();
   const router = useRouter();
-  const pathname = usePathname();
-  const locale = useLocale();
   
   const [email, setEmail] = useState('');
   const [code, setCode] = useState('');

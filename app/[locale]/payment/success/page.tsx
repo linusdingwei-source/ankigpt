@@ -2,13 +2,12 @@
 
 import { useEffect, useState } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
-import { useRouter, usePathname, Link } from '@/i18n/routing';
+import { useRouter, Link } from '@/i18n/routing';
 import { trackPaymentSuccess } from '@/lib/analytics';
 
 export default function PaymentSuccessPage() {
   const t = useTranslations();
   const router = useRouter();
-  const pathname = usePathname();
   const locale = useLocale();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');

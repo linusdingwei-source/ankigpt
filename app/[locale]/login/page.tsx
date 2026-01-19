@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
-import { useRouter, usePathname, Link } from '@/i18n/routing';
+import { useRouter, Link } from '@/i18n/routing';
 import { signIn } from 'next-auth/react';
 import { SendCodeButton } from '@/components/SendCodeButton';
 import LanguageSwitcher from '@/components/LanguageSwitcher';
@@ -11,7 +11,6 @@ import { trackPageViewEvent, trackButtonClick, trackLoginSuccess } from '@/lib/a
 export default function LoginPage() {
   const t = useTranslations();
   const router = useRouter();
-  const pathname = usePathname();
   const locale = useLocale();
   
   const [email, setEmail] = useState('');
