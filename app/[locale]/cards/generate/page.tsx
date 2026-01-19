@@ -196,13 +196,6 @@ export default function CardGeneratePage() {
             生成 Anki 卡片
           </h1>
           
-          {credits !== null && (
-            <div className="mb-4 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
-              <p className="text-sm text-gray-600 dark:text-gray-400">
-                剩余 Credits: <span className="font-bold text-indigo-600 dark:text-indigo-400">{credits}</span>
-              </p>
-            </div>
-          )}
 
           <div className="space-y-4">
             <div>
