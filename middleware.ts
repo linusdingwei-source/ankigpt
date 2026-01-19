@@ -56,6 +56,11 @@ export default auth((req) => {
         const redirectUrl = new URL(`/${locale}/dashboard`, req.url);
         return NextResponse.redirect(redirectUrl);
       }
+      // 检查 /zh/dashboard/admin 格式 -> 重定向到 /zh/admin
+      if (pathParts[1] === 'dashboard' && pathParts[2] === 'admin') {
+        const redirectUrl = new URL(`/${locale}/admin`, req.url);
+        return NextResponse.redirect(redirectUrl);
+      }
     }
   }
   
