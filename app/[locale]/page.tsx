@@ -38,7 +38,7 @@ export default async function HomePage({
 }: {
   params: Promise<{ locale: string }>;
 }) {
-  const { locale } = await params;
+  await params; // 确保 params 被解析，但不需要使用 locale
   
   // 直接重定向到 dashboard（试用页面）
   // redirect 函数会自动处理 locale，所以只需要传入相对路径

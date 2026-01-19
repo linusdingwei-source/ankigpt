@@ -62,7 +62,7 @@ export default function PaymentSuccessPage() {
     };
 
     verifyPayment();
-  }, [router]);
+  }, [router, locale]);
 
   if (loading) {
     return (
