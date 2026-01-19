@@ -86,7 +86,7 @@ export default function RegisterPage() {
           setError('Registration successful but login failed. Please login manually.');
         } else {
           trackRegistrationSuccess('email');
-          router.push('/dashboard');
+          router.push(`/${locale}/dashboard`);
         }
       } else {
         setError(data.error || 'Registration failed');

@@ -39,7 +39,7 @@ export function HomePageClient({ locale, faqs }: HomePageClientProps) {
           
           <div className="flex gap-4 justify-center flex-wrap">
             <Link
-              href="/dashboard"
+              href={`/${locale}/dashboard`}
               onClick={() => handleButtonClick('START_USING')}
               className="px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors text-lg font-semibold"
             >
