@@ -5,6 +5,7 @@ import { useTranslations } from 'next-intl';
 import { usePathname, Link } from '@/i18n/routing';
 import { signOut, useSession } from 'next-auth/react';
 import LanguageSwitcher from '@/components/LanguageSwitcher';
+import UserMenu from '@/components/UserMenu';
 import {
   trackPageViewEvent,
   trackButtonClick,
@@ -450,41 +451,13 @@ export default function DashboardPage() {
             <h1 className="text-lg font-bold text-gray-900 dark:text-white">
               {t('common.appName')}
             </h1>
-            <div className="flex items-center gap-2">
-              {credits !== null && (
-                <div className="flex items-center gap-1 px-3 py-1 bg-indigo-100 dark:bg-indigo-900 rounded">
-                  <span className="text-xs font-semibold text-indigo-700 dark:text-indigo-300">
-                    {t('dashboard.credits')}: {credits}
-                  </span>
-                </div>
-              )}
-              <Link
-                href="/pricing"
-                className="px-3 py-1 text-xs bg-green-600 text-white rounded hover:bg-green-700 transition-colors"
-              >
-                {t('dashboard.buyCredits')}
-              </Link>
+            <div className="flex items-center gap-3">
               <LanguageSwitcher />
               {session?.user ? (
-                <>
-                  <div className="text-xs text-gray-600 dark:text-gray-400">
-                    {session.user.email}
-                  </div>
-                  <button
-                    onClick={async () => {
-                      await signOut({ 
-                        callbackUrl: `/${locale}/login`,
-                        redirect: true 
-                      });
-                    }}
-                    className="px-3 py-1 text-xs bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
-                  >
-                    {t('common.logout')}
-                  </button>
-                </>
+                <UserMenu credits={credits} />
               ) : (
                 <Link
-                  href="/login"
+                  href={`/${locale}/login`}
                   className="px-4 py-2 text-sm bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
                 >
                   {t('common.login')}
@@ -636,7 +609,6 @@ export default function DashboardPage() {
                 {credits !== null && (
                   <div className="mb-2 p-2 bg-blue-50 dark:bg-blue-900/20 rounded text-xs">
                     <p className="text-xs text-gray-600 dark:text-gray-400">
-                      剩余 Credits: <span className="font-bold text-indigo-600 dark:text-indigo-400">{credits}</span>
                     </p>
                   </div>
                 )}

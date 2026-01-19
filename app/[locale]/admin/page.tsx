@@ -3,8 +3,8 @@
 import { useState, useEffect } from 'react';
 import { usePathname, useRouter } from '@/i18n/routing';
 import { useSession } from 'next-auth/react';
-import { signOut } from 'next-auth/react';
 import LanguageSwitcher from '@/components/LanguageSwitcher';
+import UserMenu from '@/components/UserMenu';
 import { trackPageViewEvent } from '@/lib/analytics';
 
 interface AdminStats {
@@ -171,9 +171,6 @@ export default function AdminPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [status, days]);
 
-  const handleLogout = async () => {
-    await signOut({ callbackUrl: `/${locale}/login` });
-  };
 
   if (status === 'loading' || loading) {
     return (
@@ -242,17 +239,7 @@ export default function AdminPage() {
             </div>
             <div className="flex items-center space-x-4">
               <LanguageSwitcher />
-              {session?.user && (
-                <div className="flex items-center space-x-3">
-                  <span className="text-sm text-gray-600">{session.user.email}</span>
-                  <button
-                    onClick={handleLogout}
-                    className="px-4 py-2 text-sm text-gray-600 hover:text-gray-900"
-                  >
-                    退出
-                  </button>
-                </div>
-              )}
+              {session?.user && <UserMenu />}
             </div>
           </div>
         </div>
