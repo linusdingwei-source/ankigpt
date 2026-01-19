@@ -88,6 +88,7 @@ export default function UserMenu({ credits }: UserMenuProps) {
         aria-label="用户菜单"
       >
         {session.user.image ? (
+          // eslint-disable-next-line @next/next/no-img-element
           <img
             src={session.user.image}
             alt={userName}
