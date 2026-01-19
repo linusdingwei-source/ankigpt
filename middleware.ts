@@ -70,6 +70,24 @@ export default auth((req) => {
     return NextResponse.redirect(redirectUrl);
   }
   
+  // 检查 /dashboard/dashboard 格式（无 locale，重复路径）
+  if (pathParts.length >= 2 && pathParts[0] === 'dashboard' && pathParts[1] === 'dashboard') {
+    const redirectUrl = new URL('/zh/dashboard', req.url);
+    return NextResponse.redirect(redirectUrl);
+  }
+  
+  // 检查 /dashboard 格式（无 locale）- 重定向到默认 locale 的 dashboard
+  if (pathParts.length === 1 && pathParts[0] === 'dashboard') {
+    const redirectUrl = new URL('/zh/dashboard', req.url);
+    return NextResponse.redirect(redirectUrl);
+  }
+  
+  // 检查 /dashboard/admin 格式（无 locale）
+  if (pathParts.length >= 2 && pathParts[0] === 'dashboard' && pathParts[1] === 'admin') {
+    const redirectUrl = new URL('/zh/admin', req.url);
+    return NextResponse.redirect(redirectUrl);
+  }
+  
   // Apply internationalization middleware
   return intlMiddleware(req);
 });
