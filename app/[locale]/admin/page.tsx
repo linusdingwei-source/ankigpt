@@ -81,17 +81,24 @@ export default function AdminPage() {
       
       if (response.success && response.data) {
         if (!response.data.isAdmin) {
-          setError(`您没有管理员权限。当前角色：${response.data.user?.role || '未知'}`);
+          const role = response.data.user?.role || '未知';
+          setError(`您没有管理员权限。当前角色：${role}。请确认数据库中的 role 字段已设置为 "admin" 并重新登录。`);
           setTimeout(() => {
             router.push(`/${locale}/dashboard`);
-          }, 3000);
+          }, 5000);
           return false;
         }
+        // 是管理员，清除任何之前的错误
+        setError('');
         return true;
       }
+      // API 返回失败
+      setError('无法验证管理员权限。请稍后重试。');
       return false;
     } catch (err) {
       console.error('Check admin access error:', err);
+      const errorMessage = err instanceof Error ? err.message : String(err);
+      setError(`检查管理员权限时出错：${errorMessage}`);
       return false;
     }
   };
@@ -103,34 +110,55 @@ export default function AdminPage() {
       setError('');
       
       // 先检查管理员权限
+      console.log('[Admin] Checking admin access...');
       const hasAccess = await checkAdminAccess();
+      console.log('[Admin] Admin access result:', hasAccess);
+      
       if (!hasAccess) {
+        // checkAdminAccess 已经设置了错误消息
+        console.log('[Admin] Access denied, error:', error);
         setLoading(false);
         return;
       }
       
+      console.log('[Admin] Fetching stats...');
       const res = await fetch(`/api/admin/stats?days=${days}`);
       const response = await res.json();
       
+      console.log('[Admin] Stats API response:', { status: res.status, ok: res.ok, response });
+      
       if (!res.ok) {
         if (res.status === 403) {
-          setError('您没有管理员权限。请确认您的账户已设置为管理员，并重新登录。');
+          // 再次检查权限，可能是 session 问题
+          const checkRes = await fetch('/api/admin/check');
+          const checkData = await checkRes.json();
+          console.log('[Admin] Re-check result:', checkData);
+          
+          if (checkData.success && checkData.data?.isAdmin) {
+            setError('权限验证失败，但诊断显示您是管理员。请刷新页面重试。');
+          } else {
+            setError('您没有管理员权限。请确认您的账户已设置为管理员，并重新登录。');
+          }
           setTimeout(() => {
             router.push(`/${locale}/dashboard`);
-          }, 3000);
+          }, 5000);
           return;
         }
-        throw new Error(response.error || 'Failed to fetch stats');
+        const errorMsg = response.error || response.message || 'Failed to fetch stats';
+        throw new Error(typeof errorMsg === 'string' ? errorMsg : JSON.stringify(errorMsg));
       }
       
       if (response.success) {
+        console.log('[Admin] Stats loaded successfully');
         setStats(response.data);
       } else {
-        throw new Error(response.error || 'Failed to fetch stats');
+        const errorMsg = response.error || response.message || 'Failed to fetch stats';
+        throw new Error(typeof errorMsg === 'string' ? errorMsg : JSON.stringify(errorMsg));
       }
     } catch (err) {
-      console.error('Fetch stats error:', err);
-      setError(err instanceof Error ? err.message : 'Failed to fetch stats');
+      console.error('[Admin] Fetch stats error:', err);
+      const errorMessage = err instanceof Error ? err.message : (typeof err === 'string' ? err : JSON.stringify(err));
+      setError(`加载统计数据失败：${errorMessage}`);
     } finally {
       setLoading(false);
     }
@@ -168,7 +196,7 @@ export default function AdminPage() {
             </svg>
           </div>
           <h2 className="text-xl font-semibold text-gray-900 mb-2">访问被拒绝</h2>
-          <p className="text-red-600 mb-4">{error}</p>
+          <p className="text-red-600 mb-4 whitespace-pre-wrap">{typeof error === 'string' ? error : JSON.stringify(error, null, 2)}</p>
           <div className="space-y-2 text-sm text-gray-600 mb-6">
             <p>如果您刚刚设置了管理员权限，请：</p>
             <ol className="list-decimal list-inside space-y-1 text-left">

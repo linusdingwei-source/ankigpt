@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAdminUserId } from '@/lib/admin';
 import { prisma } from '@/lib/prisma';
+import { getUserId } from '@/lib/anonymous-user';
+import { auth } from '@/auth';
 import { successResponse, errorResponse, ErrorCodes } from '@/lib/api-response';
 
 // 强制动态路由
@@ -15,11 +17,22 @@ export async function GET(request: NextRequest) {
     // 检查管理员权限
     const adminUserId = await getAdminUserId(request);
     if (!adminUserId) {
+      // 添加调试信息
+      const session = await auth();
+      const userId = await getUserId(session, request);
+      console.log('[Admin Stats] Permission check failed:', {
+        hasSession: !!session,
+        userId,
+        adminUserId,
+      });
+      
       return NextResponse.json(
-        errorResponse(ErrorCodes.UNAUTHORIZED, 'Admin access required'),
+        errorResponse(ErrorCodes.UNAUTHORIZED, 'Admin access required. Please ensure your account role is set to "admin" and you have logged in again.'),
         { status: 403 }
       );
     }
+    
+    console.log('[Admin Stats] Access granted for user:', adminUserId);
 
     // 获取时间范围参数（可选，默认最近30天）
     const { searchParams } = new URL(request.url);
