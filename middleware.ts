@@ -93,7 +93,11 @@ export default auth((req) => {
 });
 
 export const config = {
-  // Match API routes and internationalized pathnames
-  matcher: ['/', '/(zh|en|ja)/:path*', '/api/:path*']
+  // Match all pathnames except for
+  // - API routes
+  // - _next (internal files)
+  // - _vercel (internal files)
+  // - Static files (e.g. favicon.ico, logo.png, etc. - anything with a dot)
+  matcher: ['/((?!api|_next|_vercel|.*\\..*).*)']
 };
 
