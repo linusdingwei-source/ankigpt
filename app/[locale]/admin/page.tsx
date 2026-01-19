@@ -73,18 +73,51 @@ export default function AdminPage() {
     }
   }, [status, router, locale]);
 
+  // 检查管理员权限
+  const checkAdminAccess = async () => {
+    try {
+      const res = await fetch('/api/admin/check');
+      const response = await res.json();
+      
+      if (response.success && response.data) {
+        if (!response.data.isAdmin) {
+          setError(`您没有管理员权限。当前角色：${response.data.user?.role || '未知'}`);
+          setTimeout(() => {
+            router.push(`/${locale}/dashboard`);
+          }, 3000);
+          return false;
+        }
+        return true;
+      }
+      return false;
+    } catch (err) {
+      console.error('Check admin access error:', err);
+      return false;
+    }
+  };
+
   // 获取统计数据
   const fetchStats = async () => {
     try {
       setLoading(true);
       setError('');
+      
+      // 先检查管理员权限
+      const hasAccess = await checkAdminAccess();
+      if (!hasAccess) {
+        setLoading(false);
+        return;
+      }
+      
       const res = await fetch(`/api/admin/stats?days=${days}`);
       const response = await res.json();
       
       if (!res.ok) {
         if (res.status === 403) {
-          setError('您没有管理员权限');
-          router.push(`/${locale}/dashboard`);
+          setError('您没有管理员权限。请确认您的账户已设置为管理员，并重新登录。');
+          setTimeout(() => {
+            router.push(`/${locale}/dashboard`);
+          }, 3000);
           return;
         }
         throw new Error(response.error || 'Failed to fetch stats');
@@ -128,14 +161,36 @@ export default function AdminPage() {
   if (error && !stats) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
+        <div className="text-center max-w-md mx-auto p-6 bg-white rounded-lg shadow">
+          <div className="mb-4">
+            <svg className="mx-auto h-12 w-12 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            </svg>
+          </div>
+          <h2 className="text-xl font-semibold text-gray-900 mb-2">访问被拒绝</h2>
           <p className="text-red-600 mb-4">{error}</p>
-          <button
-            onClick={() => router.push(`/${locale}/dashboard`)}
-            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-          >
-            返回仪表板
-          </button>
+          <div className="space-y-2 text-sm text-gray-600 mb-6">
+            <p>如果您刚刚设置了管理员权限，请：</p>
+            <ol className="list-decimal list-inside space-y-1 text-left">
+              <li>退出登录</li>
+              <li>重新登录</li>
+              <li>再次访问管理员页面</li>
+            </ol>
+          </div>
+          <div className="flex space-x-4 justify-center">
+            <button
+              onClick={() => router.push(`/${locale}/dashboard`)}
+              className="px-4 py-2 bg-gray-200 text-gray-800 rounded hover:bg-gray-300"
+            >
+              返回仪表板
+            </button>
+            <button
+              onClick={handleLogout}
+              className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+            >
+              退出并重新登录
+            </button>
+          </div>
         </div>
       </div>
     );
