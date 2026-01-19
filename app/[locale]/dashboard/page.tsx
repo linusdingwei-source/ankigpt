@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { useTranslations } from 'next-intl';
+import { useTranslations, useLocale } from 'next-intl';
 import { usePathname, Link } from '@/i18n/routing';
 import { useSession } from 'next-auth/react';
 import LanguageSwitcher from '@/components/LanguageSwitcher';
@@ -36,7 +36,7 @@ export default function DashboardPage() {
   const t = useTranslations();
   const cardT = useTranslations('AnkiCard');
   const pathname = usePathname();
-  const locale = pathname.split('/')[1] || 'zh';
+  const locale = useLocale();
   const { data: session, status } = useSession();
   
   // Tab 状态
@@ -426,7 +426,7 @@ export default function DashboardPage() {
         const searchParams = new URLSearchParams(window.location.search);
         if (searchParams.get('payment') === 'success') {
           setPaymentSuccess(true);
-          window.history.replaceState({}, '', `/${locale}/dashboard`);
+          window.history.replaceState({}, '', '/dashboard');
           setTimeout(() => setPaymentSuccess(false), 5000);
         }
         trackPageViewEvent('DASHBOARD', { locale });
@@ -457,7 +457,7 @@ export default function DashboardPage() {
                 <UserMenu credits={credits} />
               ) : (
                 <Link
-                  href={`/${locale}/login`}
+                  href="/login"
                   className="px-4 py-2 text-sm bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
                 >
                   {t('common.login')}

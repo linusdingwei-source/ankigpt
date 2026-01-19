@@ -1,14 +1,14 @@
 'use client';
 
 import { useState } from 'react';
-import { useTranslations } from 'next-intl';
+import { useTranslations, useLocale } from 'next-intl';
 import { useRouter, usePathname, Link } from '@/i18n/routing';
 
 export default function ForgotPasswordPage() {
   const t = useTranslations();
   const router = useRouter();
   const pathname = usePathname();
-  const locale = pathname.split('/')[1] || 'zh';
+  const locale = useLocale();
   
   const [email, setEmail] = useState('');
   const [code, setCode] = useState('');
@@ -78,7 +78,7 @@ export default function ForgotPasswordPage() {
       if (res.ok) {
         setSuccess(t('auth.resetSuccess'));
         setTimeout(() => {
-          router.push(`/${locale}/login`);
+          router.push('/login');
         }, 2000);
       } else {
         setError(data.error || 'Failed to reset password');

@@ -2,8 +2,8 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useSession, signOut } from 'next-auth/react';
-import { useRouter, usePathname } from '@/i18n/routing';
-import Link from 'next/link';
+import { useRouter, usePathname, Link } from '@/i18n/routing';
+import { useLocale } from 'next-intl';
 
 interface UserMenuProps {
   credits?: number | null;
@@ -13,7 +13,7 @@ export default function UserMenu({ credits }: UserMenuProps) {
   const { data: session, status } = useSession();
   const router = useRouter();
   const pathname = usePathname();
-  const locale = pathname.split('/')[1] || 'zh';
+  const locale = useLocale();
   const [isOpen, setIsOpen] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -61,7 +61,7 @@ export default function UserMenu({ credits }: UserMenuProps) {
 
   const handleAdminClick = () => {
     setIsOpen(false);
-    router.push(`/${locale}/admin`);
+    router.push('/admin');
   };
 
   if (status === 'loading') {
@@ -142,7 +142,7 @@ export default function UserMenu({ credits }: UserMenuProps) {
           {/* 菜单项 */}
           <div className="py-1">
             <Link
-              href={`/${locale}/dashboard`}
+              href="/dashboard"
               onClick={() => setIsOpen(false)}
               className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
             >
@@ -153,7 +153,7 @@ export default function UserMenu({ credits }: UserMenuProps) {
             </Link>
 
             <Link
-              href={`/${locale}/pricing`}
+              href="/pricing"
               onClick={() => setIsOpen(false)}
               className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
             >

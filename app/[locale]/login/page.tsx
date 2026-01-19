@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useTranslations } from 'next-intl';
+import { useTranslations, useLocale } from 'next-intl';
 import { useRouter, usePathname, Link } from '@/i18n/routing';
 import { signIn } from 'next-auth/react';
 import { SendCodeButton } from '@/components/SendCodeButton';
@@ -12,7 +12,7 @@ export default function LoginPage() {
   const t = useTranslations();
   const router = useRouter();
   const pathname = usePathname();
-  const locale = pathname.split('/')[1] || 'zh';
+  const locale = useLocale();
   
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -32,7 +32,7 @@ export default function LoginPage() {
         const res = await fetch('/api/auth/session');
         const session = await res.json();
         if (session?.user) {
-          router.push(`/${locale}/dashboard`);
+          router.push('/dashboard');
         }
       } catch (error) {
         // 忽略错误，继续显示登录页面
@@ -64,7 +64,7 @@ export default function LoginPage() {
         setError('Invalid email or password');
       } else {
         trackLoginSuccess('email');
-        router.push(`/${locale}/dashboard`);
+        router.push('/dashboard');
       }
     } catch {
       setError('Login failed');
@@ -86,7 +86,7 @@ export default function LoginPage() {
       const data = await res.json();
       if (res.ok) {
         trackLoginSuccess('code');
-        router.push(`/${locale}/dashboard`);
+        router.push('/dashboard');
         router.refresh();
       } else {
         setError(data.error || 'Login failed');
@@ -101,7 +101,7 @@ export default function LoginPage() {
   const handleGoogleLogin = async () => {
     setLoading(true);
     trackButtonClick('GOOGLE_LOGIN', 'login_page');
-    await signIn('google', { callbackUrl: `/${locale}/dashboard` });
+    await signIn('google', { callbackUrl: '/dashboard' });
   };
 
   return (

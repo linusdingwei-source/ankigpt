@@ -1,8 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useTranslations } from 'next-intl';
-import { usePathname, Link } from '@/i18n/routing';
+import { useTranslations, useLocale } from 'next-intl';
+import { usePathname, Link, useRouter } from '@/i18n/routing';
 import { useSession } from 'next-auth/react';
 import { trackPageViewEvent, trackButtonClick, trackCheckoutStarted } from '@/lib/analytics';
 
@@ -39,8 +39,9 @@ const packages = [
 
 export default function PricingPage() {
   const t = useTranslations();
+  const router = useRouter();
   const pathname = usePathname();
-  const locale = pathname.split('/')[1] || 'zh';
+  const locale = useLocale();
   const { data: session } = useSession();
   const [loading, setLoading] = useState<string | null>(null);
 
@@ -52,7 +53,7 @@ export default function PricingPage() {
   const handlePurchase = async (packageId: string) => {
     if (!session) {
       // Redirect to login
-      window.location.href = `/${locale}/login`;
+      router.push('/login');
       return;
     }
 
@@ -184,7 +185,7 @@ export default function PricingPage() {
             <p className="text-gray-600 dark:text-gray-400">
               {t('pricing.alreadyHaveAccount')}{' '}
               <Link
-                href={`/${locale}/login`}
+                href="/login"
                 className="text-indigo-600 hover:underline dark:text-indigo-400"
               >
                 {t('common.login')}

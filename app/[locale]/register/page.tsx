@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useTranslations } from 'next-intl';
+import { useTranslations, useLocale } from 'next-intl';
 import { useRouter, usePathname, Link } from '@/i18n/routing';
 import { signIn } from 'next-auth/react';
 import { SendCodeButton } from '@/components/SendCodeButton';
@@ -12,7 +12,7 @@ export default function RegisterPage() {
   const t = useTranslations();
   const router = useRouter();
   const pathname = usePathname();
-  const locale = pathname.split('/')[1] || 'zh';
+  const locale = useLocale();
   
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -86,7 +86,7 @@ export default function RegisterPage() {
           setError('Registration successful but login failed. Please login manually.');
         } else {
           trackRegistrationSuccess('email');
-          router.push(`/${locale}/dashboard`);
+          router.push('/dashboard');
         }
       } else {
         setError(data.error || 'Registration failed');
@@ -102,7 +102,7 @@ export default function RegisterPage() {
     setLoading(true);
     trackButtonClick('GOOGLE_LOGIN', 'register_page');
     // 使用当前 locale 构建 callback URL
-    const callbackUrl = `/${locale}/dashboard`;
+    const callbackUrl = '/dashboard';
     await signIn('google', { callbackUrl });
   };
 

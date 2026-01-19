@@ -1,7 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { usePathname, useRouter } from '@/i18n/routing';
+import { useLocale } from 'next-intl';
+import { usePathname, useRouter, Link } from '@/i18n/routing';
 import { useSession } from 'next-auth/react';
 import LanguageSwitcher from '@/components/LanguageSwitcher';
 import UserMenu from '@/components/UserMenu';
@@ -52,7 +53,7 @@ interface AdminStats {
 export default function AdminPage() {
   const pathname = usePathname();
   const router = useRouter();
-  const locale = pathname.split('/')[1] || 'zh';
+  const locale = useLocale();
   const { data: session, status } = useSession();
   
   const [stats, setStats] = useState<AdminStats | null>(null);
@@ -69,9 +70,9 @@ export default function AdminPage() {
   // 检查管理员权限
   useEffect(() => {
     if (status === 'unauthenticated') {
-      router.push(`/${locale}/login`);
+      router.push('/login');
     }
-  }, [status, router, locale]);
+  }, [status, router]);
 
   // 检查管理员权限
   const checkAdminAccess = async () => {
@@ -84,7 +85,7 @@ export default function AdminPage() {
           const role = response.data.user?.role || '未知';
           setError(`您没有管理员权限。当前角色：${role}。请确认数据库中的 role 字段已设置为 "admin" 并重新登录。`);
           setTimeout(() => {
-            router.push(`/${locale}/dashboard`);
+            router.push('/dashboard');
           }, 5000);
           return false;
         }
@@ -140,7 +141,7 @@ export default function AdminPage() {
             setError('您没有管理员权限。请确认您的账户已设置为管理员，并重新登录。');
           }
           setTimeout(() => {
-            router.push(`/${locale}/dashboard`);
+            router.push('/dashboard');
           }, 5000);
           return;
         }
@@ -204,7 +205,7 @@ export default function AdminPage() {
           </div>
           <div className="flex space-x-4 justify-center">
             <button
-              onClick={() => router.push(`/${locale}/dashboard`)}
+              onClick={() => router.push('/dashboard')}
               className="px-4 py-2 bg-gray-200 text-gray-800 rounded hover:bg-gray-300"
             >
               返回仪表板

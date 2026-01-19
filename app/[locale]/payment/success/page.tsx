@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useTranslations } from 'next-intl';
+import { useTranslations, useLocale } from 'next-intl';
 import { useRouter, usePathname, Link } from '@/i18n/routing';
 import { trackPaymentSuccess } from '@/lib/analytics';
 
@@ -9,7 +9,7 @@ export default function PaymentSuccessPage() {
   const t = useTranslations();
   const router = useRouter();
   const pathname = usePathname();
-  const locale = pathname.split('/')[1] || 'zh';
+  const locale = useLocale();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
@@ -48,7 +48,7 @@ export default function PaymentSuccessPage() {
           // Redirect to dashboard after 2 seconds
           // Use router.push with path only, router will automatically add locale
           setTimeout(() => {
-            router.push(`/${locale}/dashboard?payment=success`);
+            router.push('/dashboard?payment=success');
           }, 2000);
         } else {
           setError(data.error || data.message || 'Payment verification failed');
@@ -106,7 +106,7 @@ export default function PaymentSuccessPage() {
           {t('payment.successMessage')}
         </p>
         <Link
-          href={`/${locale}/dashboard`}
+          href="/dashboard"
           className="inline-block px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
         >
           {t('payment.goToDashboard')}
