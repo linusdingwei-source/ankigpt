@@ -3,7 +3,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useSession, signOut } from 'next-auth/react';
 import { useRouter, usePathname } from '@/i18n/routing';
-import { useTranslations } from 'next-intl';
 import Link from 'next/link';
 
 interface UserMenuProps {
