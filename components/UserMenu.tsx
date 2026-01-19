@@ -15,7 +15,6 @@ export default function UserMenu({ credits }: UserMenuProps) {
   const router = useRouter();
   const pathname = usePathname();
   const locale = pathname.split('/')[1] || 'zh';
-  const t = useTranslations();
   const [isOpen, setIsOpen] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -107,6 +106,7 @@ export default function UserMenu({ credits }: UserMenuProps) {
             <div className="flex items-center space-x-3">
               <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-semibold">
                 {session.user.image ? (
+                  // eslint-disable-next-line @next/next/no-img-element
                   <img
                     src={session.user.image}
                     alt={userName}

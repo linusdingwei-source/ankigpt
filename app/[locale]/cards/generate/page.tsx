@@ -19,7 +19,7 @@ export default function CardGeneratePage() {
     audioUrl?: string;
   } | null>(null);
   const [error, setError] = useState('');
-  const [credits, setCredits] = useState<number | null>(null);
+  const [_credits, setCredits] = useState<number | null>(null);
   const [decks, setDecks] = useState<Array<{ id: string; name: string }>>([]);
 
   const fetchCredits = useCallback(async () => {
