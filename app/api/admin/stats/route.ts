@@ -132,36 +132,36 @@ export async function GET(request: NextRequest) {
       // 每日用户注册数（最近30天）
       prisma.$queryRaw<Array<{ date: Date; count: bigint }>>`
         SELECT 
-          DATE(created_at) as date,
+          DATE("createdAt") as date,
           COUNT(*)::bigint as count
         FROM "User"
-        WHERE created_at >= ${startDate}
-          AND is_anonymous = false
-        GROUP BY DATE(created_at)
+        WHERE "createdAt" >= ${startDate}
+          AND "isAnonymous" = false
+        GROUP BY DATE("createdAt")
         ORDER BY date ASC
       `,
       
       // 每日卡片创建数（最近30天）
       prisma.$queryRaw<Array<{ date: Date; count: bigint }>>`
         SELECT 
-          DATE(created_at) as date,
+          DATE("createdAt") as date,
           COUNT(*)::bigint as count
         FROM "Card"
-        WHERE created_at >= ${startDate}
-        GROUP BY DATE(created_at)
+        WHERE "createdAt" >= ${startDate}
+        GROUP BY DATE("createdAt")
         ORDER BY date ASC
       `,
       
       // 每日订单数（最近30天）
       prisma.$queryRaw<Array<{ date: Date; count: bigint; revenue: bigint }>>`
         SELECT 
-          DATE(created_at) as date,
+          DATE("createdAt") as date,
           COUNT(*)::bigint as count,
           COALESCE(SUM(amount), 0)::bigint as revenue
         FROM "Order"
-        WHERE created_at >= ${startDate}
+        WHERE "createdAt" >= ${startDate}
           AND status = 'completed'
-        GROUP BY DATE(created_at)
+        GROUP BY DATE("createdAt")
         ORDER BY date ASC
       `,
       
