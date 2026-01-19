@@ -2,12 +2,12 @@
 
 import Script from 'next/script';
 import { usePathname, useSearchParams } from 'next/navigation';
-import { useEffect } from 'react';
+import { useEffect, Suspense } from 'react';
 import { trackPageView } from '@/lib/analytics';
 
 const GA_ID = process.env.NEXT_PUBLIC_GA_ID;
 
-export function GoogleAnalytics() {
+function GoogleAnalyticsInner() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
 
@@ -18,6 +18,10 @@ export function GoogleAnalytics() {
     trackPageView(url);
   }, [pathname, searchParams]);
 
+  return null;
+}
+
+export function GoogleAnalytics() {
   if (!GA_ID) {
     return null;
   }
@@ -42,6 +46,9 @@ export function GoogleAnalytics() {
           `,
         }}
       />
+      <Suspense fallback={null}>
+        <GoogleAnalyticsInner />
+      </Suspense>
     </>
   );
 }
