@@ -447,9 +447,11 @@ export default function DashboardPage() {
       <nav className="bg-white dark:bg-gray-800 shadow-sm">
         <div className="container mx-auto px-3 py-2">
           <div className="flex justify-between items-center">
-            <h1 className="text-lg font-bold text-gray-900 dark:text-white">
-              {t('common.appName')}
-            </h1>
+            <Link href="/" className="hover:opacity-80 transition-opacity">
+              <h1 className="text-lg font-bold text-gray-900 dark:text-white">
+                {t('common.appName')}
+              </h1>
+            </Link>
             <div className="flex items-center gap-3">
               <LanguageSwitcher />
               {session?.user ? (

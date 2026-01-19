@@ -73,8 +73,11 @@
   },
   "dashboard": {
     "credits": "Credits",
+    "dashboard": "ダッシュボード",
     "buyCredits": "Creditsを購入",
     "buyCreditsNow": "今すぐCreditsを購入",
+    "adminConsole": "管理者コンソール",
+    "admin": "管理者",
     "features": "機能",
     "textToSpeech": "テキスト読み上げ",
     "ankiCards": "Ankiカード",

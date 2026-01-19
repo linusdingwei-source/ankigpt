@@ -73,8 +73,11 @@
   },
   "dashboard": {
     "credits": "Credits",
+    "dashboard": "Dashboard",
     "buyCredits": "Buy Credits",
     "buyCreditsNow": "Buy Credits Now",
+    "adminConsole": "Admin Console",
+    "admin": "Admin",
     "features": "Features",
     "textToSpeech": "Text to Speech",
     "ankiCards": "Anki Cards",

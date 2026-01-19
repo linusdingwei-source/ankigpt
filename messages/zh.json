@@ -73,8 +73,11 @@
   },
   "dashboard": {
     "credits": "Credits",
+    "dashboard": "仪表板",
     "buyCredits": "购买Credits",
     "buyCreditsNow": "立即购买Credits",
+    "adminConsole": "管理员控制台",
+    "admin": "管理员",
     "features": "功能",
     "textToSpeech": "文本转语音",
     "ankiCards": "Anki 卡片",
