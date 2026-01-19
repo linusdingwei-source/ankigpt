@@ -41,5 +41,6 @@ export default async function HomePage({
   const { locale } = await params;
   
   // 直接重定向到 dashboard（试用页面）
-  redirect({ href: `/${locale}/dashboard`, locale });
+  // redirect 函数会自动处理 locale，所以只需要传入相对路径
+  redirect({ href: '/dashboard' });
 }
