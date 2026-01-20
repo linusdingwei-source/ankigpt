@@ -4,6 +4,8 @@ import { prisma } from '@/lib/prisma';
 import { getUserId } from '@/lib/anonymous-user';
 import { successResponse, errorResponse, ErrorCodes } from '@/lib/api-response';
 
+export const dynamic = 'force-dynamic';
+
 export async function GET(request: NextRequest) {
   try {
     const session = await auth();

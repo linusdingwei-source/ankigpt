@@ -150,6 +150,21 @@ export default function WorkspacePage() {
     }
   }, [selectedDeck, page, debouncedSearchQuery, cardT]);
 
+  // 检查 URL 参数中的 deck
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const deckParam = params.get('deck');
+      if (deckParam) {
+        setDeckName(deckParam);
+        setSelectedDeck(deckParam);
+        setActiveTab('cards'); // 切换到卡片列表标签
+        // 清除 URL 参数
+        window.history.replaceState({}, '', window.location.pathname);
+      }
+    }
+  }, []);
+
   useEffect(() => {
     fetchDecks();
   }, [fetchDecks]);

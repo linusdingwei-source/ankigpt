@@ -1,5 +1,5 @@
-import { redirect } from '@/i18n/routing';
 import { generateMetadata as generateSEOMetadata } from '@/lib/seo';
+import HomePageClient from './HomePageClient';
 
 export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = await params;
@@ -40,7 +40,5 @@ export default async function HomePage({
 }) {
   const { locale } = await params;
   
-  // 直接重定向到 workspace（功能页面）
-  // redirect 函数来自 i18n/routing，需要 href 和 locale
-  redirect({ href: '/workspace', locale });
+  return <HomePageClient locale={locale} />;
 }
