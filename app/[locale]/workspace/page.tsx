@@ -58,7 +58,11 @@ function WorkspacePageContent() {
   const [ttsError, setTtsError] = useState('');
   
   // 当前工作区牌组（从URL参数或默认值）
-  const [currentWorkspaceDeck, setCurrentWorkspaceDeck] = useState<string>('default');
+  // 立即从URL参数读取，避免初始渲染时显示应用名称
+  const initialDeckParam = searchParams.get('deck');
+  const [currentWorkspaceDeck, setCurrentWorkspaceDeck] = useState<string>(
+    initialDeckParam ? decodeURIComponent(initialDeckParam) : 'default'
+  );
   
   // 卡片生成相关状态
   const [cardText, setCardText] = useState('');
@@ -152,10 +156,12 @@ function WorkspacePageContent() {
           setTotalPages(data.pagination.totalPages);
           setTotal(data.pagination.total);
         }
+        // 不自动选择第一张卡片，让用户手动点击
+        // 只有当之前选中的卡片仍然存在时才保持选中状态
         if (data.cards.length > 0) {
           setSelectedCardId((prevId) => {
             const currentSelectedExists = prevId && data.cards.find((c: Card) => c.id === prevId);
-            return currentSelectedExists ? prevId : data.cards[0].id;
+            return currentSelectedExists ? prevId : null;
           });
         } else {
           setSelectedCardId(null);
@@ -168,7 +174,7 @@ function WorkspacePageContent() {
     }
   }, [selectedDeck, page, debouncedSearchQuery, cardT]);
 
-  // 检查 URL 参数中的 deck
+  // 检查 URL 参数中的 deck（同步更新状态）
   useEffect(() => {
     const deckParam = searchParams.get('deck');
     if (deckParam) {
@@ -176,12 +182,21 @@ function WorkspacePageContent() {
       setCurrentWorkspaceDeck(decodedDeckName);
       setDeckName(decodedDeckName);
       setSelectedDeck(decodedDeckName);
-      // 清除 URL 参数
-      if (typeof window !== 'undefined') {
-        window.history.replaceState({}, '', window.location.pathname);
-      }
     }
   }, [searchParams]);
+  
+  // 清除 URL 参数（延迟执行，确保状态已更新）
+  useEffect(() => {
+    if (currentWorkspaceDeck !== 'default' && typeof window !== 'undefined') {
+      const urlParams = new URLSearchParams(window.location.search);
+      if (urlParams.get('deck')) {
+        // 使用 requestAnimationFrame 确保在下一帧清除
+        requestAnimationFrame(() => {
+          window.history.replaceState({}, '', window.location.pathname);
+        });
+      }
+    }
+  }, [currentWorkspaceDeck]);
   
   // 当牌组列表加载后，如果没有从URL参数获取到牌组，使用第一个牌组或默认值
   useEffect(() => {
@@ -495,11 +510,11 @@ function WorkspacePageContent() {
         <div className="px-4 py-3">
           <div className="flex justify-between items-center">
             <div className="flex items-center gap-3">
-              <Link href="/" className="hover:opacity-80 transition-opacity">
-                <h1 className="text-lg font-bold text-gray-900 dark:text-white">
+            <Link href="/" className="hover:opacity-80 transition-opacity">
+              <h1 className="text-lg font-bold text-gray-900 dark:text-white">
                   {currentWorkspaceDeck !== 'default' ? currentWorkspaceDeck : t('common.appName')}
-                </h1>
-              </Link>
+              </h1>
+            </Link>
               {currentWorkspaceDeck !== 'default' && (
                 <span className="text-sm text-gray-500 dark:text-gray-400">
                   {t('common.workspace')}
@@ -541,7 +556,7 @@ function WorkspacePageContent() {
 
           {/* 添加来源按钮 */}
           <div className="p-4 border-b border-gray-200 dark:border-gray-700">
-            <button 
+              <button
               onClick={() => setShowAddSourceModal(true)}
               className="w-full px-4 py-2 text-sm bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors flex items-center justify-center gap-2"
             >
@@ -689,28 +704,28 @@ function WorkspacePageContent() {
                 <div className="flex-1">
                   <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
                     {cardT('selectDeck')}
-                  </label>
-                  <input
-                    type="text"
+                    </label>
+                    <input
+                      type="text"
                     value={currentWorkspaceDeck}
                     onChange={(e) => {
                       setCurrentWorkspaceDeck(e.target.value);
                       setDeckName(e.target.value);
                     }}
-                    list="deckOptions"
+                      list="deckOptions"
                     className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                    placeholder="输入牌组名称..."
-                    disabled={cardLoading}
-                  />
-                  <datalist id="deckOptions">
-                    {decks.map((deck) => (
-                      <option key={deck.id} value={deck.name} />
-                    ))}
-                  </datalist>
+                      placeholder="输入牌组名称..."
+                      disabled={cardLoading}
+                    />
+                    <datalist id="deckOptions">
+                      {decks.map((deck) => (
+                        <option key={deck.id} value={deck.name} />
+                      ))}
+                    </datalist>
                   <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                     当前工作区牌组：{currentWorkspaceDeck}
                   </p>
-                </div>
+                  </div>
                 <div className="flex-1">
                   <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
                     卡片类型
@@ -1146,7 +1161,7 @@ function WorkspacePageContent() {
             <div className="p-6">
               {/* 标题栏 */}
               <div className="flex justify-between items-center mb-6">
-                <div>
+                      <div>
                   <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-1">
                     {workspaceT('generateAudioVideoOverview')}
                   </h2>
