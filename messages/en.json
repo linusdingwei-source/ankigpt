@@ -170,7 +170,18 @@
     "deepResearchDescription": "Get in-depth reports and new sources!",
     "searchNewSources": "Search for new sources on the web",
     "web": "Web",
-    "fastResearch": "Fast Research"
+    "fastResearch": "Fast Research",
+    "uploadFile": "Upload File",
+    "website": "Website",
+    "cloudDrive": "Cloud Drive",
+    "copiedText": "Copied Text",
+    "pasteCopiedText": "Paste Copied Text",
+    "pasteTextInstruction": "Paste the copied text below to upload it as a source to NotebookLM.",
+    "pasteTextHere": "Paste text here",
+    "insert": "Insert",
+    "orDragFilesHere": "Or drag files here",
+    "generateAudioVideoOverview": "Generate audio overview and video overview based on the following content",
+    "yourDocument": "Your Document"
   }
 }
 

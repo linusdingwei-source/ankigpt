@@ -170,7 +170,18 @@
     "deepResearchDescription": "詳細なレポートと新しいソースを取得！",
     "searchNewSources": "ウェブで新しいソースを検索",
     "web": "Web",
-    "fastResearch": "Fast Research"
+    "fastResearch": "Fast Research",
+    "uploadFile": "ファイルをアップロード",
+    "website": "ウェブサイト",
+    "cloudDrive": "クラウドドライブ",
+    "copiedText": "コピーしたテキスト",
+    "pasteCopiedText": "コピーしたテキストを貼り付け",
+    "pasteTextInstruction": "下にコピーしたテキストを貼り付けると、NotebookLM にソースとしてアップロードされます。",
+    "pasteTextHere": "ここにテキストを貼り付け",
+    "insert": "挿入",
+    "orDragFilesHere": "またはファイルをここにドラッグ",
+    "generateAudioVideoOverview": "以下のコンテンツに基づいて音声概要と動画概要を生成",
+    "yourDocument": "あなたのドキュメント"
   }
 }
 
