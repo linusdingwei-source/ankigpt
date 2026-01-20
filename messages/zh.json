@@ -145,6 +145,35 @@
     "clearSearch": "清除搜索",
     "noSearchResults": "没有找到匹配的卡片",
     "selectCard": "选择卡片"
+  },
+  "workspace": {
+    "source": "来源",
+    "chat": "对话",
+    "studio": "Studio",
+    "addSource": "添加来源",
+    "uploadSource": "上传来源",
+    "addSourceToStart": "添加来源即可开始使用",
+    "savedSources": "已保存的来源将显示在此处",
+    "addSourceHint": "点击上方的"添加来源"即可添加 PDF、网站、文本、视频或音频文件。此外，您还可以直接从 Google 云端硬盘导入文件。",
+    "sourcesCount": "{count}个来源",
+    "studioOutputs": "Studio 输出将保存在此处。",
+    "studioOutputsHint": "添加来源后，点击即可添加音频概览、学习指南、思维导图等！",
+    "addNote": "添加笔记",
+    "audioOverview": "音频概览",
+    "videoOverview": "视频概览",
+    "mindMap": "思维导图",
+    "report": "报告",
+    "flashcards": "闪卡",
+    "quiz": "测验",
+    "generateAIFlashcards": "基于您的来源生成 AI 闪卡",
+    "infographic": "信息图",
+    "presentation": "演示文稿",
+    "dataTable": "数据表格",
+    "tryDeepResearch": "试用 Deep Research",
+    "deepResearchDescription": "获取深度报告和新来源！",
+    "searchNewSources": "在网络中搜索新来源",
+    "web": "Web",
+    "fastResearch": "Fast Research"
   }
 }
 

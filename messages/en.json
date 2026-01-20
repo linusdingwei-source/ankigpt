@@ -142,6 +142,35 @@
     "pageInfo": "Page {page} of {totalPages}",
     "previousPage": "Previous",
     "nextPage": "Next"
+  },
+  "workspace": {
+    "source": "Source",
+    "chat": "Chat",
+    "studio": "Studio",
+    "addSource": "Add Source",
+    "uploadSource": "Upload Source",
+    "addSourceToStart": "Add sources to start using",
+    "savedSources": "Saved sources will be displayed here",
+    "addSourceHint": "Click \"Add Source\" above to add PDF, website, text, video, or audio files. Additionally, you can directly import files from Google Drive.",
+    "sourcesCount": "{count} sources",
+    "studioOutputs": "Studio outputs will be saved here.",
+    "studioOutputsHint": "After adding sources, click to add audio overviews, study guides, mind maps, etc.!",
+    "addNote": "Add Note",
+    "audioOverview": "Audio Overview",
+    "videoOverview": "Video Overview",
+    "mindMap": "Mind Map",
+    "report": "Report",
+    "flashcards": "Flashcards",
+    "quiz": "Quiz",
+    "generateAIFlashcards": "Generate AI Flashcards based on your sources",
+    "infographic": "Infographic",
+    "presentation": "Presentation",
+    "dataTable": "Data Table",
+    "tryDeepResearch": "Try Deep Research",
+    "deepResearchDescription": "Get in-depth reports and new sources!",
+    "searchNewSources": "Search for new sources on the web",
+    "web": "Web",
+    "fastResearch": "Fast Research"
   }
 }
 

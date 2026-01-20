@@ -142,6 +142,35 @@
     "pageInfo": "{page} / {totalPages} ページ",
     "previousPage": "前へ",
     "nextPage": "次へ"
+  },
+  "workspace": {
+    "source": "ソース",
+    "chat": "チャット",
+    "studio": "Studio",
+    "addSource": "ソースを追加",
+    "uploadSource": "ソースをアップロード",
+    "addSourceToStart": "ソースを追加して使用を開始",
+    "savedSources": "保存されたソースがここに表示されます",
+    "addSourceHint": "上記の「ソースを追加」をクリックして、PDF、ウェブサイト、テキスト、動画、または音声ファイルを追加できます。さらに、Google ドライブから直接ファイルをインポートすることもできます。",
+    "sourcesCount": "{count}個のソース",
+    "studioOutputs": "Studio の出力はここに保存されます。",
+    "studioOutputsHint": "ソースを追加した後、クリックして音声概要、学習ガイド、マインドマップなどを追加できます！",
+    "addNote": "ノートを追加",
+    "audioOverview": "音声概要",
+    "videoOverview": "動画概要",
+    "mindMap": "マインドマップ",
+    "report": "レポート",
+    "flashcards": "フラッシュカード",
+    "quiz": "クイズ",
+    "generateAIFlashcards": "ソースに基づいて AI フラッシュカードを生成",
+    "infographic": "インフォグラフィック",
+    "presentation": "プレゼンテーション",
+    "dataTable": "データテーブル",
+    "tryDeepResearch": "Deep Research を試す",
+    "deepResearchDescription": "詳細なレポートと新しいソースを取得！",
+    "searchNewSources": "ウェブで新しいソースを検索",
+    "web": "Web",
+    "fastResearch": "Fast Research"
   }
 }
 

@@ -1,9 +1,10 @@
 'use client';
 
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, Suspense } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
 import { Link } from '@/i18n/routing';
 import { useSession } from 'next-auth/react';
+import { useSearchParams } from 'next/navigation';
 import LanguageSwitcher from '@/components/LanguageSwitcher';
 import UserMenu from '@/components/UserMenu';
 import {
@@ -30,16 +31,25 @@ interface Card {
   updatedAt: string;
 }
 
-type TabType = 'tts' | 'generate' | 'cards';
-
 export default function WorkspacePage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-lg">Loading...</div>
+      </div>
+    }>
+      <WorkspacePageContent />
+    </Suspense>
+  );
+}
+
+function WorkspacePageContent() {
   const t = useTranslations();
+  const workspaceT = useTranslations('workspace');
   const cardT = useTranslations('AnkiCard');
   const locale = useLocale();
   const { data: session, status } = useSession();
-  
-  // Tab 状态
-  const [activeTab, setActiveTab] = useState<TabType>('tts');
+  const searchParams = useSearchParams();
   
   // TTS 相关状态
   const [ttsText, setTtsText] = useState('');
@@ -152,28 +162,24 @@ export default function WorkspacePage() {
 
   // 检查 URL 参数中的 deck
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const params = new URLSearchParams(window.location.search);
-      const deckParam = params.get('deck');
-      if (deckParam) {
-        setDeckName(deckParam);
-        setSelectedDeck(deckParam);
-        setActiveTab('cards'); // 切换到卡片列表标签
-        // 清除 URL 参数
+    const deckParam = searchParams.get('deck');
+    if (deckParam) {
+      setDeckName(deckParam);
+      setSelectedDeck(deckParam);
+      // 清除 URL 参数
+      if (typeof window !== 'undefined') {
         window.history.replaceState({}, '', window.location.pathname);
       }
     }
-  }, []);
+  }, [searchParams]);
 
   useEffect(() => {
     fetchDecks();
   }, [fetchDecks]);
 
   useEffect(() => {
-    if (activeTab === 'cards') {
       fetchCards();
-    }
-  }, [activeTab, fetchCards]);
+  }, [fetchCards]);
 
   const selectedCard = useMemo(() => {
     return cards.find(card => card.id === selectedCardId) || null;
@@ -367,7 +373,6 @@ export default function WorkspacePage() {
 
       // 适配新的统一响应格式
       if (response.success) {
-        setActiveTab('cards');
         await fetchCards();
         setCardText('');
         setPreview(null);
@@ -458,9 +463,10 @@ export default function WorkspacePage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800">
-      <nav className="bg-white dark:bg-gray-800 shadow-sm">
-        <div className="container mx-auto px-3 py-2">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex flex-col">
+      {/* 顶部导航栏 */}
+      <nav className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
+        <div className="px-4 py-3">
           <div className="flex justify-between items-center">
             <Link href="/" className="hover:opacity-80 transition-opacity">
               <h1 className="text-lg font-bold text-gray-900 dark:text-white">
@@ -484,48 +490,115 @@ export default function WorkspacePage() {
         </div>
       </nav>
 
-      <div className="container mx-auto px-3 py-2">
-        {/* Tab 导航栏 */}
-        <div className="max-w-6xl mx-auto mb-2">
-          <div className="bg-white dark:bg-gray-800 rounded shadow-sm">
-            <div className="flex border-b border-gray-200 dark:border-gray-700">
-              <button
-                onClick={() => setActiveTab('tts')}
-                className={`px-4 py-2 text-xs font-medium transition-colors border-b-2 ${
-                  activeTab === 'tts'
-                    ? 'border-indigo-600 text-indigo-600 dark:text-indigo-400 dark:border-indigo-400'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300'
-                }`}
-              >
-                {t('dashboard.textToSpeech')}
+      {/* 三栏布局 */}
+      <div className="flex-1 flex overflow-hidden">
+        {/* 左侧面板：来源（Sources） */}
+        <div className="w-80 flex-shrink-0 border-r border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 flex flex-col">
+          {/* 面板标题 */}
+          <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
+            <h2 className="text-sm font-semibold text-gray-900 dark:text-white">
+              {workspaceT('source')}
+            </h2>
+            <button className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
               </button>
-              <button
-                onClick={() => setActiveTab('generate')}
-                className={`px-4 py-2 text-xs font-medium transition-colors border-b-2 ${
-                  activeTab === 'generate'
-                    ? 'border-purple-600 text-purple-600 dark:text-purple-400 dark:border-purple-400'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300'
-                }`}
-              >
-                {t('dashboard.generateCard')}
+          </div>
+
+          {/* 添加来源按钮 */}
+          <div className="p-4 border-b border-gray-200 dark:border-gray-700">
+            <button className="w-full px-4 py-2 text-sm bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors flex items-center justify-center gap-2">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+              </svg>
+              {workspaceT('addSource')}
               </button>
-              <button
-                onClick={() => setActiveTab('cards')}
-                className={`px-4 py-2 text-xs font-medium transition-colors border-b-2 ${
-                  activeTab === 'cards'
-                    ? 'border-blue-600 text-blue-600 dark:text-blue-400 dark:border-blue-400'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300'
-                }`}
-              >
-                {t('dashboard.viewCards')}
+          </div>
+
+          {/* Deep Research 提示 */}
+          <div className="p-4 border-b border-gray-200 dark:border-gray-700 bg-blue-50 dark:bg-blue-900/20">
+            <div className="flex items-start gap-2">
+              <svg className="w-5 h-5 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+              <div>
+                <p className="text-xs font-medium text-blue-900 dark:text-blue-200 mb-1">
+                  {workspaceT('tryDeepResearch')}
+                </p>
+                <p className="text-xs text-blue-700 dark:text-blue-300">
+                  {workspaceT('deepResearchDescription')}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* 搜索新来源 */}
+          <div className="p-4 border-b border-gray-200 dark:border-gray-700">
+            <div className="relative">
+              <svg className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+              <input
+                type="text"
+                placeholder={workspaceT('searchNewSources')}
+                className="w-full pl-10 pr-4 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+              />
+            </div>
+            <div className="flex gap-2 mt-2">
+              <button className="flex-1 px-3 py-1.5 text-xs border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600 flex items-center justify-center gap-1">
+                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" />
+                </svg>
+                {workspaceT('web')}
+                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
               </button>
+              <button className="flex-1 px-3 py-1.5 text-xs border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600 flex items-center justify-center gap-1">
+                {workspaceT('fastResearch')}
+                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </button>
+              <button className="px-3 py-1.5 text-xs border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
+              </button>
+            </div>
+          </div>
+
+          {/* 已保存的来源列表 */}
+          <div className="flex-1 overflow-y-auto p-4">
+            <div className="text-center text-gray-500 dark:text-gray-400">
+              <svg className="w-12 h-12 mx-auto mb-3 text-gray-300 dark:text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+              <p className="text-sm font-medium mb-1">{workspaceT('savedSources')}</p>
+              <p className="text-xs">{workspaceT('addSourceHint')}</p>
             </div>
           </div>
         </div>
 
-        <div className="max-w-6xl mx-auto">
+        {/* 中间面板：对话（Chat） */}
+        <div className="flex-1 flex flex-col border-r border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
+          {/* 面板标题 */}
+          <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
+            <h2 className="text-sm font-semibold text-gray-900 dark:text-white">
+              {workspaceT('chat')}
+            </h2>
+            <button className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
+              </svg>
+            </button>
+          </div>
+
+          {/* 主要内容区域 */}
+          <div className="flex-1 overflow-y-auto p-6">
           {paymentSuccess && (
-            <div className="mb-2 p-2 bg-green-100 dark:bg-green-900 border border-green-400 dark:border-green-700 text-green-700 dark:text-green-300 rounded text-sm">
+              <div className="mb-4 p-3 bg-green-100 dark:bg-green-900 border border-green-400 dark:border-green-700 text-green-700 dark:text-green-300 rounded text-sm">
               <div className="flex items-center justify-between">
                 <div className="flex items-center">
                   <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
@@ -543,209 +616,197 @@ export default function WorkspacePage() {
             </div>
           )}
 
-          {/* Tab 1: 文本转语音 */}
-          {activeTab === 'tts' && (
-            <div className="bg-white dark:bg-gray-800 rounded shadow-sm p-4">
-              <h2 className="text-lg font-bold mb-2 text-gray-900 dark:text-white">
-                {t('tts.title')}
-              </h2>
-              <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">
-                {t('tts.description')}
-              </p>
+            {/* 空状态或内容 */}
+            {!preview && !cardText && !ttsText && (
+              <div className="flex flex-col items-center justify-center h-full text-center">
+                <div className="mb-4">
+                  <svg className="w-16 h-16 mx-auto text-gray-300 dark:text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" />
+                  </svg>
+                </div>
+                <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
+                  {workspaceT('addSourceToStart')}
+                </p>
+                <button className="px-4 py-2 text-sm bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors">
+                  {workspaceT('uploadSource')}
+                </button>
+              </div>
+            )}
 
-              <form onSubmit={handleTtsGenerate} className="space-y-2">
+            {/* 卡片生成表单 */}
+            <div className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
-                    {t('tts.inputPlaceholder')}
+                  {cardT('japaneseTextInput')}
                   </label>
+                <textarea
+                  value={cardText}
+                  onChange={(e) => setCardText(e.target.value)}
+                  className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent resize-none"
+                  rows={4}
+                  placeholder={cardT('japaneseTextPlaceholder')}
+                  disabled={cardLoading}
+                />
+              </div>
+
+              <div className="flex items-center gap-4">
+                <div className="flex-1">
+                  <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
+                    {cardT('selectDeck')}
+                  </label>
+                  <input
+                    type="text"
+                    value={deckName}
+                    onChange={(e) => setDeckName(e.target.value)}
+                    list="deckOptions"
+                    className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                    placeholder="输入牌组名称..."
+                    disabled={cardLoading}
+                  />
+                  <datalist id="deckOptions">
+                    {decks.map((deck) => (
+                      <option key={deck.id} value={deck.name} />
+                    ))}
+                  </datalist>
+                </div>
+                <div className="flex-1">
+                  <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
+                    卡片类型
+                  </label>
+                  <select
+                    value={cardType}
+                    onChange={(e) => setCardType(e.target.value)}
+                    className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                    disabled={cardLoading}
+                  >
+                    <option value="问答题（附翻转卡片）">问答题（附翻转卡片）</option>
+                    <option value="Basic-b860c">Basic-b860c</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="flex items-center">
+                <input
+                  type="checkbox"
+                  id="includePronunciation"
+                  checked={includePronunciation}
+                  onChange={(e) => setIncludePronunciation(e.target.checked)}
+                  className="mr-2"
+                  disabled={cardLoading}
+                />
+                <label htmlFor="includePronunciation" className="text-sm text-gray-700 dark:text-gray-300">
+                  {cardT('includePronunciation')}
+                </label>
+              </div>
+
+              {cardError && (
+                <div className="p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg text-sm text-red-600 dark:text-red-400">
+                  {cardError}
+                </div>
+              )}
+
+              <div className="flex gap-2">
+                <button
+                  onClick={handleGeneratePreview}
+                  disabled={cardLoading || !cardText.trim()}
+                  className="px-4 py-2 text-sm bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                >
+                  {cardLoading ? t('common.loading') : cardT('generatePreviewButton')}
+                </button>
+                {preview && (
+                  <button
+                    onClick={handleSaveCard}
+                    disabled={cardLoading}
+                    className="px-4 py-2 text-sm bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  >
+                    {cardLoading ? t('common.loading') : cardT('saveCardButton')}
+                  </button>
+                )}
+              </div>
+
+              {/* TTS 功能 */}
+              <div className="border-t border-gray-200 dark:border-gray-700 pt-4 mt-4">
+                <h3 className="text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
+                  {t('tts.title')}
+                </h3>
+                <form onSubmit={handleTtsGenerate} className="space-y-2">
                   <textarea
                     value={ttsText}
                     onChange={(e) => setTtsText(e.target.value)}
-                    rows={4}
+                    rows={3}
                     maxLength={500}
                     placeholder={t('tts.inputPlaceholder')}
-                    className="w-full px-3 py-2 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-indigo-500 focus:border-transparent dark:bg-gray-700 dark:border-gray-600 dark:text-white resize-none"
+                    className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent resize-none"
                   />
-                  <div className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-                    {ttsText.length}/500 {t('tts.maxLength')}
+                  <div className="flex items-center justify-between">
+                    <div className="text-xs text-gray-500 dark:text-gray-400">
+                      {ttsText.length}/500
                   </div>
-                </div>
-
                 <button
                   type="submit"
                   disabled={ttsLoading || !ttsText.trim()}
-                  className="w-full py-2 px-3 text-sm bg-indigo-600 text-white rounded hover:bg-indigo-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="px-4 py-2 text-sm bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {ttsLoading ? t('tts.generating') : t('tts.generate')}
                 </button>
+                  </div>
               </form>
 
               {ttsError && (
-                <div className="mt-2 p-2 bg-red-100 dark:bg-red-900 text-red-700 dark:text-red-300 rounded text-xs">
+                  <div className="mt-2 p-2 bg-red-50 dark:bg-red-900 text-red-700 dark:text-red-300 rounded text-xs">
                   {ttsError}
-                  {ttsError.includes('Insufficient credits') && (
-                    <div className="mt-2">
-                      <Link
-                        href="/pricing"
-                        className="text-indigo-600 hover:underline dark:text-indigo-400 font-semibold"
-                      >
-                        {t('dashboard.buyCreditsNow')} →
-                      </Link>
-                    </div>
-                  )}
                 </div>
               )}
 
               {audioUrl && (
                 <div className="mt-3 space-y-2">
-                  <div className="p-2 bg-gray-50 dark:bg-gray-700 rounded">
+                    <div className="p-2 bg-gray-50 dark:bg-gray-700 rounded-lg">
                     <audio controls className="w-full" src={audioUrl}>
                       Your browser does not support the audio element.
                     </audio>
                   </div>
                   <button
                     onClick={handleDownload}
-                    className="w-full py-1.5 px-3 text-sm bg-green-600 text-white rounded hover:bg-green-700 transition-colors"
+                      className="w-full px-4 py-2 text-sm bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
                   >
                     {t('tts.download')}
                   </button>
                 </div>
               )}
             </div>
-          )}
 
-          {/* Tab 2: 生成新卡片 */}
-          {activeTab === 'generate' && (
-            <div className="space-y-3">
-              <div className="bg-white dark:bg-gray-800 rounded shadow-sm p-4">
-                <h2 className="text-lg font-bold mb-2 text-gray-900 dark:text-white">
-                  生成 Anki 卡片
-                </h2>
-                
-                {credits !== null && (
-                  <div className="mb-2 p-2 bg-blue-50 dark:bg-blue-900/20 rounded text-xs">
-                    <p className="text-xs text-gray-600 dark:text-gray-400">
-                    </p>
-                  </div>
-                )}
-
-                <div className="space-y-2">
-                  <div>
-                    <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
-                      卡片类型
-                    </label>
-                    <select
-                      value={cardType}
-                      onChange={(e) => setCardType(e.target.value)}
-                      className="w-full px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                      disabled={cardLoading}
-                    >
-                      <option value="问答题（附翻转卡片）">问答题（附翻转卡片）</option>
-                      <option value="Basic-b860c">Basic-b860c</option>
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
-                      目标牌组
-                    </label>
-                    <input
-                      type="text"
-                      value={deckName}
-                      onChange={(e) => setDeckName(e.target.value)}
-                      list="deckOptions"
-                      className="w-full px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                      placeholder="输入牌组名称..."
-                      disabled={cardLoading}
-                    />
-                    <datalist id="deckOptions">
-                      {decks.map((deck) => (
-                        <option key={deck.id} value={deck.name} />
-                      ))}
-                    </datalist>
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
-                      日文句子
-                    </label>
-                    <textarea
-                      value={cardText}
-                      onChange={(e) => setCardText(e.target.value)}
-                      className="w-full px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                      rows={3}
-                      placeholder="在此输入日文句子..."
-                      disabled={cardLoading}
-                    />
-                  </div>
-
-                  <div className="flex items-center">
-                    <input
-                      type="checkbox"
-                      id="includePronunciation"
-                      checked={includePronunciation}
-                      onChange={(e) => setIncludePronunciation(e.target.checked)}
-                      className="mr-1.5"
-                      disabled={cardLoading}
-                    />
-                    <label htmlFor="includePronunciation" className="text-xs text-gray-700 dark:text-gray-300">
-                      包含发音
-                    </label>
-                  </div>
-
-                  {cardError && (
-                    <div className="p-2 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded text-xs">
-                      <p className="text-sm text-red-600 dark:text-red-400">{cardError}</p>
-                    </div>
-                  )}
-
-                  <div className="flex gap-2">
-                    <button
-                      onClick={handleGeneratePreview}
-                      disabled={cardLoading || !cardText.trim()}
-                      className="px-3 py-1.5 text-sm bg-indigo-600 text-white rounded hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      {cardLoading ? '生成中...' : '生成预览'}
-                    </button>
-                    {preview && (
-                      <button
-                        onClick={handleSaveCard}
-                        disabled={cardLoading}
-                        className="px-3 py-1.5 text-sm bg-green-600 text-white rounded hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
-                        {cardLoading ? '保存中...' : '保存卡片'}
-                      </button>
-                    )}
-                  </div>
-                </div>
-              </div>
-
+              {/* 预览 */}
               {preview && (
-                <div className="bg-white dark:bg-gray-800 rounded shadow-sm p-4">
-                  <h2 className="text-base font-bold mb-2 text-gray-900 dark:text-white">预览</h2>
-                  
-                  <div className="space-y-2">
+                <div className="mt-4 p-4 bg-gray-50 dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600">
+                  <h3 className="text-sm font-semibold mb-3 text-gray-900 dark:text-white">
+                    {cardT('cardPreview')}
+                  </h3>
+            <div className="space-y-3">
                     <div>
-                      <h3 className="text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">正面（日文）</h3>
-                      <div className="p-2 bg-gray-50 dark:bg-gray-700 rounded">
+                      <h4 className="text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        {cardT('frontContent')}
+                      </h4>
+                      <div className="p-3 bg-white dark:bg-gray-800 rounded border border-gray-200 dark:border-gray-600">
                         <p className="text-sm">{preview.frontContent}</p>
                       </div>
                     </div>
-
                     <div>
-                      <h3 className="text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">背面（分析）</h3>
-                      <div 
-                        className="p-2 bg-gray-50 dark:bg-gray-700 rounded prose dark:prose-invert max-w-none prose-sm"
+                      <h4 className="text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        {cardT('backContent')}
+                      </h4>
+                      <div
+                        className="p-3 bg-white dark:bg-gray-800 rounded border border-gray-200 dark:border-gray-600 prose dark:prose-invert max-w-none prose-sm"
                         dangerouslySetInnerHTML={{ __html: preview.backContent }}
                       />
                     </div>
-
                     {preview.audioUrl && (
                       <div>
-                        <h3 className="text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">发音</h3>
+                        <h4 className="text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+                          {cardT('pronunciationPreview')}
+                        </h4>
                         <audio controls className="w-full">
                           <source src={preview.audioUrl} type="audio/mpeg" />
-                          您的浏览器不支持音频播放。
+                          {cardT('audioNotSupported')}
                         </audio>
                       </div>
                     )}
@@ -753,10 +814,394 @@ export default function WorkspacePage() {
                 </div>
               )}
             </div>
-          )}
+          </div>
 
-          {/* Tab 3: 查看卡片列表 */}
-          {activeTab === 'cards' && (
+          {/* 底部状态栏 */}
+          <div className="px-4 py-2 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 flex items-center justify-between text-xs text-gray-600 dark:text-gray-400">
+            <span>{workspaceT('addSourceToStart')}</span>
+            <span>{workspaceT('sourcesCount', { count: decks.length })}</span>
+            <button className="text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        {/* 右侧面板：Studio */}
+        <div className="w-80 flex-shrink-0 bg-white dark:bg-gray-800 flex flex-col">
+          {/* 面板标题 */}
+          <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
+            <h2 className="text-sm font-semibold text-gray-900 dark:text-white">
+              {workspaceT('studio')}
+                </h2>
+            <button className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+
+          {/* Studio 输出选项网格 */}
+          <div className="flex-1 overflow-y-auto p-4">
+            <div className="grid grid-cols-2 gap-3">
+              {/* 音频概览 */}
+              <button className="p-3 bg-gray-50 dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600 hover:border-indigo-500 dark:hover:border-indigo-400 transition-colors text-left">
+                <div className="w-8 h-8 bg-blue-100 dark:bg-blue-900/30 rounded-lg flex items-center justify-center mb-2">
+                  <svg className="w-5 h-5 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
+                  </svg>
+                </div>
+                <p className="text-xs font-medium text-gray-900 dark:text-white">
+                  {workspaceT('audioOverview')}
+                </p>
+              </button>
+
+              {/* 视频概览 */}
+              <button className="p-3 bg-gray-50 dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600 hover:border-indigo-500 dark:hover:border-indigo-400 transition-colors text-left">
+                <div className="w-8 h-8 bg-red-100 dark:bg-red-900/30 rounded-lg flex items-center justify-center mb-2">
+                  <svg className="w-5 h-5 text-red-600 dark:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                  </svg>
+                  </div>
+                <p className="text-xs font-medium text-gray-900 dark:text-white">
+                  {workspaceT('videoOverview')}
+                </p>
+              </button>
+
+              {/* 思维导图 */}
+              <button className="p-3 bg-gray-50 dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600 hover:border-indigo-500 dark:hover:border-indigo-400 transition-colors text-left">
+                <div className="w-8 h-8 bg-purple-100 dark:bg-purple-900/30 rounded-lg flex items-center justify-center mb-2">
+                  <svg className="w-5 h-5 text-purple-600 dark:text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                  </svg>
+                  </div>
+                <p className="text-xs font-medium text-gray-900 dark:text-white">
+                  {workspaceT('mindMap')}
+                </p>
+              </button>
+
+              {/* 报告 */}
+              <button className="p-3 bg-gray-50 dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600 hover:border-indigo-500 dark:hover:border-indigo-400 transition-colors text-left">
+                <div className="w-8 h-8 bg-green-100 dark:bg-green-900/30 rounded-lg flex items-center justify-center mb-2">
+                  <svg className="w-5 h-5 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  </svg>
+                </div>
+                <p className="text-xs font-medium text-gray-900 dark:text-white">
+                  {workspaceT('report')}
+                </p>
+              </button>
+
+              {/* 闪卡 - 高亮显示 */}
+              <button className="p-3 bg-indigo-50 dark:bg-indigo-900/30 rounded-lg border-2 border-indigo-500 dark:border-indigo-400 hover:border-indigo-600 dark:hover:border-indigo-300 transition-colors text-left col-span-2">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-indigo-100 dark:bg-indigo-900/50 rounded-lg flex items-center justify-center">
+                    <svg className="w-6 h-6 text-indigo-600 dark:text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
+                    </svg>
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-sm font-semibold text-indigo-900 dark:text-indigo-100 mb-1">
+                      {workspaceT('generateAIFlashcards')}
+                    </p>
+                    <p className="text-xs text-indigo-700 dark:text-indigo-300">
+                      {workspaceT('flashcards')}
+                    </p>
+                  </div>
+                </div>
+              </button>
+
+              {/* 测验 */}
+              <button className="p-3 bg-gray-50 dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600 hover:border-indigo-500 dark:hover:border-indigo-400 transition-colors text-left">
+                <div className="w-8 h-8 bg-yellow-100 dark:bg-yellow-900/30 rounded-lg flex items-center justify-center mb-2">
+                  <svg className="w-5 h-5 text-yellow-600 dark:text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                </div>
+                <p className="text-xs font-medium text-gray-900 dark:text-white">
+                  {workspaceT('quiz')}
+                </p>
+              </button>
+
+              {/* 信息图 */}
+              <button className="p-3 bg-gray-50 dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600 hover:border-indigo-500 dark:hover:border-indigo-400 transition-colors text-left">
+                <div className="w-8 h-8 bg-pink-100 dark:bg-pink-900/30 rounded-lg flex items-center justify-center mb-2">
+                  <svg className="w-5 h-5 text-pink-600 dark:text-pink-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                  </svg>
+                </div>
+                <p className="text-xs font-medium text-gray-900 dark:text-white">
+                  {workspaceT('infographic')}
+                </p>
+              </button>
+
+              {/* 演示文稿 */}
+              <button className="p-3 bg-gray-50 dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600 hover:border-indigo-500 dark:hover:border-indigo-400 transition-colors text-left">
+                <div className="w-8 h-8 bg-orange-100 dark:bg-orange-900/30 rounded-lg flex items-center justify-center mb-2">
+                  <svg className="w-5 h-5 text-orange-600 dark:text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01" />
+                  </svg>
+                </div>
+                <p className="text-xs font-medium text-gray-900 dark:text-white">
+                  {workspaceT('presentation')}
+                </p>
+              </button>
+
+              {/* 数据表格 */}
+              <button className="p-3 bg-gray-50 dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600 hover:border-indigo-500 dark:hover:border-indigo-400 transition-colors text-left">
+                <div className="w-8 h-8 bg-teal-100 dark:bg-teal-900/30 rounded-lg flex items-center justify-center mb-2">
+                  <svg className="w-5 h-5 text-teal-600 dark:text-teal-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M3 14h18m-9-4v8m-7 0h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                  </svg>
+                </div>
+                <p className="text-xs font-medium text-gray-900 dark:text-white">
+                  {workspaceT('dataTable')}
+                </p>
+              </button>
+            </div>
+
+            {/* Studio 输出说明 */}
+            <div className="mt-6 p-4 bg-gray-50 dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600">
+              <div className="flex items-start gap-2 mb-2">
+                <svg className="w-5 h-5 text-indigo-600 dark:text-indigo-400 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
+                </svg>
+                  <div>
+                  <p className="text-xs font-medium text-gray-900 dark:text-white mb-1">
+                    {workspaceT('studioOutputs')}
+                  </p>
+                  <p className="text-xs text-gray-600 dark:text-gray-400">
+                    {workspaceT('studioOutputsHint')}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* 添加笔记按钮 */}
+            <button className="mt-4 w-full px-4 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors flex items-center justify-center gap-2">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+              </svg>
+              {workspaceT('addNote')}
+            </button>
+          </div>
+
+          {/* 卡片列表（在 Studio 面板底部） */}
+          <div className="border-t border-gray-200 dark:border-gray-700 flex flex-col" style={{ maxHeight: '40%' }}>
+            <div className="px-4 py-2 border-b border-gray-200 dark:border-gray-700">
+              <div className="flex items-center justify-between mb-2">
+                <h3 className="text-xs font-semibold text-gray-900 dark:text-white">
+                  {cardT('myCardsTitle')}
+                </h3>
+                {total > 0 && (
+                  <span className="text-xs text-gray-500 dark:text-gray-400">
+                    {total}
+                  </span>
+                )}
+              </div>
+                    <input
+                      type="text"
+                placeholder={cardT('searchPlaceholder')}
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full px-2 py-1.5 text-xs border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-1 focus:ring-indigo-500 focus:border-transparent"
+              />
+              {decks.length > 0 && (
+                <select
+                  value={selectedDeck}
+                  onChange={(e) => {
+                    setSelectedDeck(e.target.value);
+                    setPage(1);
+                  }}
+                  className="w-full mt-2 px-2 py-1.5 text-xs border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-1 focus:ring-indigo-500 focus:border-transparent"
+                >
+                  <option value="">{cardT('allDecks')}</option>
+                      {decks.map((deck) => (
+                    <option key={deck.id} value={deck.name}>
+                      {deck.name}
+                    </option>
+                      ))}
+                </select>
+              )}
+                  </div>
+
+            {/* 卡片列表 */}
+            <div className="flex-1 overflow-y-auto">
+              {cardsError && (
+                <div className="p-2 m-2 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded text-xs">
+                  <p className="text-xs text-red-600 dark:text-red-400">{cardsError}</p>
+                  </div>
+              )}
+              {cardsLoading ? (
+                <div className="flex justify-center items-center h-24">
+                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-indigo-600"></div>
+                  </div>
+              ) : cards.length === 0 ? (
+                <div className="p-4 text-center text-xs text-gray-500 dark:text-gray-400">
+                  {debouncedSearchQuery ? cardT('noSearchResults') : cardT('noCardsYet')}
+                </div>
+              ) : (
+                <div className="divide-y divide-gray-200 dark:divide-gray-700">
+                  {cards.map((card) => (
+                    <button
+                      key={card.id}
+                      onClick={() => setSelectedCardId(card.id)}
+                      className={`w-full text-left p-2 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors ${
+                        selectedCardId === card.id
+                          ? 'bg-indigo-50 dark:bg-indigo-900/20 border-l-2 border-indigo-600'
+                          : ''
+                      }`}
+                    >
+                      <p className="text-xs font-medium text-gray-900 dark:text-white line-clamp-2 mb-1">
+                        {card.frontContent}
+                      </p>
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs text-gray-500 dark:text-gray-400">
+                          {card.deckName}
+                        </span>
+                        <span className="text-xs text-gray-400 dark:text-gray-500">
+                          {new Date(card.createdAt).toLocaleDateString(locale)}
+                        </span>
+                      </div>
+                    </button>
+                  ))}
+                    </div>
+                  )}
+
+              {totalPages > 1 && (
+                <div className="p-2 border-t border-gray-200 dark:border-gray-700">
+                  <div className="flex items-center justify-between">
+                    <button
+                      onClick={() => setPage(p => Math.max(1, p - 1))}
+                      disabled={page === 1}
+                      className="px-2 py-1 text-xs border border-gray-300 dark:border-gray-600 rounded disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 dark:hover:bg-gray-700"
+                    >
+                      {cardT('previousPage')}
+                    </button>
+                    <span className="text-xs text-gray-600 dark:text-gray-400">
+                      {cardT('pageInfo', { page, totalPages })}
+                    </span>
+                      <button
+                      onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                      disabled={page === totalPages}
+                      className="px-2 py-1 text-xs border border-gray-300 dark:border-gray-600 rounded disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 dark:hover:bg-gray-700"
+                    >
+                      {cardT('nextPage')}
+                      </button>
+                  </div>
+                </div>
+                    )}
+            </div>
+                  </div>
+                </div>
+              </div>
+
+      {/* 卡片详情模态框（当选中卡片时显示在中间面板） */}
+      {selectedCard && (
+        <div className="fixed inset-0 bg-black/50 dark:bg-black/70 z-50 flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6">
+              <div className="flex justify-between items-start mb-4 pb-4 border-b border-gray-200 dark:border-gray-700">
+                <div>
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="text-xs px-2 py-1 bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 rounded">
+                      {selectedCard.deckName}
+                    </span>
+                    <span className="text-xs px-2 py-1 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded">
+                      {selectedCard.cardType}
+                    </span>
+                  </div>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">
+                    {new Date(selectedCard.createdAt).toLocaleString(locale)}
+                  </p>
+                </div>
+                <button
+                  onClick={() => setSelectedCardId(null)}
+                  className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+
+              <div className="space-y-4">
+                    <div>
+                  <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                    {cardT('frontContent')}
+                  </h3>
+                  <div className="p-4 bg-gray-50 dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600">
+                    <p className="text-base text-gray-900 dark:text-white leading-relaxed">
+                      {selectedCard.frontContent}
+                    </p>
+                      </div>
+                    </div>
+
+                    <div>
+                  <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                    {cardT('backContent')}
+                  </h3>
+                      <div 
+                    className="p-4 bg-gray-50 dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600 prose dark:prose-invert max-w-none prose-sm"
+                    dangerouslySetInnerHTML={{ __html: selectedCard.backContent }}
+                      />
+                    </div>
+
+                {selectedCard.audioUrl && (
+                      <div>
+                    <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                      {cardT('pronunciationPreview')}
+                    </h3>
+                    <div className="p-3 bg-gray-50 dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600">
+                        <audio controls className="w-full">
+                        <source src={selectedCard.audioUrl} type="audio/mpeg" />
+                        {cardT('audioNotSupported')}
+                        </audio>
+                    </div>
+                      </div>
+                    )}
+
+                {selectedCard.tags && selectedCard.tags.length > 0 && (
+                  <div>
+                    <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                      标签
+                    </h3>
+                    <div className="flex flex-wrap gap-2">
+                      {selectedCard.tags.map((tag, index) => (
+                        <span
+                          key={index}
+                          className="px-2 py-1 text-xs bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-full"
+                        >
+                          {tag}
+                        </span>
+                      ))}
+                  </div>
+                </div>
+              )}
+
+                <div className="flex justify-end gap-2 pt-4 border-t border-gray-200 dark:border-gray-700">
+                  <button
+                    onClick={() => setSelectedCardId(null)}
+                    className="px-4 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
+                  >
+                    {t('common.cancel')}
+                  </button>
+                  <button
+                    onClick={() => handleDeleteCard(selectedCard.id)}
+                    className="px-4 py-2 text-sm bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+                  >
+                    {cardT('delete')}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+            </div>
+          )}
+    </div>
+  );
+}
             <div className="flex gap-3 h-[calc(100vh-250px)]">
               {/* 左侧边栏 - 卡片列表 */}
               <div className="w-80 flex-shrink-0 bg-white dark:bg-gray-800 rounded shadow-sm flex flex-col">
