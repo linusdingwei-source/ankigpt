@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useSession, signOut } from 'next-auth/react';
-import { useRouter, Link } from '@/i18n/routing';
+import { useRouter, Link, usePathname } from '@/i18n/routing';
 import { useLocale, useTranslations } from 'next-intl';
 
 interface UserMenuProps {
@@ -12,6 +12,7 @@ interface UserMenuProps {
 export default function UserMenu({ credits }: UserMenuProps) {
   const { data: session, status } = useSession();
   const router = useRouter();
+  const pathname = usePathname();
   const locale = useLocale();
   const t = useTranslations();
   const [isOpen, setIsOpen] = useState(false);
@@ -144,7 +145,16 @@ export default function UserMenu({ credits }: UserMenuProps) {
           <div className="py-1">
             <Link
               href="/dashboard"
-              onClick={() => setIsOpen(false)}
+              onClick={(e) => {
+                setIsOpen(false);
+                // 如果已经在 dashboard 页面，滚动到顶部
+                if (pathname?.includes('/dashboard')) {
+                  e.preventDefault();
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                  // 也可以选择刷新页面
+                  // router.refresh();
+                }
+              }}
               className="w-full flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
             >
               <svg className="w-4 h-4 mr-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
