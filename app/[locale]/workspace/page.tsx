@@ -58,11 +58,23 @@ function WorkspacePageContent() {
   const [ttsError, setTtsError] = useState('');
   
   // 当前工作区牌组（从URL参数或默认值）
-  // 立即从URL参数读取，避免初始渲染时显示应用名称
-  const initialDeckParam = searchParams.get('deck');
-  const [currentWorkspaceDeck, setCurrentWorkspaceDeck] = useState<string>(
-    initialDeckParam ? decodeURIComponent(initialDeckParam) : 'default'
-  );
+  // 使用函数式初始化确保在组件挂载时立即读取URL参数
+  const [currentWorkspaceDeck, setCurrentWorkspaceDeck] = useState<string>(() => {
+    // 在客户端立即从 window.location 读取，确保初始渲染时就有值
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const deckParam = params.get('deck');
+      if (deckParam) {
+        return decodeURIComponent(deckParam);
+      }
+    }
+    // 如果 window 不可用，尝试从 searchParams 读取（服务端渲染）
+    const deckParam = searchParams.get('deck');
+    if (deckParam) {
+      return decodeURIComponent(deckParam);
+    }
+    return 'default';
+  });
   
   // 卡片生成相关状态
   const [cardText, setCardText] = useState('');
@@ -176,24 +188,44 @@ function WorkspacePageContent() {
 
   // 检查 URL 参数中的 deck（同步更新状态）
   useEffect(() => {
-    const deckParam = searchParams.get('deck');
-    if (deckParam) {
+    // 优先从 window.location 读取（客户端），确保能获取到最新的URL参数
+    let deckParam: string | null = null;
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      deckParam = params.get('deck');
+    }
+    // 如果 window.location 没有，尝试从 searchParams 读取
+    if (!deckParam) {
+      deckParam = searchParams.get('deck');
+    }
+    
+    if (deckParam && currentWorkspaceDeck === 'default') {
+      // 只有在当前还是默认值时才更新，避免覆盖用户手动设置的值
       const decodedDeckName = decodeURIComponent(deckParam);
       setCurrentWorkspaceDeck(decodedDeckName);
       setDeckName(decodedDeckName);
       setSelectedDeck(decodedDeckName);
+    } else if (deckParam) {
+      // 如果已经有值，也更新一下确保同步
+      const decodedDeckName = decodeURIComponent(deckParam);
+      if (decodedDeckName !== currentWorkspaceDeck) {
+        setCurrentWorkspaceDeck(decodedDeckName);
+        setDeckName(decodedDeckName);
+        setSelectedDeck(decodedDeckName);
+      }
     }
-  }, [searchParams]);
+  }, [searchParams, currentWorkspaceDeck]);
   
-  // 清除 URL 参数（延迟执行，确保状态已更新）
+  // 清除 URL 参数（延迟执行，确保状态已更新且已渲染）
   useEffect(() => {
     if (currentWorkspaceDeck !== 'default' && typeof window !== 'undefined') {
       const urlParams = new URLSearchParams(window.location.search);
       if (urlParams.get('deck')) {
-        // 使用 requestAnimationFrame 确保在下一帧清除
-        requestAnimationFrame(() => {
+        // 延迟清除，确保组件已经渲染完成
+        const timer = setTimeout(() => {
           window.history.replaceState({}, '', window.location.pathname);
-        });
+        }, 500);
+        return () => clearTimeout(timer);
       }
     }
   }, [currentWorkspaceDeck]);
@@ -512,14 +544,40 @@ function WorkspacePageContent() {
             <div className="flex items-center gap-3">
             <Link href="/" className="hover:opacity-80 transition-opacity">
               <h1 className="text-lg font-bold text-gray-900 dark:text-white">
-                  {currentWorkspaceDeck !== 'default' ? currentWorkspaceDeck : t('common.appName')}
+                  {(() => {
+                    // 在渲染时也检查URL参数，确保能获取到最新值
+                    if (typeof window !== 'undefined') {
+                      const params = new URLSearchParams(window.location.search);
+                      const deckParam = params.get('deck');
+                      if (deckParam) {
+                        return decodeURIComponent(deckParam);
+                      }
+                    }
+                    // 如果URL参数没有，使用状态值
+                    return currentWorkspaceDeck && currentWorkspaceDeck !== 'default' 
+                      ? currentWorkspaceDeck 
+                      : t('common.appName');
+                  })()}
               </h1>
             </Link>
-              {currentWorkspaceDeck !== 'default' && (
-                <span className="text-sm text-gray-500 dark:text-gray-400">
-                  {t('common.workspace')}
-                </span>
-              )}
+              {(() => {
+                // 同样在渲染时检查URL参数
+                if (typeof window !== 'undefined') {
+                  const params = new URLSearchParams(window.location.search);
+                  if (params.get('deck')) {
+                    return (
+                      <span className="text-sm text-gray-500 dark:text-gray-400">
+                        {t('common.workspace')}
+                      </span>
+                    );
+                  }
+                }
+                return currentWorkspaceDeck && currentWorkspaceDeck !== 'default' ? (
+                  <span className="text-sm text-gray-500 dark:text-gray-400">
+                    {t('common.workspace')}
+                  </span>
+                ) : null;
+              })()}
             </div>
             <div className="flex items-center gap-3">
               <LanguageSwitcher />
