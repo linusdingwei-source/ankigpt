@@ -40,7 +40,7 @@ export default async function HomePage({
 }) {
   const { locale } = await params;
   
-  // 直接重定向到 dashboard（试用页面）
+  // 直接重定向到 workspace（功能页面）
   // redirect 函数来自 i18n/routing，需要 href 和 locale
-  redirect({ href: '/dashboard', locale });
+  redirect({ href: '/workspace', locale });
 }
