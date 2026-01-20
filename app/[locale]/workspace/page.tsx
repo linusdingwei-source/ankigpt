@@ -57,6 +57,9 @@ function WorkspacePageContent() {
   const [audioUrl, setAudioUrl] = useState<string | null>(null);
   const [ttsError, setTtsError] = useState('');
   
+  // 当前工作区牌组（从URL参数或默认值）
+  const [currentWorkspaceDeck, setCurrentWorkspaceDeck] = useState<string>('default');
+  
   // 卡片生成相关状态
   const [cardText, setCardText] = useState('');
   const [cardType, setCardType] = useState('问答题（附翻转卡片）');
@@ -169,14 +172,32 @@ function WorkspacePageContent() {
   useEffect(() => {
     const deckParam = searchParams.get('deck');
     if (deckParam) {
-      setDeckName(deckParam);
-      setSelectedDeck(deckParam);
+      const decodedDeckName = decodeURIComponent(deckParam);
+      setCurrentWorkspaceDeck(decodedDeckName);
+      setDeckName(decodedDeckName);
+      setSelectedDeck(decodedDeckName);
       // 清除 URL 参数
       if (typeof window !== 'undefined') {
         window.history.replaceState({}, '', window.location.pathname);
       }
     }
   }, [searchParams]);
+  
+  // 当牌组列表加载后，如果没有从URL参数获取到牌组，使用第一个牌组或默认值
+  useEffect(() => {
+    if (decks.length > 0 && currentWorkspaceDeck === 'default' && !searchParams.get('deck')) {
+      setCurrentWorkspaceDeck(decks[0].name);
+      setDeckName(decks[0].name);
+      setSelectedDeck(decks[0].name);
+    }
+  }, [decks, currentWorkspaceDeck, searchParams]);
+  
+  // 确保卡片列表始终显示当前工作区牌组的卡片
+  useEffect(() => {
+    if (currentWorkspaceDeck !== 'default') {
+      setSelectedDeck(currentWorkspaceDeck);
+    }
+  }, [currentWorkspaceDeck]);
 
   useEffect(() => {
     fetchDecks();
@@ -363,7 +384,7 @@ function WorkspacePageContent() {
         body: JSON.stringify({
           text: cardText,
           cardType,
-          deckName: deckName.trim() || 'default',
+          deckName: currentWorkspaceDeck.trim() || deckName.trim() || 'default',
           includePronunciation,
         }),
       });
@@ -473,11 +494,18 @@ function WorkspacePageContent() {
       <nav className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
         <div className="px-4 py-3">
           <div className="flex justify-between items-center">
-            <Link href="/" className="hover:opacity-80 transition-opacity">
-              <h1 className="text-lg font-bold text-gray-900 dark:text-white">
-                {t('common.appName')}
-              </h1>
-            </Link>
+            <div className="flex items-center gap-3">
+              <Link href="/" className="hover:opacity-80 transition-opacity">
+                <h1 className="text-lg font-bold text-gray-900 dark:text-white">
+                  {currentWorkspaceDeck !== 'default' ? currentWorkspaceDeck : t('common.appName')}
+                </h1>
+              </Link>
+              {currentWorkspaceDeck !== 'default' && (
+                <span className="text-sm text-gray-500 dark:text-gray-400">
+                  {t('common.workspace')}
+                </span>
+              )}
+            </div>
             <div className="flex items-center gap-3">
               <LanguageSwitcher />
               {session?.user ? (
@@ -661,22 +689,28 @@ function WorkspacePageContent() {
                 <div className="flex-1">
                   <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
                     {cardT('selectDeck')}
-                    </label>
-                    <input
-                      type="text"
-                      value={deckName}
-                      onChange={(e) => setDeckName(e.target.value)}
-                      list="deckOptions"
+                  </label>
+                  <input
+                    type="text"
+                    value={currentWorkspaceDeck}
+                    onChange={(e) => {
+                      setCurrentWorkspaceDeck(e.target.value);
+                      setDeckName(e.target.value);
+                    }}
+                    list="deckOptions"
                     className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                      placeholder="输入牌组名称..."
-                      disabled={cardLoading}
-                    />
-                    <datalist id="deckOptions">
-                      {decks.map((deck) => (
-                        <option key={deck.id} value={deck.name} />
-                      ))}
-                    </datalist>
-                  </div>
+                    placeholder="输入牌组名称..."
+                    disabled={cardLoading}
+                  />
+                  <datalist id="deckOptions">
+                    {decks.map((deck) => (
+                      <option key={deck.id} value={deck.name} />
+                    ))}
+                  </datalist>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                    当前工作区牌组：{currentWorkspaceDeck}
+                  </p>
+                </div>
                 <div className="flex-1">
                   <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
                     卡片类型
