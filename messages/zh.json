@@ -154,7 +154,7 @@
     "uploadSource": "上传来源",
     "addSourceToStart": "添加来源即可开始使用",
     "savedSources": "已保存的来源将显示在此处",
-    "addSourceHint": "点击上方的"添加来源"即可添加 PDF、网站、文本、视频或音频文件。此外，您还可以直接从 Google 云端硬盘导入文件。",
+    "addSourceHint": "点击上方的\"添加来源\"即可添加 PDF、网站、文本、视频或音频文件。此外，您还可以直接从 Google 云端硬盘导入文件。",
     "sourcesCount": "{count}个来源",
     "studioOutputs": "Studio 输出将保存在此处。",
     "studioOutputsHint": "添加来源后，点击即可添加音频概览、学习指南、思维导图等！",

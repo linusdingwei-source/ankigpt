@@ -639,90 +639,90 @@ function WorkspacePageContent() {
                   <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
                   {cardT('japaneseTextInput')}
                   </label>
-                <textarea
+                  <textarea
                   value={cardText}
                   onChange={(e) => setCardText(e.target.value)}
                   className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent resize-none"
-                  rows={4}
+                    rows={4}
                   placeholder={cardT('japaneseTextPlaceholder')}
                   disabled={cardLoading}
-                />
-              </div>
+                  />
+                </div>
 
               <div className="flex items-center gap-4">
                 <div className="flex-1">
                   <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
                     {cardT('selectDeck')}
-                  </label>
-                  <input
-                    type="text"
-                    value={deckName}
-                    onChange={(e) => setDeckName(e.target.value)}
-                    list="deckOptions"
+                    </label>
+                    <input
+                      type="text"
+                      value={deckName}
+                      onChange={(e) => setDeckName(e.target.value)}
+                      list="deckOptions"
                     className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                    placeholder="输入牌组名称..."
-                    disabled={cardLoading}
-                  />
-                  <datalist id="deckOptions">
-                    {decks.map((deck) => (
-                      <option key={deck.id} value={deck.name} />
-                    ))}
-                  </datalist>
-                </div>
+                      placeholder="输入牌组名称..."
+                      disabled={cardLoading}
+                    />
+                    <datalist id="deckOptions">
+                      {decks.map((deck) => (
+                        <option key={deck.id} value={deck.name} />
+                      ))}
+                    </datalist>
+                  </div>
                 <div className="flex-1">
                   <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
                     卡片类型
-                  </label>
+                    </label>
                   <select
                     value={cardType}
                     onChange={(e) => setCardType(e.target.value)}
                     className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                    disabled={cardLoading}
+                      disabled={cardLoading}
                   >
                     <option value="问答题（附翻转卡片）">问答题（附翻转卡片）</option>
                     <option value="Basic-b860c">Basic-b860c</option>
                   </select>
                 </div>
-              </div>
+                  </div>
 
-              <div className="flex items-center">
-                <input
-                  type="checkbox"
-                  id="includePronunciation"
-                  checked={includePronunciation}
-                  onChange={(e) => setIncludePronunciation(e.target.checked)}
+                  <div className="flex items-center">
+                    <input
+                      type="checkbox"
+                      id="includePronunciation"
+                      checked={includePronunciation}
+                      onChange={(e) => setIncludePronunciation(e.target.checked)}
                   className="mr-2"
-                  disabled={cardLoading}
-                />
+                      disabled={cardLoading}
+                    />
                 <label htmlFor="includePronunciation" className="text-sm text-gray-700 dark:text-gray-300">
                   {cardT('includePronunciation')}
-                </label>
-              </div>
+                    </label>
+                  </div>
 
-              {cardError && (
+                  {cardError && (
                 <div className="p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg text-sm text-red-600 dark:text-red-400">
                   {cardError}
-                </div>
-              )}
+                    </div>
+                  )}
 
-              <div className="flex gap-2">
-                <button
-                  onClick={handleGeneratePreview}
-                  disabled={cardLoading || !cardText.trim()}
+                  <div className="flex gap-2">
+                    <button
+                      onClick={handleGeneratePreview}
+                      disabled={cardLoading || !cardText.trim()}
                   className="px-4 py-2 text-sm bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                >
+                    >
                   {cardLoading ? t('common.loading') : cardT('generatePreviewButton')}
-                </button>
-                {preview && (
-                  <button
-                    onClick={handleSaveCard}
-                    disabled={cardLoading}
+                    </button>
+                    {preview && (
+                      <button
+                        onClick={handleSaveCard}
+                        disabled={cardLoading}
                     className="px-4 py-2 text-sm bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                  >
+                      >
                     {cardLoading ? t('common.loading') : cardT('saveCardButton')}
-                  </button>
-                )}
-              </div>
+                      </button>
+                    )}
+                  </div>
 
               {/* TTS 功能 */}
               <div className="border-t border-gray-200 dark:border-gray-700 pt-4 mt-4">
@@ -741,7 +741,7 @@ function WorkspacePageContent() {
                   <div className="flex items-center justify-between">
                     <div className="text-xs text-gray-500 dark:text-gray-400">
                       {ttsText.length}/500
-                  </div>
+                </div>
                 <button
                   type="submit"
                   disabled={ttsLoading || !ttsText.trim()}
@@ -749,7 +749,7 @@ function WorkspacePageContent() {
                 >
                   {ttsLoading ? t('tts.generating') : t('tts.generate')}
                 </button>
-                  </div>
+              </div>
               </form>
 
               {ttsError && (
@@ -794,7 +794,7 @@ function WorkspacePageContent() {
                       <h4 className="text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
                         {cardT('backContent')}
                       </h4>
-                      <div
+                      <div 
                         className="p-3 bg-white dark:bg-gray-800 rounded border border-gray-200 dark:border-gray-600 prose dark:prose-invert max-w-none prose-sm"
                         dangerouslySetInnerHTML={{ __html: preview.backContent }}
                       />
@@ -1003,95 +1003,95 @@ function WorkspacePageContent() {
                     <input
                       type="text"
                 placeholder={cardT('searchPlaceholder')}
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
                 className="w-full px-2 py-1.5 text-xs border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-1 focus:ring-indigo-500 focus:border-transparent"
               />
               {decks.length > 0 && (
-                <select
-                  value={selectedDeck}
-                  onChange={(e) => {
-                    setSelectedDeck(e.target.value);
-                    setPage(1);
-                  }}
+                    <select
+                      value={selectedDeck}
+                      onChange={(e) => {
+                        setSelectedDeck(e.target.value);
+                        setPage(1);
+                      }}
                   className="w-full mt-2 px-2 py-1.5 text-xs border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-1 focus:ring-indigo-500 focus:border-transparent"
-                >
+                    >
                   <option value="">{cardT('allDecks')}</option>
                       {decks.map((deck) => (
-                    <option key={deck.id} value={deck.name}>
-                      {deck.name}
-                    </option>
+                        <option key={deck.id} value={deck.name}>
+                          {deck.name}
+                        </option>
                       ))}
-                </select>
-              )}
-                  </div>
-
-            {/* 卡片列表 */}
-            <div className="flex-1 overflow-y-auto">
-              {cardsError && (
-                <div className="p-2 m-2 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded text-xs">
-                  <p className="text-xs text-red-600 dark:text-red-400">{cardsError}</p>
-                  </div>
-              )}
-              {cardsLoading ? (
-                <div className="flex justify-center items-center h-24">
-                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-indigo-600"></div>
-                  </div>
-              ) : cards.length === 0 ? (
-                <div className="p-4 text-center text-xs text-gray-500 dark:text-gray-400">
-                  {debouncedSearchQuery ? cardT('noSearchResults') : cardT('noCardsYet')}
+                    </select>
+                  )}
                 </div>
-              ) : (
-                <div className="divide-y divide-gray-200 dark:divide-gray-700">
-                  {cards.map((card) => (
-                    <button
-                      key={card.id}
-                      onClick={() => setSelectedCardId(card.id)}
-                      className={`w-full text-left p-2 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors ${
-                        selectedCardId === card.id
+
+                {/* 卡片列表 */}
+                <div className="flex-1 overflow-y-auto">
+                  {cardsError && (
+                    <div className="p-2 m-2 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded text-xs">
+                      <p className="text-xs text-red-600 dark:text-red-400">{cardsError}</p>
+                    </div>
+                  )}
+                  {cardsLoading ? (
+                    <div className="flex justify-center items-center h-24">
+                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-indigo-600"></div>
+                    </div>
+                  ) : cards.length === 0 ? (
+                    <div className="p-4 text-center text-xs text-gray-500 dark:text-gray-400">
+                  {debouncedSearchQuery ? cardT('noSearchResults') : cardT('noCardsYet')}
+                    </div>
+                  ) : (
+                    <div className="divide-y divide-gray-200 dark:divide-gray-700">
+                      {cards.map((card) => (
+                        <button
+                          key={card.id}
+                          onClick={() => setSelectedCardId(card.id)}
+                          className={`w-full text-left p-2 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors ${
+                            selectedCardId === card.id
                           ? 'bg-indigo-50 dark:bg-indigo-900/20 border-l-2 border-indigo-600'
-                          : ''
-                      }`}
-                    >
+                              : ''
+                          }`}
+                        >
                       <p className="text-xs font-medium text-gray-900 dark:text-white line-clamp-2 mb-1">
-                        {card.frontContent}
-                      </p>
+                              {card.frontContent}
+                            </p>
                       <div className="flex items-center justify-between">
-                        <span className="text-xs text-gray-500 dark:text-gray-400">
-                          {card.deckName}
-                        </span>
-                        <span className="text-xs text-gray-400 dark:text-gray-500">
+                            <span className="text-xs text-gray-500 dark:text-gray-400">
+                              {card.deckName}
+                            </span>
+                            <span className="text-xs text-gray-400 dark:text-gray-500">
                           {new Date(card.createdAt).toLocaleDateString(locale)}
-                        </span>
-                      </div>
-                    </button>
-                  ))}
+                            </span>
+                          </div>
+                        </button>
+                      ))}
                     </div>
                   )}
 
-              {totalPages > 1 && (
-                <div className="p-2 border-t border-gray-200 dark:border-gray-700">
-                  <div className="flex items-center justify-between">
-                    <button
-                      onClick={() => setPage(p => Math.max(1, p - 1))}
-                      disabled={page === 1}
+                  {totalPages > 1 && (
+                    <div className="p-2 border-t border-gray-200 dark:border-gray-700">
+                      <div className="flex items-center justify-between">
+                        <button
+                          onClick={() => setPage(p => Math.max(1, p - 1))}
+                          disabled={page === 1}
                       className="px-2 py-1 text-xs border border-gray-300 dark:border-gray-600 rounded disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 dark:hover:bg-gray-700"
-                    >
+                        >
                       {cardT('previousPage')}
-                    </button>
+                        </button>
                     <span className="text-xs text-gray-600 dark:text-gray-400">
                       {cardT('pageInfo', { page, totalPages })}
-                    </span>
-                      <button
-                      onClick={() => setPage(p => Math.min(totalPages, p + 1))}
-                      disabled={page === totalPages}
+                        </span>
+                        <button
+                          onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                          disabled={page === totalPages}
                       className="px-2 py-1 text-xs border border-gray-300 dark:border-gray-600 rounded disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 dark:hover:bg-gray-700"
-                    >
+                        >
                       {cardT('nextPage')}
-                      </button>
-                  </div>
-                </div>
-                    )}
+                        </button>
+                      </div>
+                    </div>
+                  )}
             </div>
                   </div>
                 </div>
@@ -1103,82 +1103,82 @@ function WorkspacePageContent() {
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
             <div className="p-6">
               <div className="flex justify-between items-start mb-4 pb-4 border-b border-gray-200 dark:border-gray-700">
-                <div>
+                      <div>
                   <div className="flex items-center gap-2 mb-2">
                     <span className="text-xs px-2 py-1 bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 rounded">
-                      {selectedCard.deckName}
-                    </span>
+                            {selectedCard.deckName}
+                          </span>
                     <span className="text-xs px-2 py-1 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded">
-                      {selectedCard.cardType}
-                    </span>
-                  </div>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">
+                            {selectedCard.cardType}
+                          </span>
+                        </div>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">
                     {new Date(selectedCard.createdAt).toLocaleString(locale)}
-                  </p>
-                </div>
-                <button
+                        </p>
+                      </div>
+                      <button
                   onClick={() => setSelectedCardId(null)}
                   className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
-                >
+                      >
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                   </svg>
-                </button>
-              </div>
+                      </button>
+                    </div>
 
               <div className="space-y-4">
-                    <div>
+                      <div>
                   <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
                     {cardT('frontContent')}
-                  </h3>
+                        </h3>
                   <div className="p-4 bg-gray-50 dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600">
-                    <p className="text-base text-gray-900 dark:text-white leading-relaxed">
-                      {selectedCard.frontContent}
-                    </p>
+                          <p className="text-base text-gray-900 dark:text-white leading-relaxed">
+                            {selectedCard.frontContent}
+                          </p>
+                        </div>
                       </div>
-                    </div>
 
-                    <div>
+                      <div>
                   <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
                     {cardT('backContent')}
-                  </h3>
-                      <div 
+                        </h3>
+                        <div
                     className="p-4 bg-gray-50 dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600 prose dark:prose-invert max-w-none prose-sm"
-                    dangerouslySetInnerHTML={{ __html: selectedCard.backContent }}
-                      />
-                    </div>
+                          dangerouslySetInnerHTML={{ __html: selectedCard.backContent }}
+                        />
+                      </div>
 
-                {selectedCard.audioUrl && (
-                      <div>
+                      {selectedCard.audioUrl && (
+                        <div>
                     <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
                       {cardT('pronunciationPreview')}
-                    </h3>
+                          </h3>
                     <div className="p-3 bg-gray-50 dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600">
-                        <audio controls className="w-full">
-                        <source src={selectedCard.audioUrl} type="audio/mpeg" />
+                            <audio controls className="w-full">
+                              <source src={selectedCard.audioUrl} type="audio/mpeg" />
                         {cardT('audioNotSupported')}
-                        </audio>
-                    </div>
-                      </div>
-                    )}
+                            </audio>
+                          </div>
+                        </div>
+                      )}
 
-                {selectedCard.tags && selectedCard.tags.length > 0 && (
-                  <div>
+                      {selectedCard.tags && selectedCard.tags.length > 0 && (
+                        <div>
                     <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                      标签
-                    </h3>
+                            标签
+                          </h3>
                     <div className="flex flex-wrap gap-2">
-                      {selectedCard.tags.map((tag, index) => (
-                        <span
-                          key={index}
+                            {selectedCard.tags.map((tag, index) => (
+                              <span
+                                key={index}
                           className="px-2 py-1 text-xs bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-full"
-                        >
-                          {tag}
-                        </span>
-                      ))}
-                  </div>
-                </div>
-              )}
+                              >
+                                {tag}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      )}
 
                 <div className="flex justify-end gap-2 pt-4 border-t border-gray-200 dark:border-gray-700">
                   <button
@@ -1197,232 +1197,8 @@ function WorkspacePageContent() {
               </div>
             </div>
           </div>
-            </div>
-          )}
-    </div>
-  );
-}
-            <div className="flex gap-3 h-[calc(100vh-250px)]">
-              {/* 左侧边栏 - 卡片列表 */}
-              <div className="w-80 flex-shrink-0 bg-white dark:bg-gray-800 rounded shadow-sm flex flex-col">
-                {/* 搜索和筛选区域 */}
-                <div className="p-3 border-b border-gray-200 dark:border-gray-700 space-y-2">
-                  <div>
-                    <input
-                      type="text"
-                      placeholder={t('AnkiCard.searchPlaceholder')}
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                      className="w-full px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                    />
-                    {searchQuery && (
-                      <button
-                        onClick={() => setSearchQuery('')}
-                        className="mt-1 text-xs text-indigo-600 dark:text-indigo-400 hover:underline"
-                      >
-                        {t('AnkiCard.clearSearch')}
-                      </button>
-                    )}
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
-                      {t('AnkiCard.filterByDeck')}
-                    </label>
-                    <select
-                      value={selectedDeck}
-                      onChange={(e) => {
-                        setSelectedDeck(e.target.value);
-                        setPage(1);
-                      }}
-                      className="w-full px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                    >
-                      <option value="">{t('AnkiCard.allDecks')}</option>
-                      {decks.map((deck) => (
-                        <option key={deck.id} value={deck.name}>
-                          {deck.name}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  {total > 0 && (
-                    <div className="text-xs text-gray-600 dark:text-gray-400">
-                      {t('AnkiCard.totalCards', { total })}
-                    </div>
-                  )}
-                </div>
-
-                {/* 卡片列表 */}
-                <div className="flex-1 overflow-y-auto">
-                  {cardsError && (
-                    <div className="p-2 m-2 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded text-xs">
-                      <p className="text-xs text-red-600 dark:text-red-400">{cardsError}</p>
-                    </div>
-                  )}
-                  {cardsLoading ? (
-                    <div className="flex justify-center items-center h-24">
-                      <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-indigo-600"></div>
-                    </div>
-                  ) : cards.length === 0 ? (
-                    <div className="p-4 text-center text-xs text-gray-500 dark:text-gray-400">
-                      {debouncedSearchQuery ? t('AnkiCard.noSearchResults') : t('AnkiCard.noCardsYet')}
-                    </div>
-                  ) : (
-                    <div className="divide-y divide-gray-200 dark:divide-gray-700">
-                      {cards.map((card) => (
-                        <button
-                          key={card.id}
-                          onClick={() => setSelectedCardId(card.id)}
-                          className={`w-full text-left p-2 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors ${
-                            selectedCardId === card.id
-                              ? 'bg-indigo-50 dark:bg-indigo-900/20 border-l-4 border-indigo-600'
-                              : ''
-                          }`}
-                        >
-                          <div className="flex justify-between items-start mb-1">
-                            <p className="text-xs font-medium text-gray-900 dark:text-white line-clamp-2 flex-1">
-                              {card.frontContent}
-                            </p>
-                          </div>
-                          <div className="flex items-center justify-between mt-1">
-                            <span className="text-xs text-gray-500 dark:text-gray-400">
-                              {card.deckName}
-                            </span>
-                            <span className="text-xs text-gray-400 dark:text-gray-500">
-                              {new Date(card.createdAt).toLocaleDateString('zh-CN')}
-                            </span>
-                          </div>
-                        </button>
-                      ))}
-                    </div>
-                  )}
-
-                  {totalPages > 1 && (
-                    <div className="p-2 border-t border-gray-200 dark:border-gray-700">
-                      <div className="flex items-center justify-between">
-                        <button
-                          onClick={() => setPage(p => Math.max(1, p - 1))}
-                          disabled={page === 1}
-                          className="px-3 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 dark:hover:bg-gray-700"
-                        >
-                          {t('AnkiCard.previousPage')}
-                        </button>
-                        <span className="text-sm text-gray-600 dark:text-gray-400">
-                          {t('AnkiCard.pageInfo', { page, totalPages })}
-                        </span>
-                        <button
-                          onClick={() => setPage(p => Math.min(totalPages, p + 1))}
-                          disabled={page === totalPages}
-                          className="px-3 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 dark:hover:bg-gray-700"
-                        >
-                          {t('AnkiCard.nextPage')}
-                        </button>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* 右侧主内容区 - 卡片详情 */}
-              <div className="flex-1 bg-white dark:bg-gray-800 rounded shadow-sm overflow-y-auto">
-                {selectedCard ? (
-                  <div className="p-4">
-                    <div className="flex justify-between items-start mb-3 pb-2 border-b border-gray-200 dark:border-gray-700">
-                      <div>
-                        <div className="flex items-center gap-1.5 mb-1">
-                          <span className="text-xs px-1.5 py-0.5 bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 rounded">
-                            {selectedCard.deckName}
-                          </span>
-                          <span className="text-xs px-1.5 py-0.5 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded">
-                            {selectedCard.cardType}
-                          </span>
-                        </div>
-                        <p className="text-xs text-gray-500 dark:text-gray-400">
-                          {new Date(selectedCard.createdAt).toLocaleString('zh-CN')}
-                        </p>
-                      </div>
-                      <button
-                        onClick={() => handleDeleteCard(selectedCard.id)}
-                        className="px-2 py-1 text-xs bg-red-100 dark:bg-red-900/20 text-red-600 dark:text-red-400 rounded hover:bg-red-200 dark:hover:bg-red-900/40 transition-colors"
-                      >
-                        {t('AnkiCard.delete')}
-                      </button>
-                    </div>
-
-                    <div className="space-y-3">
-                      <div>
-                        <h3 className="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1.5 uppercase tracking-wide">
-                          {t('AnkiCard.frontContent')}
-                        </h3>
-                        <div className="p-3 bg-gray-50 dark:bg-gray-700 rounded border border-gray-200 dark:border-gray-600">
-                          <p className="text-base text-gray-900 dark:text-white leading-relaxed">
-                            {selectedCard.frontContent}
-                          </p>
-                        </div>
-                      </div>
-
-                      <div>
-                        <h3 className="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1.5 uppercase tracking-wide">
-                          {t('AnkiCard.backContent')}
-                        </h3>
-                        <div
-                          className="p-3 bg-gray-50 dark:bg-gray-700 rounded border border-gray-200 dark:border-gray-600 prose dark:prose-invert max-w-none prose-sm"
-                          dangerouslySetInnerHTML={{ __html: selectedCard.backContent }}
-                        />
-                      </div>
-
-                      {selectedCard.audioUrl && (
-                        <div>
-                          <h3 className="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1.5 uppercase tracking-wide">
-                            {t('AnkiCard.pronunciationPreview')}
-                          </h3>
-                          <div className="p-2 bg-gray-50 dark:bg-gray-700 rounded border border-gray-200 dark:border-gray-600">
-                            <audio controls className="w-full">
-                              <source src={selectedCard.audioUrl} type="audio/mpeg" />
-                              {t('AnkiCard.audioNotSupported')}
-                            </audio>
-                          </div>
-                        </div>
-                      )}
-
-                      {selectedCard.tags && selectedCard.tags.length > 0 && (
-                        <div>
-                          <h3 className="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1.5 uppercase tracking-wide">
-                            标签
-                          </h3>
-                          <div className="flex flex-wrap gap-1.5">
-                            {selectedCard.tags.map((tag, index) => (
-                              <span
-                                key={index}
-                                className="px-2 py-0.5 text-xs bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-full"
-                              >
-                                {tag}
-                              </span>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                ) : (
-                  <div className="flex items-center justify-center h-full p-6">
-                    <div className="text-center">
-                      <div className="text-4xl mb-2">📚</div>
-                      <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">
-                        {t('AnkiCard.noCardSelected')}
-                      </p>
-                      <p className="text-xs text-gray-500 dark:text-gray-500">
-                        {t('AnkiCard.selectCard')}
-                      </p>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
         </div>
-      </div>
+      )}
     </div>
   );
 }
