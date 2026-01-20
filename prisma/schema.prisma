@@ -29,6 +29,7 @@ model User {
   orders        Order[]
   cards         Card[]
   decks         Deck[]
+  sources       Source[]
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
@@ -145,5 +146,30 @@ model Card {
   @@index([userId])
   @@index([deckName])
   @@index([deckId])
+  @@index([createdAt])
+}
+
+model Source {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  // 来源信息
+  name        String   // 来源名称（用户可编辑）
+  type        String   @default("text") // 来源类型: text, file, url, etc.
+  content     String?  @db.Text // 文本内容（如果是文本类型）
+  contentUrl  String?  // 内容存储 URL（存储在 Vercel Blob 或其他云存储）
+  fileUrl     String?  // 文件 URL（如果是文件类型）
+  fileName    String?  // 文件名
+  
+  // 元数据
+  mimeType    String?  // MIME 类型
+  size        Int?     // 文件大小（字节）
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  @@index([userId])
+  @@index([type])
   @@index([createdAt])
 }
