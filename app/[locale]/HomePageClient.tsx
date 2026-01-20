@@ -18,7 +18,7 @@ interface Deck {
 
 type TabType = 'all' | 'my' | 'featured';
 
-export default function HomePageClient({ locale }: { locale: string }) {
+export default function HomePageClient({ locale: _locale }: { locale: string }) {
   const t = useTranslations();
   const routerLocale = useLocale();
   const router = useRouter();
@@ -218,14 +218,14 @@ export default function HomePageClient({ locale }: { locale: string }) {
               )}
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {featuredDecks.map((deck, index) => (
+              {featuredDecks.map((deck, deckIndex) => (
                 <button
                   key={deck.id}
                   onClick={() => handleDeckClick(deck.name)}
                   className="group relative h-48 rounded-lg overflow-hidden shadow-sm hover:shadow-lg transition-all text-left"
                 >
                   {/* 背景渐变 */}
-                  <div className={`absolute inset-0 bg-gradient-to-br ${getDeckColor(index)} opacity-90`} />
+                  <div className={`absolute inset-0 bg-gradient-to-br ${getDeckColor(deckIndex)} opacity-90`} />
                   
                   {/* 内容 */}
                   <div className="relative h-full p-4 flex flex-col justify-between text-white">
@@ -279,7 +279,7 @@ export default function HomePageClient({ locale }: { locale: string }) {
                 ))}
               </>
             ) : recentDecks.length > 0 ? (
-              recentDecks.map((deck, index) => (
+              recentDecks.map((deck) => (
                 <button
                   key={deck.id}
                   onClick={() => handleDeckClick(deck.name)}
@@ -334,14 +334,14 @@ export default function HomePageClient({ locale }: { locale: string }) {
               {activeTab === 'all' ? '全部牌组' : '我的牌组'}
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-              {filteredDecks.map((deck, index) => (
+              {filteredDecks.map((deck, deckIndex) => (
                 <button
                   key={deck.id}
                   onClick={() => handleDeckClick(deck.name)}
                   className="group h-48 rounded-lg border border-gray-200 dark:border-gray-700 hover:border-indigo-500 dark:hover:border-indigo-400 hover:shadow-lg transition-all bg-white dark:bg-gray-800 p-4 flex flex-col"
                 >
                   <div className="flex items-start justify-between mb-3">
-                    <div className={`w-12 h-12 rounded-lg bg-gradient-to-br ${getDeckColor(index)} flex items-center justify-center flex-shrink-0`}>
+                    <div className={`w-12 h-12 rounded-lg bg-gradient-to-br ${getDeckColor(deckIndex)} flex items-center justify-center flex-shrink-0`}>
                       <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M3 14h18m-9-4v8m-7 0h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
                       </svg>
