@@ -9,10 +9,8 @@ import LanguageSwitcher from '@/components/LanguageSwitcher';
 import UserMenu from '@/components/UserMenu';
 import {
   trackPageViewEvent,
-  trackButtonClick,
   trackAudioGenerationSuccess,
   trackAudioGenerationFailed,
-  trackInsufficientCredits,
 } from '@/lib/analytics';
 
 interface Card {
