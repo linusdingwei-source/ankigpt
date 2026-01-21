@@ -10,10 +10,8 @@ import UserMenu from '@/components/UserMenu';
 import {
   trackPageViewEvent,
   trackButtonClick,
-  trackAudioGenerationStart,
   trackAudioGenerationSuccess,
   trackAudioGenerationFailed,
-  trackAudioDownload,
   trackInsufficientCredits,
 } from '@/lib/analytics';
 
@@ -50,12 +48,6 @@ function WorkspacePageContent() {
   const locale = useLocale();
   const { data: session, status } = useSession();
   const searchParams = useSearchParams();
-  
-  // TTS 相关状态
-  const [ttsText, setTtsText] = useState('');
-  const [ttsLoading, setTtsLoading] = useState(false);
-  const [audioUrl, setAudioUrl] = useState<string | null>(null);
-  const [ttsError, setTtsError] = useState('');
   
   // 当前工作区牌组（从URL参数或默认值）
   // 使用函数式初始化确保在组件挂载时立即读取URL参数
@@ -308,88 +300,6 @@ function WorkspacePageContent() {
     }
   }, [credits]);
 
-  // TTS 生成处理
-  const handleTtsGenerate = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!ttsText.trim()) {
-      setTtsError('Please enter some text');
-      return;
-    }
-
-    if (ttsText.length > 500) {
-      setTtsError(t('tts.maxLength'));
-      return;
-    }
-
-    setTtsLoading(true);
-    setTtsError('');
-    setAudioUrl(null);
-
-    trackAudioGenerationStart(ttsText.length);
-    trackButtonClick('GENERATE_AUDIO', 'dashboard');
-
-    try {
-      const { getAnonymousHeaders } = await import('@/hooks/useAnonymousUser');
-      const headers = getAnonymousHeaders();
-      
-      const res = await fetch('/api/tts/generate', {
-        method: 'POST',
-        headers,
-        body: JSON.stringify({ text: ttsText }),
-      });
-
-      const response = await res.json();
-      // 适配新的统一响应格式
-      const data = response.success ? response.data : response;
-      const errorData = response.success ? null : response.error;
-
-      if (res.ok && data?.audio) {
-        try {
-          const binaryString = atob(data.audio);
-          const bytes = new Uint8Array(binaryString.length);
-          for (let i = 0; i < binaryString.length; i++) {
-            bytes[i] = binaryString.charCodeAt(i);
-          }
-          const audioBlob = new Blob([bytes], { type: 'audio/mpeg' });
-          const url = URL.createObjectURL(audioBlob);
-          setAudioUrl(url);
-          if (data.credits !== undefined) {
-            setCredits(data.credits);
-            trackAudioGenerationSuccess(ttsText.length, data.credits);
-          }
-        } catch (err) {
-          console.error('Error processing audio:', err);
-          setTtsError('Failed to process audio data');
-        }
-      } else {
-        const errorMsg = errorData?.message || data?.error || 'Failed to generate audio';
-        setTtsError(errorMsg);
-        if (res.status === 402 && data?.credits !== undefined) {
-          setCredits(data.credits);
-          trackInsufficientCredits(data.credits);
-        } else {
-          trackAudioGenerationFailed(errorMsg, data?.credits);
-        }
-      }
-    } catch {
-      setTtsError('Network error');
-    } finally {
-      setTtsLoading(false);
-    }
-  };
-
-  const handleDownload = () => {
-    if (audioUrl) {
-      trackAudioDownload();
-      const a = document.createElement('a');
-      a.href = audioUrl;
-      a.download = `japanese-tts-${Date.now()}.mp3`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-    }
-  };
 
   // 卡片生成预览
   const handleGeneratePreview = async () => {
@@ -775,7 +685,7 @@ function WorkspacePageContent() {
                           className="flex-1 px-2 py-1 text-sm border border-indigo-500 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500"
                           autoFocus
                         />
-                        <button
+              <button
                           onClick={async () => {
                             try {
                               const { getAnonymousHeaders } = await import('@/hooks/useAnonymousUser');
@@ -797,8 +707,8 @@ function WorkspacePageContent() {
                           className="px-2 py-1 text-xs bg-indigo-600 text-white rounded hover:bg-indigo-700"
                         >
                           ✓
-                        </button>
-                        <button
+              </button>
+              <button
                           onClick={() => {
                             setEditingSourceId(null);
                             setEditingSourceName('');
@@ -806,8 +716,8 @@ function WorkspacePageContent() {
                           className="px-2 py-1 text-xs border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600"
                         >
                           ✕
-                        </button>
-                  </div>
+              </button>
+            </div>
                     ) : (
                       <>
                         <div className="flex items-start gap-2">
@@ -937,19 +847,19 @@ function WorkspacePageContent() {
                     <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                   </svg>
                   <span>{t('payment.successMessage')}</span>
-                  </div>
-                  <button
+                </div>
+                <button
                   onClick={() => setPaymentSuccess(false)}
                   className="text-green-700 dark:text-green-300 hover:text-green-900 dark:hover:text-green-100"
-                  >
+                >
                   ✕
-                  </button>
-                </div>
+                </button>
+              </div>
             </div>
           )}
 
             {/* 空状态或内容 */}
-            {!preview && !cardText && !ttsText && (
+            {!preview && !cardText && (
               <div className="flex flex-col items-center justify-center h-full text-center">
                 <div className="mb-4">
                   <svg className="w-16 h-16 mx-auto text-gray-300 dark:text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -967,10 +877,10 @@ function WorkspacePageContent() {
 
             {/* 卡片生成表单 */}
             <div className="space-y-4">
-                  <div>
+                <div>
                   <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
                   {cardT('japaneseTextInput')}
-                    </label>
+                  </label>
                   <textarea
                   value={cardText}
                   onChange={(e) => setCardText(e.target.value)}
@@ -979,23 +889,23 @@ function WorkspacePageContent() {
                   placeholder={cardT('japaneseTextPlaceholder')}
                       disabled={cardLoading}
                   />
-                  </div>
+                </div>
 
               <div className="flex items-center gap-4">
                 <div className="flex-1">
                   <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
-                    卡片类型
+                      卡片类型
                     </label>
-                  <select
-                    value={cardType}
-                    onChange={(e) => setCardType(e.target.value)}
+                    <select
+                      value={cardType}
+                      onChange={(e) => setCardType(e.target.value)}
                     className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
                       disabled={cardLoading}
-                  >
-                    <option value="问答题（附翻转卡片）">问答题（附翻转卡片）</option>
-                    <option value="Basic-b860c">Basic-b860c</option>
-                  </select>
-                </div>
+                    >
+                      <option value="问答题（附翻转卡片）">问答题（附翻转卡片）</option>
+                      <option value="Basic-b860c">Basic-b860c</option>
+                    </select>
+                  </div>
                   </div>
 
                   <div className="flex items-center">
@@ -1036,57 +946,6 @@ function WorkspacePageContent() {
                       </button>
                     )}
                   </div>
-
-              {/* TTS 功能 */}
-              <div className="border-t border-gray-200 dark:border-gray-700 pt-4 mt-4">
-                <h3 className="text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
-                  {t('tts.title')}
-                </h3>
-                <form onSubmit={handleTtsGenerate} className="space-y-2">
-                  <textarea
-                    value={ttsText}
-                    onChange={(e) => setTtsText(e.target.value)}
-                    rows={3}
-                    maxLength={500}
-                    placeholder={t('tts.inputPlaceholder')}
-                    className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent resize-none"
-                  />
-                  <div className="flex items-center justify-between">
-                    <div className="text-xs text-gray-500 dark:text-gray-400">
-                      {ttsText.length}/500
-                </div>
-                <button
-                  type="submit"
-                  disabled={ttsLoading || !ttsText.trim()}
-                      className="px-4 py-2 text-sm bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {ttsLoading ? t('tts.generating') : t('tts.generate')}
-                </button>
-              </div>
-              </form>
-
-              {ttsError && (
-                  <div className="mt-2 p-2 bg-red-50 dark:bg-red-900 text-red-700 dark:text-red-300 rounded text-xs">
-                  {ttsError}
-                </div>
-              )}
-
-              {audioUrl && (
-                <div className="mt-3 space-y-2">
-                    <div className="p-2 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                    <audio controls className="w-full" src={audioUrl}>
-                      Your browser does not support the audio element.
-                    </audio>
-                  </div>
-                  <button
-                    onClick={handleDownload}
-                      className="w-full px-4 py-2 text-sm bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
-                  >
-                    {t('tts.download')}
-                  </button>
-                </div>
-              )}
-            </div>
 
               {/* 预览 */}
               {preview && (
@@ -1314,7 +1173,7 @@ function WorkspacePageContent() {
                   </p>
                 </div>
               </div>
-            </div>
+                  </div>
 
             {/* 添加笔记按钮 */}
             <button className="mt-4 w-full px-4 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors flex items-center justify-center gap-2">
@@ -1323,7 +1182,7 @@ function WorkspacePageContent() {
               </svg>
               {workspaceT('addNote')}
             </button>
-          </div>
+                    </div>
 
           {/* 卡片列表（在 Studio 面板底部） */}
           <div className="border-t border-gray-200 dark:border-gray-700 flex flex-col" style={{ maxHeight: '40%' }}>
@@ -1620,8 +1479,6 @@ function WorkspacePageContent() {
                       if (res.ok && response.success) {
                         // 成功保存，刷新来源列表
                         await fetchSources();
-                        // 将粘贴的文本设置为TTS文本
-                        setTtsText(pastedText);
                         setShowPasteTextModal(false);
                         setPastedText('');
                       } else {
