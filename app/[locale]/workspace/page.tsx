@@ -119,6 +119,10 @@ function WorkspacePageContent() {
   const [editingSourceId, setEditingSourceId] = useState<string | null>(null);
   const [editingSourceName, setEditingSourceName] = useState('');
   const [showSourceMenuId, setShowSourceMenuId] = useState<string | null>(null);
+  
+  // 面板收起/展开状态
+  const [isSourcePanelCollapsed, setIsSourcePanelCollapsed] = useState(false);
+  const [isStudioPanelCollapsed, setIsStudioPanelCollapsed] = useState(false);
 
   // 防抖搜索
   useEffect(() => {
@@ -547,17 +551,22 @@ function WorkspacePageContent() {
       {/* 三栏布局 */}
       <div className="flex-1 flex overflow-hidden">
         {/* 左侧面板：来源（Sources） */}
+        {!isSourcePanelCollapsed ? (
         <div className="w-80 flex-shrink-0 border-r border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 flex flex-col">
           {/* 面板标题 */}
           <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
             <h2 className="text-sm font-semibold text-gray-900 dark:text-white">
               {workspaceT('source')}
             </h2>
-            <button className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
+            <button 
+              onClick={() => setIsSourcePanelCollapsed(true)}
+              className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+              aria-label="收起来源面板"
+            >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
               </svg>
-              </button>
+            </button>
           </div>
 
           {/* 添加来源按钮 */}
@@ -716,7 +725,7 @@ function WorkspacePageContent() {
                         >
                           ✕
               </button>
-            </div>
+                  </div>
                     ) : (
                       <>
                         <div className="flex items-start gap-2">
@@ -846,14 +855,14 @@ function WorkspacePageContent() {
                     <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                   </svg>
                   <span>{t('payment.successMessage')}</span>
-                </div>
-                <button
+                  </div>
+                  <button
                   onClick={() => setPaymentSuccess(false)}
                   className="text-green-700 dark:text-green-300 hover:text-green-900 dark:hover:text-green-100"
-                >
+                  >
                   ✕
-                </button>
-              </div>
+                  </button>
+                </div>
             </div>
           )}
 
@@ -876,19 +885,19 @@ function WorkspacePageContent() {
 
             {/* 卡片生成表单 */}
             <div className="space-y-4">
-                <div>
+                  <div>
                   <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
                   {cardT('japaneseTextInput')}
-                  </label>
-                  <textarea
-                  value={cardText}
-                  onChange={(e) => setCardText(e.target.value)}
+                    </label>
+                    <textarea
+                      value={cardText}
+                      onChange={(e) => setCardText(e.target.value)}
                   className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent resize-none"
                     rows={4}
                   placeholder={cardT('japaneseTextPlaceholder')}
                       disabled={cardLoading}
-                  />
-                </div>
+                    />
+                  </div>
 
 
                   <div className="flex items-center">
@@ -982,15 +991,33 @@ function WorkspacePageContent() {
             </button>
           </div>
         </div>
+        ) : (
+          <div className="w-12 flex-shrink-0 border-r border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 flex flex-col items-center py-2">
+            <button
+              onClick={() => setIsSourcePanelCollapsed(false)}
+              className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+              aria-label="展开来源面板"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              </svg>
+            </button>
+          </div>
+        )}
 
         {/* 右侧面板：Studio */}
+        {!isStudioPanelCollapsed ? (
         <div className="w-80 flex-shrink-0 bg-white dark:bg-gray-800 flex flex-col">
           {/* 面板标题 */}
           <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
             <h2 className="text-sm font-semibold text-gray-900 dark:text-white">
               {workspaceT('studio')}
                 </h2>
-            <button className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
+            <button 
+              onClick={() => setIsStudioPanelCollapsed(true)}
+              className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+              aria-label="收起Studio面板"
+            >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
               </svg>
@@ -1262,6 +1289,20 @@ function WorkspacePageContent() {
                   </div>
                 </div>
               </div>
+        </div>
+        ) : (
+          <div className="w-12 flex-shrink-0 bg-white dark:bg-gray-800 flex flex-col items-center py-2 border-l border-gray-200 dark:border-gray-700">
+            <button
+              onClick={() => setIsStudioPanelCollapsed(false)}
+              className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+              aria-label="展开Studio面板"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+              </svg>
+            </button>
+          </div>
+        )}
 
       {/* 添加来源模态框 */}
       {showAddSourceModal && (
