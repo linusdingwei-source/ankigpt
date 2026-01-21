@@ -989,7 +989,7 @@ function WorkspacePageContent() {
           {/* 底部状态栏 */}
           <div className="px-4 py-2 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 flex items-center justify-between text-xs text-gray-600 dark:text-gray-400">
             <span>{workspaceT('addSourceToStart')}</span>
-            <span>{workspaceT('sourcesCount', { count: decks.length })}</span>
+            <span>{workspaceT('sourcesCount', { count: sources.length })}</span>
             <button className="text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300">
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
@@ -1386,7 +1386,7 @@ function WorkspacePageContent() {
               {/* 底部状态栏 */}
               <div className="mt-6 pt-4 border-t border-gray-200 dark:border-gray-700 flex items-center justify-between text-xs text-gray-600 dark:text-gray-400">
                 <span>{workspaceT('addSourceToStart')}</span>
-                <span>{workspaceT('sourcesCount', { count: 0 })}</span>
+                <span>{workspaceT('sourcesCount', { count: sources.length })}</span>
                 <button className="text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300">
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
