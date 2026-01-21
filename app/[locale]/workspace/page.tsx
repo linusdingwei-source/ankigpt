@@ -341,13 +341,17 @@ function WorkspacePageContent() {
 
       if (res.ok && data?.audio) {
         // 音频生成成功，更新卡片列表（刷新以获取最新数据）
-        trackAudioGenerationSuccess(card.frontContent.length);
+        const creditsRemaining = data.credits !== undefined ? data.credits : (credits ?? 0);
+        trackAudioGenerationSuccess(card.frontContent.length, creditsRemaining);
+        if (data.credits !== undefined) {
+          setCredits(data.credits);
+        }
       }
     } catch (error) {
       console.error('Failed to generate audio for card:', error);
-      trackAudioGenerationFailed();
+      trackAudioGenerationFailed('network_error', credits ?? undefined);
     }
-  }, []);
+  }, [credits]);
 
   // TTS 生成处理
   const handleTtsGenerate = async (e: React.FormEvent) => {
