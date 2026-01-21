@@ -68,7 +68,8 @@ function WorkspacePageContent() {
   
   // 卡片生成相关状态
   const [cardText, setCardText] = useState('');
-  const [cardType, setCardType] = useState('问答题（附翻转卡片）');
+  // 卡片类型固定为"问答题（附翻转卡片）"
+  const cardType = '问答题（附翻转卡片）';
   const [includePronunciation, setIncludePronunciation] = useState(true);
   const [cardLoading, setCardLoading] = useState(false);
   const [preview, setPreview] = useState<{
@@ -288,8 +289,8 @@ function WorkspacePageContent() {
         // 音频生成成功，更新卡片列表（刷新以获取最新数据）
         const creditsRemaining = data.credits !== undefined ? data.credits : (credits ?? 0);
         trackAudioGenerationSuccess(card.frontContent.length, creditsRemaining);
-        if (data.credits !== undefined) {
-          setCredits(data.credits);
+          if (data.credits !== undefined) {
+            setCredits(data.credits);
         }
       }
     } catch (error) {
@@ -889,22 +890,6 @@ function WorkspacePageContent() {
                   />
                 </div>
 
-              <div className="flex items-center gap-4">
-                <div className="flex-1">
-                  <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
-                      卡片类型
-                    </label>
-                    <select
-                      value={cardType}
-                      onChange={(e) => setCardType(e.target.value)}
-                    className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                      disabled={cardLoading}
-                    >
-                      <option value="问答题（附翻转卡片）">问答题（附翻转卡片）</option>
-                      <option value="Basic-b860c">Basic-b860c</option>
-                    </select>
-                  </div>
-                  </div>
 
                   <div className="flex items-center">
                     <input
@@ -943,7 +928,7 @@ function WorkspacePageContent() {
                     {cardLoading ? t('common.loading') : cardT('saveCardButton')}
                       </button>
                     )}
-                  </div>
+              </div>
 
               {/* 预览 */}
               {preview && (
