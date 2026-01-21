@@ -79,7 +79,6 @@ function WorkspacePageContent() {
   // 卡片生成相关状态
   const [cardText, setCardText] = useState('');
   const [cardType, setCardType] = useState('问答题（附翻转卡片）');
-  const [deckName, setDeckName] = useState('default');
   const [includePronunciation, setIncludePronunciation] = useState(true);
   const [cardLoading, setCardLoading] = useState(false);
   const [preview, setPreview] = useState<{
@@ -88,13 +87,11 @@ function WorkspacePageContent() {
     audioUrl?: string;
   } | null>(null);
   const [cardError, setCardError] = useState('');
-  const [decks, setDecks] = useState<Array<{ id: string; name: string; cardCount?: number }>>([]);
   
   // 卡片列表相关状态
   const [cards, setCards] = useState<Card[]>([]);
   const [cardsLoading, setCardsLoading] = useState(true);
   const [cardsError, setCardsError] = useState('');
-  const [selectedDeck, setSelectedDeck] = useState<string>('');
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [total, setTotal] = useState(0);
@@ -141,25 +138,6 @@ function WorkspacePageContent() {
     return () => clearTimeout(timer);
   }, [searchQuery]);
 
-  // 获取牌组列表
-  const fetchDecks = useCallback(async () => {
-    try {
-      const { getAnonymousHeaders } = await import('@/hooks/useAnonymousUser');
-      const headers = getAnonymousHeaders();
-      const res = await fetch('/api/decks', { headers });
-      const response = await res.json();
-      // 适配新的统一响应格式
-      const data = response.success ? response.data : response;
-      if (data?.decks) {
-        setDecks(data.decks);
-        if (data.decks.length > 0 && !deckName) {
-          setDeckName(data.decks[0].name);
-        }
-      }
-    } catch (err) {
-      console.error('Failed to fetch decks:', err);
-    }
-  }, [deckName]);
 
   // 获取来源列表
   const fetchSources = useCallback(async () => {
@@ -187,8 +165,9 @@ function WorkspacePageContent() {
       const { getAnonymousHeaders } = await import('@/hooks/useAnonymousUser');
       const headers = getAnonymousHeaders();
       const params = new URLSearchParams();
-      if (selectedDeck) {
-        params.append('deck', selectedDeck);
+      // 工作区只显示当前工作区牌组的卡片
+      if (currentWorkspaceDeck && currentWorkspaceDeck !== 'default') {
+        params.append('deck', currentWorkspaceDeck);
       }
       if (debouncedSearchQuery.trim()) {
         params.append('search', debouncedSearchQuery.trim());
@@ -224,7 +203,7 @@ function WorkspacePageContent() {
     } finally {
       setCardsLoading(false);
     }
-  }, [selectedDeck, page, debouncedSearchQuery, cardT]);
+  }, [currentWorkspaceDeck, page, debouncedSearchQuery, cardT]);
 
   // 检查 URL 参数中的 deck（同步更新状态）
   useEffect(() => {
@@ -243,15 +222,11 @@ function WorkspacePageContent() {
       // 只有在当前还是默认值时才更新，避免覆盖用户手动设置的值
       const decodedDeckName = decodeURIComponent(deckParam);
       setCurrentWorkspaceDeck(decodedDeckName);
-      setDeckName(decodedDeckName);
-      setSelectedDeck(decodedDeckName);
     } else if (deckParam) {
       // 如果已经有值，也更新一下确保同步
       const decodedDeckName = decodeURIComponent(deckParam);
       if (decodedDeckName !== currentWorkspaceDeck) {
         setCurrentWorkspaceDeck(decodedDeckName);
-        setDeckName(decodedDeckName);
-        setSelectedDeck(decodedDeckName);
       }
     }
   }, [searchParams, currentWorkspaceDeck]);
@@ -286,26 +261,6 @@ function WorkspacePageContent() {
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [showSourceMenuId]);
-  
-  // 当牌组列表加载后，如果没有从URL参数获取到牌组，使用第一个牌组或默认值
-  useEffect(() => {
-    if (decks.length > 0 && currentWorkspaceDeck === 'default' && !searchParams.get('deck')) {
-      setCurrentWorkspaceDeck(decks[0].name);
-      setDeckName(decks[0].name);
-      setSelectedDeck(decks[0].name);
-    }
-  }, [decks, currentWorkspaceDeck, searchParams]);
-  
-  // 确保卡片列表始终显示当前工作区牌组的卡片
-  useEffect(() => {
-    if (currentWorkspaceDeck !== 'default') {
-      setSelectedDeck(currentWorkspaceDeck);
-    }
-  }, [currentWorkspaceDeck]);
-
-  useEffect(() => {
-    fetchDecks();
-  }, [fetchDecks]);
 
   useEffect(() => {
       fetchCards();
@@ -526,7 +481,7 @@ function WorkspacePageContent() {
         body: JSON.stringify({
           text: cardText,
           cardType,
-          deckName: currentWorkspaceDeck.trim() || deckName.trim() || 'default',
+          deckName: currentWorkspaceDeck.trim() || 'default',
           includePronunciation,
         }),
       });
@@ -722,22 +677,22 @@ function WorkspacePageContent() {
                 <p className="text-xs text-blue-700 dark:text-blue-300">
                   {workspaceT('deepResearchDescription')}
                 </p>
-              </div>
             </div>
           </div>
+        </div>
 
           {/* 搜索新来源 */}
           <div className="p-4 border-b border-gray-200 dark:border-gray-700">
             <div className="relative">
               <svg className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-              </svg>
+                  </svg>
               <input
                 type="text"
                 placeholder={workspaceT('searchNewSources')}
                 className="w-full pl-10 pr-4 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
               />
-            </div>
+                </div>
             <div className="flex gap-2 mt-2">
               <button className="flex-1 px-3 py-1.5 text-xs border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600 flex items-center justify-center gap-1">
                 <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -758,9 +713,9 @@ function WorkspacePageContent() {
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                 </svg>
-              </button>
+                </button>
+              </div>
             </div>
-          </div>
 
           {/* 已保存的来源列表 */}
           <div className="flex-1 overflow-y-auto p-4">
@@ -852,7 +807,7 @@ function WorkspacePageContent() {
                         >
                           ✕
                         </button>
-                      </div>
+                  </div>
                     ) : (
                       <>
                         <div className="flex items-start gap-2">
@@ -866,9 +821,9 @@ function WorkspacePageContent() {
                             <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
                               {new Date(source.createdAt).toLocaleDateString(locale, { month: 'short', day: 'numeric' })}
                             </p>
-                          </div>
+                </div>
                           <div className="relative source-menu-container">
-                            <button
+                <button
                               onClick={(e) => {
                                 e.stopPropagation();
                                 setShowSourceMenuId(showSourceMenuId === source.id ? null : source.id);
@@ -878,7 +833,7 @@ function WorkspacePageContent() {
                               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
                               </svg>
-                            </button>
+                </button>
                             {showSourceMenuId === source.id && (
                               <div className="absolute right-0 top-8 z-10 w-40 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg py-1">
                                 <button
@@ -945,9 +900,9 @@ function WorkspacePageContent() {
                                   </svg>
                                   删除
                                 </button>
-                              </div>
-                            )}
-                          </div>
+                    </div>
+                  )}
+                </div>
                         </div>
                       </>
                     )}
@@ -982,14 +937,14 @@ function WorkspacePageContent() {
                     <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                   </svg>
                   <span>{t('payment.successMessage')}</span>
-                </div>
-                <button
+                  </div>
+                  <button
                   onClick={() => setPaymentSuccess(false)}
                   className="text-green-700 dark:text-green-300 hover:text-green-900 dark:hover:text-green-100"
-                >
+                  >
                   ✕
-                </button>
-              </div>
+                  </button>
+                </div>
             </div>
           )}
 
@@ -1007,51 +962,26 @@ function WorkspacePageContent() {
                 <button className="px-4 py-2 text-sm bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors">
                   {workspaceT('uploadSource')}
                 </button>
-              </div>
-            )}
+                  </div>
+                )}
 
             {/* 卡片生成表单 */}
             <div className="space-y-4">
-                <div>
+                  <div>
                   <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
                   {cardT('japaneseTextInput')}
-                  </label>
+                    </label>
                   <textarea
                   value={cardText}
                   onChange={(e) => setCardText(e.target.value)}
                   className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent resize-none"
                     rows={4}
                   placeholder={cardT('japaneseTextPlaceholder')}
-                  disabled={cardLoading}
+                      disabled={cardLoading}
                   />
-                </div>
+                  </div>
 
               <div className="flex items-center gap-4">
-                <div className="flex-1">
-                  <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
-                    {cardT('selectDeck')}
-                    </label>
-                    <input
-                      type="text"
-                    value={currentWorkspaceDeck}
-                    onChange={(e) => {
-                      setCurrentWorkspaceDeck(e.target.value);
-                      setDeckName(e.target.value);
-                    }}
-                      list="deckOptions"
-                    className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                      placeholder="输入牌组名称..."
-                      disabled={cardLoading}
-                    />
-                    <datalist id="deckOptions">
-                      {decks.map((deck) => (
-                        <option key={deck.id} value={deck.name} />
-                      ))}
-                    </datalist>
-                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                    当前工作区牌组：{currentWorkspaceDeck}
-                  </p>
-                  </div>
                 <div className="flex-1">
                   <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
                     卡片类型
@@ -1277,7 +1207,7 @@ function WorkspacePageContent() {
               </button>
 
               {/* 闪卡 - 高亮显示 */}
-              <button
+                      <button
                 onClick={async () => {
                   // 为所有没有音频的卡片自动生成音频
                   const cardsWithoutAudio = cards.filter(card => !card.audioUrl);
@@ -1318,7 +1248,7 @@ function WorkspacePageContent() {
                     </p>
                   </div>
                 </div>
-              </button>
+                      </button>
 
               {/* 测验 */}
               <button className="p-3 bg-gray-50 dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600 hover:border-indigo-500 dark:hover:border-indigo-400 transition-colors text-left">
@@ -1326,7 +1256,7 @@ function WorkspacePageContent() {
                   <svg className="w-5 h-5 text-yellow-600 dark:text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
-                </div>
+                  </div>
                 <p className="text-xs font-medium text-gray-900 dark:text-white">
                   {workspaceT('quiz')}
                 </p>
@@ -1415,23 +1345,6 @@ function WorkspacePageContent() {
                       onChange={(e) => setSearchQuery(e.target.value)}
                 className="w-full px-2 py-1.5 text-xs border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-1 focus:ring-indigo-500 focus:border-transparent"
               />
-              {decks.length > 0 && (
-                    <select
-                      value={selectedDeck}
-                      onChange={(e) => {
-                        setSelectedDeck(e.target.value);
-                        setPage(1);
-                      }}
-                  className="w-full mt-2 px-2 py-1.5 text-xs border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-1 focus:ring-indigo-500 focus:border-transparent"
-                    >
-                  <option value="">{cardT('allDecks')}</option>
-                      {decks.map((deck) => (
-                        <option key={deck.id} value={deck.name}>
-                          {deck.name}
-                        </option>
-                      ))}
-                    </select>
-                  )}
                 </div>
 
                 {/* 卡片列表 */}
@@ -1470,10 +1383,7 @@ function WorkspacePageContent() {
                       <p className="text-xs font-medium text-gray-900 dark:text-white line-clamp-2 mb-1">
                               {card.frontContent}
                             </p>
-                      <div className="flex items-center justify-between">
-                            <span className="text-xs text-gray-500 dark:text-gray-400">
-                              {card.deckName}
-                            </span>
+                      <div className="flex items-center justify-end">
                             <span className="text-xs text-gray-400 dark:text-gray-500">
                           {new Date(card.createdAt).toLocaleDateString(locale)}
                             </span>
@@ -1774,9 +1684,6 @@ function WorkspacePageContent() {
               <div className="flex justify-between items-start mb-4 pb-4 border-b border-gray-200 dark:border-gray-700">
                       <div>
                   <div className="flex items-center gap-2 mb-2">
-                    <span className="text-xs px-2 py-1 bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 rounded">
-                            {selectedCard.deckName}
-                          </span>
                     <span className="text-xs px-2 py-1 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded">
                             {selectedCard.cardType}
                           </span>
