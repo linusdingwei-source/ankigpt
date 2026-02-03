@@ -12,10 +12,63 @@ export function SourcesPanel(props: WorkspaceViewProps) {
     editingSourceId, setEditingSourceId,
     editingSourceName, setEditingSourceName,
     fetchSources, setShowSourceViewModal,
-    setSourceContent, setSelectedSourceId,
+    setSourceContent, setSelectedSourceId, selectedSourceId,
     handleUploadFile, handleUploadAudio,
-    handlePasteImage
+    handlePasteImage,
+    sourceContent
   } = props;
+
+  // 如果有选中的来源，显示来源内容视图
+  if (props.selectedSourceId) {
+    const selectedSource = sources.find(s => s.id === props.selectedSourceId);
+    
+    return (
+      <div className="w-80 flex-shrink-0 border-r border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 flex flex-col">
+        {/* 面板标题 */}
+        <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
+          <h2 className="text-sm font-semibold text-gray-900 dark:text-white">
+            {workspaceT('source')}
+          </h2>
+          <button 
+            onClick={() => setIsSourcePanelCollapsed(true)}
+            className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+            aria-label="收起来源面板"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+
+        {/* 来源内容头部 */}
+        <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
+          <h3 className="font-medium text-gray-900 dark:text-white truncate pr-2" title={selectedSource?.name}>
+            {selectedSource?.name || '来源内容'}
+          </h3>
+          <button
+            onClick={() => {
+              setSelectedSourceId(null);
+              setSourceContent('');
+            }}
+            className="p-1 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+
+        {/* 来源内容 */}
+        <div className="flex-1 overflow-y-auto p-4">
+          <div className="prose dark:prose-invert max-w-none prose-sm">
+            <pre className="whitespace-pre-wrap text-sm text-gray-700 dark:text-gray-300 font-sans">
+              {sourceContent || '正在加载内容...'}
+            </pre>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   if (isSourcePanelCollapsed) {
     return (
@@ -160,7 +213,25 @@ export function SourcesPanel(props: WorkspaceViewProps) {
             {sources.map((source) => (
               <div
                 key={source.id}
-                className="group relative p-3 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-700 hover:border-indigo-300 dark:hover:border-indigo-600 hover:shadow-sm transition-all"
+                onClick={async () => {
+                  if (editingSourceId === source.id) return;
+                  try {
+                    const { getAnonymousHeaders } = await import('@/hooks/useAnonymousUser');
+                    const headers = getAnonymousHeaders();
+                    setSelectedSourceId(source.id);
+                    setSourceContent('');
+                    
+                    const res = await fetch(`/api/sources/${source.id}`, { headers });
+                    const response = await res.json();
+                    if (res.ok && response.success) {
+                      setSourceContent(response.data.source.content || '');
+                      setShowSourceViewModal(true);
+                    }
+                  } catch (error) {
+                    console.error('Failed to fetch source content:', error);
+                  }
+                }}
+                className={`group relative p-3 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-700 hover:border-indigo-300 dark:hover:border-indigo-600 hover:shadow-sm transition-all cursor-pointer ${selectedSourceId === source.id ? 'border-indigo-500 ring-1 ring-indigo-500' : ''}`}
               >
                 {editingSourceId === source.id ? (
                   <div className="flex items-center gap-2">

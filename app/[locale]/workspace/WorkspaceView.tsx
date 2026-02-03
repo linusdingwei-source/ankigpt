@@ -297,30 +297,53 @@ export function WorkspaceView(props: WorkspaceViewProps) {
       {/* 查看来源内容模态框 */}
       {showSourceViewModal && selectedSourceId && (
         <div className="fixed inset-0 bg-black/50 dark:bg-black/70 z-50 flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="p-6">
-              <div className="flex justify-between items-center mb-4 pb-4 border-b border-gray-200 dark:border-gray-700">
-                <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
-                  {sources.find(s => s.id === selectedSourceId)?.name || '来源内容'}
-                </h2>
-                <button
-                  onClick={() => {
-                    setShowSourceViewModal(false);
-                    setSelectedSourceId(null);
-                    setSourceContent('');
-                  }}
-                  className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
-                >
-                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                </button>
-              </div>
-              <div className="prose dark:prose-invert max-w-none">
-                <pre className="whitespace-pre-wrap text-sm text-gray-900 dark:text-white bg-gray-50 dark:bg-gray-700 p-4 rounded-lg border border-gray-200 dark:border-gray-600 font-mono">
-                  {sourceContent}
-                </pre>
-              </div>
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] flex flex-col">
+            <div className="p-6 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-white truncate pr-4">
+                {sources.find(s => s.id === selectedSourceId)?.name || '来源内容'}
+              </h2>
+              <button
+                onClick={() => {
+                  setShowSourceViewModal(false);
+                  setSelectedSourceId(null);
+                  setSourceContent('');
+                }}
+                className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 flex-shrink-0"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            <div className="flex-1 overflow-y-auto p-6">
+              {(() => {
+                const selectedSource = sources.find(s => s.id === selectedSourceId);
+                const isImage = selectedSource?.type === 'image';
+                const isAudio = selectedSource?.type === 'audio';
+                const url = selectedSource?.contentUrl || selectedSource?.fileUrl;
+
+                if (isImage && url) {
+                  return (
+                    <div className="flex justify-center">
+                      <img src={url} alt={selectedSource?.name} className="max-w-full h-auto rounded-lg shadow-sm" />
+                    </div>
+                  );
+                } else if (isAudio && url) {
+                  return (
+                    <div className="flex flex-col items-center justify-center py-12">
+                      <audio controls src={url} className="w-full max-w-md" />
+                    </div>
+                  );
+                } else {
+                  return (
+                    <div className="prose dark:prose-invert max-w-none">
+                      <pre className="whitespace-pre-wrap text-sm text-gray-900 dark:text-white bg-gray-50 dark:bg-gray-700 p-4 rounded-lg border border-gray-200 dark:border-gray-600 font-mono">
+                        {sourceContent}
+                      </pre>
+                    </div>
+                  );
+                }
+              })()}
             </div>
           </div>
         </div>
