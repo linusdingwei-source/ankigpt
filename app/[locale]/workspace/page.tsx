@@ -48,24 +48,22 @@ function WorkspacePageContent() {
   const searchParams = useSearchParams();
   
   // 当前工作区牌组（从URL参数或默认值）
-  // 使用函数式初始化确保在组件挂载时立即读取URL参数
-  const [currentWorkspaceDeck, setCurrentWorkspaceDeck] = useState<string>(() => {
-    // 在客户端立即从 window.location 读取，确保初始渲染时就有值
-    if (typeof window !== 'undefined') {
-      const params = new URLSearchParams(window.location.search);
-      const deckParam = params.get('deck');
-      if (deckParam) {
-        return decodeURIComponent(deckParam);
-      }
-    }
-    // 如果 window 不可用，尝试从 searchParams 读取（服务端渲染）
+  const [currentWorkspaceDeck, setCurrentWorkspaceDeck] = useState<string>('default');
+
+  useEffect(() => {
     const deckParam = searchParams.get('deck');
     if (deckParam) {
-      return decodeURIComponent(deckParam);
+      setCurrentWorkspaceDeck(decodeURIComponent(deckParam));
     }
-    return 'default';
-  });
-  
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const urlDeck = params.get('deck');
+      if (urlDeck) {
+        setCurrentWorkspaceDeck(decodeURIComponent(urlDeck));
+      }
+    }
+  }, [searchParams]);
+
   // 卡片生成相关状态
   const [cardText, setCardText] = useState('');
   // 卡片类型固定为"问答题（附翻转卡片）"
@@ -514,20 +512,9 @@ function WorkspacePageContent() {
                 </div>
                 {/* 牌组名称 */}
                 <h1 className="text-lg font-medium text-gray-900 dark:text-white leading-tight">
-                  {(() => {
-                    // 在渲染时也检查URL参数，确保能获取到最新值
-                    if (typeof window !== 'undefined') {
-                      const params = new URLSearchParams(window.location.search);
-                      const deckParam = params.get('deck');
-                      if (deckParam) {
-                        return decodeURIComponent(deckParam);
-                      }
-                    }
-                    // 如果URL参数没有，使用状态值
-                    return currentWorkspaceDeck && currentWorkspaceDeck !== 'default' 
-                      ? currentWorkspaceDeck 
-                      : t('common.appName');
-                  })()}
+                  {currentWorkspaceDeck && currentWorkspaceDeck !== 'default'
+                    ? currentWorkspaceDeck
+                    : t('common.appName')}
               </h1>
             </Link>
             </div>
@@ -597,7 +584,6 @@ function WorkspacePageContent() {
                 </p>
             </div>
           </div>
-        </div>
 
           {/* 搜索新来源 */}
           <div className="p-4 border-b border-gray-200 dark:border-gray-700">
@@ -830,6 +816,20 @@ function WorkspacePageContent() {
             )}
           </div>
         </div>
+        </div>
+        ) : (
+          <div className="w-12 flex-shrink-0 border-r border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 flex flex-col items-center py-2">
+            <button
+              onClick={() => setIsSourcePanelCollapsed(false)}
+              className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-opacity"
+              aria-label="展开来源面板"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              </svg>
+            </button>
+          </div>
+        )}
 
         {/* 中间面板：对话（Chat） */}
         <div className="flex-1 flex flex-col border-r border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
@@ -991,20 +991,6 @@ function WorkspacePageContent() {
             </button>
           </div>
         </div>
-        ) : (
-          <div className="w-12 flex-shrink-0 border-r border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 flex flex-col items-center py-2">
-            <button
-              onClick={() => setIsSourcePanelCollapsed(false)}
-              className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
-              aria-label="展开来源面板"
-            >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-              </svg>
-            </button>
-          </div>
-        )}
-
         {/* 右侧面板：Studio */}
         {!isStudioPanelCollapsed ? (
         <div className="w-80 flex-shrink-0 bg-white dark:bg-gray-800 flex flex-col">
