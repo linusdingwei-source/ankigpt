@@ -72,4 +72,7 @@ export interface WorkspaceViewProps {
   generateCardAudio: (card: any) => Promise<void>;
   fetchSources: () => Promise<void>;
   fetchCards: () => Promise<void>;
+  handleUploadFile: () => void;
+  handleUploadAudio: () => void;
+  handlePasteImage: () => void;
 }

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
 import { useSession } from 'next-auth/react';
 import { useSearchParams } from 'next/navigation';
@@ -107,6 +107,9 @@ export function WorkspacePageContent() {
   // 面板收起/展开状态
   const [isSourcePanelCollapsed, setIsSourcePanelCollapsed] = useState(false);
   const [isStudioPanelCollapsed, setIsStudioPanelCollapsed] = useState(false);
+
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const audioInputRef = useRef<HTMLInputElement>(null);
 
   // 防抖搜索
   useEffect(() => {
@@ -474,6 +477,92 @@ export function WorkspacePageContent() {
     initDashboard();
   }, [status, locale, session, fetchCredits]);
 
+  const handleUploadFile = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleUploadAudio = () => {
+    audioInputRef.current?.click();
+  };
+
+  const onFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Reset input
+    e.target.value = '';
+
+    setSourcesLoading(true);
+    try {
+      const { getAnonymousHeaders } = await import('@/hooks/useAnonymousUser');
+      const headers = getAnonymousHeaders();
+      
+      const formData = new FormData();
+      formData.append('file', file);
+      
+      const res = await fetch('/api/sources', {
+        method: 'POST',
+        headers, // FormData automatically sets Content-Type
+        body: formData,
+      });
+
+      const response = await res.json();
+      if (response.success) {
+        await fetchSources();
+        setShowAddSourceModal(false);
+      } else {
+        throw new Error(response.error?.message || 'Upload failed');
+      }
+    } catch (err) {
+      console.error('Upload error:', err);
+      alert('Upload failed: ' + (err instanceof Error ? err.message : 'Unknown error'));
+    } finally {
+      setSourcesLoading(false);
+    }
+  };
+
+  const handlePasteImage = async () => {
+    try {
+      const clipboardItems = await navigator.clipboard.read();
+      for (const item of clipboardItems) {
+        for (const type of item.types) {
+          if (type.startsWith('image/')) {
+            const blob = await item.getType(type);
+            const file = new File([blob], `pasted_image_${Date.now()}.png`, { type });
+            
+            setSourcesLoading(true);
+            const { getAnonymousHeaders } = await import('@/hooks/useAnonymousUser');
+            const headers = getAnonymousHeaders();
+            
+            const formData = new FormData();
+            formData.append('file', file);
+            
+            const res = await fetch('/api/sources', {
+              method: 'POST',
+              headers,
+              body: formData,
+            });
+
+            const response = await res.json();
+            if (response.success) {
+              await fetchSources();
+              setShowAddSourceModal(false);
+              return;
+            } else {
+              throw new Error(response.error?.message || 'Upload failed');
+            }
+          }
+        }
+      }
+      alert('No image found in clipboard');
+    } catch (err) {
+      console.error('Paste image error:', err);
+      alert('Failed to paste image: ' + (err instanceof Error ? err.message : 'Unknown error'));
+    } finally {
+      setSourcesLoading(false);
+    }
+  };
+
   if (status === 'loading') {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -483,9 +572,23 @@ export function WorkspacePageContent() {
   }
 
   return (
-    <WorkspaceView
-      locale={locale}
-      session={session}
+    <>
+      <input
+        type="file"
+        ref={fileInputRef}
+        className="hidden"
+        onChange={(e) => onFileChange(e)}
+      />
+      <input
+        type="file"
+        ref={audioInputRef}
+        className="hidden"
+        accept="audio/*"
+        onChange={(e) => onFileChange(e)}
+      />
+      <WorkspaceView
+        locale={locale}
+        session={session}
       t={t}
       workspaceT={workspaceT}
       cardT={cardT}
@@ -550,6 +653,10 @@ export function WorkspacePageContent() {
       generateCardAudio={generateCardAudio}
       fetchSources={fetchSources}
       fetchCards={fetchCards}
+      handleUploadFile={handleUploadFile}
+      handleUploadAudio={handleUploadAudio}
+      handlePasteImage={handlePasteImage}
     />
+    </>
   );
 }

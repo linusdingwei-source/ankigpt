@@ -62,6 +62,70 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const contentType = request.headers.get('content-type') || '';
+
+    if (contentType.includes('multipart/form-data')) {
+      const formData = await request.formData();
+      const file = formData.get('file') as File;
+      
+      if (!file) {
+        return NextResponse.json(
+          errorResponse(ErrorCodes.BAD_REQUEST, 'File is required'),
+          { status: 400 }
+        );
+      }
+
+      const buffer = Buffer.from(await file.arrayBuffer());
+      const timestamp = Date.now();
+      const safeName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_');
+      const filename = `sources/${timestamp}-${safeName}`;
+
+      let contentUrl: string | null = null;
+      try {
+        const uploadResult = await uploadToStorage(
+          buffer,
+          filename,
+          file.type
+        );
+        contentUrl = uploadResult.url;
+      } catch (uploadError) {
+        console.error('Failed to upload source file:', uploadError);
+        return NextResponse.json(
+          errorResponse(ErrorCodes.INTERNAL_ERROR, 'Failed to upload file'),
+          { status: 500 }
+        );
+      }
+
+      const source = await prisma.source.create({
+        data: {
+          userId,
+          name: file.name,
+          type: file.type.startsWith('audio/') ? 'audio' : 
+                file.type.startsWith('image/') ? 'image' : 'file',
+          content: '', // 文件内容不直接存储在 content 字段
+          contentUrl,
+          size: file.size,
+          mimeType: file.type,
+          fileUrl: contentUrl, // 同时保存到 fileUrl
+          fileName: file.name,
+        },
+        select: {
+          id: true,
+          name: true,
+          type: true,
+          contentUrl: true,
+          fileUrl: true,
+          fileName: true,
+          mimeType: true,
+          size: true,
+          createdAt: true,
+          updatedAt: true,
+        },
+      });
+
+      return NextResponse.json(successResponse({ source }));
+    }
+
     const body = await request.json();
     const { name, content, type = 'text' } = body;
 
