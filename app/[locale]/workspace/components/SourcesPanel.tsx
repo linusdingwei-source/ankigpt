@@ -23,7 +23,7 @@ export function SourcesPanel(props: WorkspaceViewProps) {
     const selectedSource = sources.find(s => s.id === props.selectedSourceId);
     
     return (
-      <div className="w-80 flex-shrink-0 border-r border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 flex flex-col">
+      <div style={{ width: props.isSourcePanelCollapsed ? 'auto' : '100%' }} className="flex-shrink-0 border-r border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 flex flex-col">
         {/* 面板标题 */}
         <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
           <h2 className="text-sm font-semibold text-gray-900 dark:text-white">
@@ -87,7 +87,7 @@ export function SourcesPanel(props: WorkspaceViewProps) {
   }
 
   return (
-    <div className="w-80 flex-shrink-0 border-r border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 flex flex-col">
+    <div style={{ width: props.isSourcePanelCollapsed ? 'auto' : '100%' }} className="flex-shrink-0 border-r border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 flex flex-col">
       {/* 面板标题 */}
       <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
         <h2 className="text-sm font-semibold text-gray-900 dark:text-white">
@@ -225,7 +225,7 @@ export function SourcesPanel(props: WorkspaceViewProps) {
                     const response = await res.json();
                     if (res.ok && response.success) {
                       setSourceContent(response.data.source.content || '');
-                      setShowSourceViewModal(true);
+                      setShowSourceViewModal(true); // Now we show content in panel, not modal
                     }
                   } catch (error) {
                     console.error('Failed to fetch source content:', error);

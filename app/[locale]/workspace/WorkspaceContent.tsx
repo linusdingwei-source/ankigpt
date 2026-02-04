@@ -108,6 +108,46 @@ export function WorkspacePageContent() {
   const [isSourcePanelCollapsed, setIsSourcePanelCollapsed] = useState(false);
   const [isStudioPanelCollapsed, setIsStudioPanelCollapsed] = useState(false);
 
+  const [sourcePanelWidth, setSourcePanelWidth] = useState(320);
+  const [studioPanelWidth, setStudioPanelWidth] = useState(360);
+  const [isResizingSource, setIsResizingSource] = useState(false);
+  const [isResizingStudio, setIsResizingStudio] = useState(false);
+
+  // Resize Handlers
+  const startResizingSource = useCallback(() => setIsResizingSource(true), []);
+  const startResizingStudio = useCallback(() => setIsResizingStudio(true), []);
+  const stopResizing = useCallback(() => {
+    setIsResizingSource(false);
+    setIsResizingStudio(false);
+  }, []);
+
+  const resize = useCallback(
+    (mouseMoveEvent: MouseEvent) => {
+      if (isResizingSource) {
+        const newWidth = mouseMoveEvent.clientX;
+        if (newWidth > 200 && newWidth < 600) { // Min/Max constraints
+          setSourcePanelWidth(newWidth);
+        }
+      }
+      if (isResizingStudio) {
+        const newWidth = window.innerWidth - mouseMoveEvent.clientX;
+        if (newWidth > 250 && newWidth < 600) { // Min/Max constraints
+          setStudioPanelWidth(newWidth);
+        }
+      }
+    },
+    [isResizingSource, isResizingStudio]
+  );
+
+  useEffect(() => {
+    window.addEventListener("mousemove", resize);
+    window.addEventListener("mouseup", stopResizing);
+    return () => {
+      window.removeEventListener("mousemove", resize);
+      window.removeEventListener("mouseup", stopResizing);
+    };
+  }, [resize, stopResizing]);
+
   const fileInputRef = useRef<HTMLInputElement>(null);
   const audioInputRef = useRef<HTMLInputElement>(null);
 
@@ -656,6 +696,11 @@ export function WorkspacePageContent() {
       handleUploadFile={handleUploadFile}
       handleUploadAudio={handleUploadAudio}
       handlePasteImage={handlePasteImage}
+      
+      sourcePanelWidth={sourcePanelWidth}
+      studioPanelWidth={studioPanelWidth}
+      startResizingSource={startResizingSource}
+      startResizingStudio={startResizingStudio}
     />
     </>
   );

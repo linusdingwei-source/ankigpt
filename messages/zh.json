@@ -74,6 +74,7 @@
   "dashboard": {
     "credits": "Credits",
     "dashboard": "仪表板",
+    "workspace": "工作区",
     "buyCredits": "购买Credits",
     "buyCreditsNow": "立即购买Credits",
     "adminConsole": "管理员控制台",

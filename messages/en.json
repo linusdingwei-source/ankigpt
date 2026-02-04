@@ -74,6 +74,7 @@
   "dashboard": {
     "credits": "Credits",
     "dashboard": "Dashboard",
+    "workspace": "Workspace",
     "buyCredits": "Buy Credits",
     "buyCreditsNow": "Buy Credits Now",
     "adminConsole": "Admin Console",

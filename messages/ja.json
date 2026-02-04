@@ -74,6 +74,7 @@
   "dashboard": {
     "credits": "Credits",
     "dashboard": "ダッシュボード",
+    "workspace": "ワークスペース",
     "buyCredits": "Creditsを購入",
     "buyCreditsNow": "今すぐCreditsを購入",
     "adminConsole": "管理者コンソール",

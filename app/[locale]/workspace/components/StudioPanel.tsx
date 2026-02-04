@@ -31,7 +31,7 @@ export function StudioPanel(props: WorkspaceViewProps) {
   }
 
   return (
-    <div className="w-80 flex-shrink-0 bg-white dark:bg-gray-800 flex flex-col">
+    <div style={{ width: props.isStudioPanelCollapsed ? 'auto' : '100%' }} className="flex-shrink-0 bg-white dark:bg-gray-800 flex flex-col">
       {/* 面板标题 */}
       <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
         <h2 className="text-sm font-semibold text-gray-900 dark:text-white">
