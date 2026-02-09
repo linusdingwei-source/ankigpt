@@ -117,22 +117,6 @@ export function SourcesPanel(props: WorkspaceViewProps) {
           </button>
       </div> */}
 
-      {/* Deep Research 提示 */}
-      <div className="p-4 border-b border-gray-200 dark:border-gray-700 bg-blue-50 dark:bg-blue-900/20">
-        <div className="flex items-start gap-2">
-          <svg className="w-5 h-5 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-          </svg>
-          <div>
-            <p className="text-xs font-medium text-blue-900 dark:text-blue-200 mb-1">
-              {workspaceT('tryDeepResearch')}
-            </p>
-            <p className="text-xs text-blue-700 dark:text-blue-300">
-              {workspaceT('deepResearchDescription')}
-            </p>
-        </div>
-      </div>
-      </div>
 
       {/* 来源操作按钮 */}
       <div className="p-4 border-b border-gray-200 dark:border-gray-700">
