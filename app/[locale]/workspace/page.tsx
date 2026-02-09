@@ -22,7 +22,6 @@ export default function WorkspacePage() {
   const { data: session, status } = useSession();
   
   // Panel states
-  const [activeTab, setActiveTab] = useState<'source' | 'chat' | 'studio'>('source');
   const [viewMode, setViewMode] = useState<ViewMode>('source');
   const [decks, setDecks] = useState<Deck[]>([]);
   const [selectedDeck, setSelectedDeck] = useState<string | null>(null);

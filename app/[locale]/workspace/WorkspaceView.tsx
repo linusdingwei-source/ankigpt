@@ -12,8 +12,6 @@ export function WorkspaceView(props: WorkspaceViewProps) {
   const {
     locale, session, t,
     currentWorkspaceDeck, credits,
-    showAddSourceModal, setShowAddSourceModal, workspaceT,
-    showPasteTextModal, setShowPasteTextModal, pastedText, setPastedText, fetchSources,
     showSourceViewModal, setShowSourceViewModal, selectedSourceId, setSelectedSourceId, sources, sourceContent, setSourceContent,
     selectedCard, setSelectedCardId, cardT, handleDeleteCard
   } = props;
