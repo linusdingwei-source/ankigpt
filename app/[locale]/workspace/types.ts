@@ -31,6 +31,8 @@ export interface WorkspaceViewProps {
   setShowSourceViewModal: (v: boolean) => void;
   selectedSourceId: string | null;
   setSelectedSourceId: (v: string | null) => void;
+  viewingSourceId: string | null;
+  setViewingSourceId: (v: string | null) => void;
   sourceContent: string;
   setSourceContent: (v: string) => void;
   editingSourceId: string | null;

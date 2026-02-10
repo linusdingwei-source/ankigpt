@@ -13,14 +13,15 @@ export function SourcesPanel(props: WorkspaceViewProps) {
     editingSourceName, setEditingSourceName,
     fetchSources, 
     setSourceContent, setSelectedSourceId, selectedSourceId,
+    viewingSourceId, setViewingSourceId,
     handleUploadFile, handleUploadAudio,
     handlePasteImage,
     sourceContent
   } = props;
 
-  // 如果有选中的来源，显示来源内容视图
-  if (props.selectedSourceId) {
-    const selectedSource = sources.find(s => s.id === props.selectedSourceId);
+  // 如果有正在查看的来源，显示来源内容视图
+  if (props.viewingSourceId) {
+    const selectedSource = sources.find(s => s.id === props.viewingSourceId);
     
     return (
       <div style={{ width: props.isSourcePanelCollapsed ? 'auto' : '100%' }} className="flex-shrink-0 border-r border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 flex flex-col">
@@ -47,7 +48,7 @@ export function SourcesPanel(props: WorkspaceViewProps) {
           </h3>
           <button
             onClick={() => {
-              setSelectedSourceId(null);
+              setViewingSourceId(null);
               setSourceContent('');
             }}
             className="p-1 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
@@ -202,20 +203,21 @@ export function SourcesPanel(props: WorkspaceViewProps) {
                   try {
                     const { getAnonymousHeaders } = await import('@/hooks/useAnonymousUser');
                     const headers = getAnonymousHeaders();
+                    // 点击整个项目：同时选中(打勾)并查看内容
                     setSelectedSourceId(source.id);
+                    setViewingSourceId(source.id);
                     setSourceContent('');
                     
                     const res = await fetch(`/api/sources/${source.id}`, { headers });
                     const response = await res.json();
                     if (res.ok && response.success) {
                       setSourceContent(response.data.source.content || '');
-                      // setShowSourceViewModal(true); // Now we show content in panel, not modal
                     }
                   } catch (error) {
                     console.error('Failed to fetch source content:', error);
                   }
                 }}
-                className={`group relative p-3 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-700 hover:border-indigo-300 dark:hover:border-indigo-600 hover:shadow-sm transition-all cursor-pointer ${selectedSourceId === source.id ? 'border-indigo-500 ring-1 ring-indigo-500' : ''}`}
+                className={`group relative p-3 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-700 hover:border-indigo-300 dark:hover:border-indigo-600 hover:shadow-sm transition-all cursor-pointer ${viewingSourceId === source.id ? 'border-indigo-500 ring-1 ring-indigo-500' : ''}`}
               >
                 {editingSourceId === source.id ? (
                   <div className="flex items-center gap-2">
@@ -289,7 +291,11 @@ export function SourcesPanel(props: WorkspaceViewProps) {
                       <input
                         type="checkbox"
                         checked={selectedSourceId === source.id}
-                        onChange={() => {}} // Click is handled by the parent div
+                        onClick={(e) => {
+                          e.stopPropagation(); // 阻止冒泡，不触发查看内容
+                          setSelectedSourceId(selectedSourceId === source.id ? null : source.id);
+                        }}
+                        onChange={() => {}} // 逻辑在 onClick 中
                         className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded cursor-pointer"
                       />
                     </div>
@@ -328,8 +334,7 @@ export function SourcesPanel(props: WorkspaceViewProps) {
                                   const response = await res.json();
                                   if (res.ok && response.success) {
                                     setSourceContent(response.data.source.content || '');
-                                    setSelectedSourceId(source.id);
-                                    // setShowSourceViewModal(true);
+                                    setViewingSourceId(source.id);
                                     setShowSourceMenuId(null);
                                   }
                                 } catch (error) {

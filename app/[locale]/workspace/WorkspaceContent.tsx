@@ -98,6 +98,7 @@ export function WorkspacePageContent() {
   }>>([]);
   const [sourcesLoading, setSourcesLoading] = useState(true);
   const [selectedSourceId, setSelectedSourceId] = useState<string | null>(null);
+  const [viewingSourceId, setViewingSourceId] = useState<string | null>(null);
   const [showSourceViewModal, setShowSourceViewModal] = useState(false);
   const [sourceContent, setSourceContent] = useState<string>('');
   const [editingSourceId, setEditingSourceId] = useState<string | null>(null);
@@ -461,39 +462,50 @@ export function WorkspacePageContent() {
 
   // 批量从来源生成卡片
   const handleGenerateCardsFromSource = async () => {
-    if (!selectedSourceId || !sourceContent) {
+    if (!selectedSourceId) {
       alert('请先选择一个来源');
-      return;
-    }
-
-    const { splitJapaneseSentences } = await import('@/lib/llm-utils');
-    const sentences = splitJapaneseSentences(sourceContent);
-
-    if (sentences.length === 0) {
-      alert('未能从来源中识别出有效的日文句子');
-      return;
-    }
-
-    if (!confirm(`识别出 ${sentences.length} 个句子，是否开始批量生成卡片？`)) {
       return;
     }
 
     setCardLoading(true);
     setCardError('');
 
-    let successCount = 0;
-    let failCount = 0;
-
     try {
       const { getAnonymousHeaders } = await import('@/hooks/useAnonymousUser');
       const headers = getAnonymousHeaders();
+
+      // 获取选中来源的最新内容
+      const res = await fetch(`/api/sources/${selectedSourceId}`, { headers });
+      const response = await res.json();
+      
+      if (!res.ok || !response.success || !response.data?.source?.content) {
+        throw new Error('未能获取到来源内容');
+      }
+
+      const content = response.data.source.content;
+      const { splitJapaneseSentences } = await import('@/lib/llm-utils');
+      const sentences = splitJapaneseSentences(content);
+
+      if (sentences.length === 0) {
+        alert('未能从来源中识别出有效的日文句子');
+        setCardLoading(false);
+        return;
+      }
+
+      if (!confirm(`识别出 ${sentences.length} 个句子，是否开始批量生成卡片？`)) {
+        setCardLoading(false);
+        return;
+      }
+
+      let successCount = 0;
+      let failCount = 0;
 
       for (let i = 0; i < sentences.length; i++) {
         const sentence = sentences[i];
         console.log(`正在生成第 ${i + 1}/${sentences.length} 个句子:`, sentence);
         
         try {
-          const res = await fetch('/api/cards/generate', {
+          const genRes = await fetch('/api/cards/generate', {
             method: 'POST',
             headers: { ...headers, 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -504,7 +516,7 @@ export function WorkspacePageContent() {
             }),
           });
 
-          if (res.ok) {
+          if (genRes.ok) {
             successCount++;
           } else {
             failCount++;
@@ -521,7 +533,7 @@ export function WorkspacePageContent() {
       alert(`批量生成完成！成功: ${successCount}, 失败: ${failCount}`);
     } catch (err) {
       console.error('Batch generation error:', err);
-      setCardError(err instanceof Error ? err.message : '批量生成失败');
+      alert(err instanceof Error ? err.message : '批量生成失败');
     } finally {
       setCardLoading(false);
     }
@@ -732,6 +744,8 @@ export function WorkspacePageContent() {
       setShowSourceViewModal={setShowSourceViewModal}
       selectedSourceId={selectedSourceId}
       setSelectedSourceId={setSelectedSourceId}
+      viewingSourceId={viewingSourceId}
+      setViewingSourceId={setViewingSourceId}
       sourceContent={sourceContent}
       setSourceContent={setSourceContent}
       editingSourceId={editingSourceId}
