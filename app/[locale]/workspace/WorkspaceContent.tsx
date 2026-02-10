@@ -459,6 +459,74 @@ export function WorkspacePageContent() {
     }
   };
 
+  // 批量从来源生成卡片
+  const handleGenerateCardsFromSource = async () => {
+    if (!selectedSourceId || !sourceContent) {
+      alert('请先选择一个来源');
+      return;
+    }
+
+    const { splitJapaneseSentences } = await import('@/lib/llm-utils');
+    const sentences = splitJapaneseSentences(sourceContent);
+
+    if (sentences.length === 0) {
+      alert('未能从来源中识别出有效的日文句子');
+      return;
+    }
+
+    if (!confirm(`识别出 ${sentences.length} 个句子，是否开始批量生成卡片？`)) {
+      return;
+    }
+
+    setCardLoading(true);
+    setCardError('');
+
+    let successCount = 0;
+    let failCount = 0;
+
+    try {
+      const { getAnonymousHeaders } = await import('@/hooks/useAnonymousUser');
+      const headers = getAnonymousHeaders();
+
+      for (let i = 0; i < sentences.length; i++) {
+        const sentence = sentences[i];
+        console.log(`正在生成第 ${i + 1}/${sentences.length} 个句子:`, sentence);
+        
+        try {
+          const res = await fetch('/api/cards/generate', {
+            method: 'POST',
+            headers: { ...headers, 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              text: sentence,
+              cardType: '问答题（附翻转卡片）',
+              deckName: currentWorkspaceDeck.trim() || 'default',
+              includePronunciation: true,
+            }),
+          });
+
+          if (res.ok) {
+            successCount++;
+          } else {
+            failCount++;
+          }
+        } catch (err) {
+          console.error(`第 ${i + 1} 个句子生成失败:`, err);
+          failCount++;
+        }
+      }
+
+      await fetchCards();
+      await fetchCredits();
+      
+      alert(`批量生成完成！成功: ${successCount}, 失败: ${failCount}`);
+    } catch (err) {
+      console.error('Batch generation error:', err);
+      setCardError(err instanceof Error ? err.message : '批量生成失败');
+    } finally {
+      setCardLoading(false);
+    }
+  };
+
   // 删除卡片
   const handleDeleteCard = async (cardId: string) => {
     if (!confirm(cardT('confirmDeleteMessage', { frontContent: selectedCard?.frontContent || '' }))) {
@@ -699,6 +767,7 @@ export function WorkspacePageContent() {
       handleGeneratePreview={handleGeneratePreview}
       handleSaveCard={handleSaveCard}
       handleDeleteCard={handleDeleteCard}
+      handleGenerateCardsFromSource={handleGenerateCardsFromSource}
       generateCardAudio={generateCardAudio}
       fetchSources={fetchSources}
       fetchCards={fetchCards}

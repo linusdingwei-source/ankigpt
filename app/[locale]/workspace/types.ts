@@ -69,6 +69,7 @@ export interface WorkspaceViewProps {
   handleGeneratePreview: () => void;
   handleSaveCard: () => void;
   handleDeleteCard: (id: string) => void;
+  handleGenerateCardsFromSource: () => Promise<void>;
   generateCardAudio: (card: any) => Promise<void>;
   fetchSources: () => Promise<void>;
   fetchCards: () => Promise<void>;

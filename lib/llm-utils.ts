@@ -89,3 +89,78 @@ export function markdownToHtml(markdown: string): string {
   return html;
 }
 
+/**
+ * 将日文文本拆分成句子
+ */
+export function splitJapaneseSentences(text: string): string[] {
+  if (!text) return [];
+  
+  // 移除首尾空白
+  text = text.trim();
+  if (!text) return [];
+  
+  // 先按换行符拆分
+  const lines = text.split('\n');
+  const sentences: string[] = [];
+  
+  for (let line of lines) {
+    line = line.trim();
+    if (!line) continue;
+    
+    // 按日文标点符号拆分：。！？
+    const parts = line.split(/([。！？])/);
+    let currentSentence = "";
+    
+    for (const part of parts) {
+      if (['。', '！', '？'].includes(part)) {
+        currentSentence += part;
+        if (currentSentence.trim()) {
+          sentences.push(currentSentence.trim());
+        }
+        currentSentence = "";
+      } else {
+        currentSentence += part;
+      }
+    }
+    
+    if (currentSentence.trim()) {
+      sentences.push(currentSentence.trim());
+    }
+  }
+  
+  // 过滤空句子
+  const filtered = sentences.filter(s => s.trim().length > 0);
+  
+  // 处理引号「」
+  const finalSentences: string[] = [];
+  let i = 0;
+  while (i < filtered.length) {
+    const sentence = filtered[i];
+    if (sentence.startsWith('「') && !sentence.includes('」')) {
+      let merged = sentence;
+      i++;
+      while (i < filtered.length && !merged.includes('」')) {
+        merged += filtered[i];
+        i++;
+      }
+      finalSentences.push(merged.trim());
+    } else {
+      finalSentences.push(sentence.trim());
+      i++;
+    }
+  }
+  
+  // 清理引号
+  return finalSentences.map(s => {
+    let cleaned = s.trim();
+    if (cleaned.startsWith('「') && cleaned.endsWith('」')) {
+      cleaned = cleaned.slice(1, -1).trim();
+    } else if (cleaned.startsWith('「')) {
+      cleaned = cleaned.slice(1).trim();
+    } else if (cleaned.endsWith('」')) {
+      cleaned = cleaned.slice(0, -1).trim();
+    }
+    return cleaned;
+  }).filter(s => s.length > 0);
+}
+
