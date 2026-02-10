@@ -10,9 +10,8 @@ export async function uploadToVercelBlob(
     throw new Error('BLOB_READ_WRITE_TOKEN is not configured');
   }
 
-  // 生成唯一文件名
-  const timestamp = Date.now();
-  const uniqueFilename = `audio/${timestamp}-${filename}`;
+  // 直接使用传入的文件名，它已经在上层处理过唯一性和路径了
+  const uniqueFilename = filename;
 
   const blob = await put(uniqueFilename, fileBuffer, {
     access: 'public',

@@ -116,9 +116,15 @@ export function SourcesPanel(props: WorkspaceViewProps) {
             const url = selectedSource?.contentUrl || selectedSource?.fileUrl;
 
             if (isImage && url) {
+              // 确保使用完整的 URL，防止由于数据问题导致的相对路径引用
+              const fullUrl = url.startsWith('http') ? url : url.startsWith('//') ? `https:${url}` : url;
               return (
-                <div className="w-full h-full flex items-center justify-center">
-                  <img src={url} alt={selectedSource?.name} className="max-w-full max-h-full object-contain rounded-lg shadow-sm" />
+                <div className="w-full h-full flex flex-col items-center justify-center p-4">
+                  <img 
+                    src={fullUrl} 
+                    alt={selectedSource?.name} 
+                    className="max-w-full max-h-full object-contain rounded-lg shadow-md"
+                  />
                 </div>
               );
             } else if (isAudio && url) {
