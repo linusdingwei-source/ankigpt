@@ -66,6 +66,8 @@ export interface WorkspaceViewProps {
   selectedCardId: string | null;
   setSelectedCardId: (v: any) => void;
   selectedCard: any;
+  showCardMenuId: string | null;
+  setShowCardMenuId: (v: string | null) => void;
   
   // Handlers
   handleGeneratePreview: () => void;

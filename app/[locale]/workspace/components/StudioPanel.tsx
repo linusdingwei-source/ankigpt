@@ -11,7 +11,9 @@ export function StudioPanel(props: WorkspaceViewProps) {
     total, totalPages, page, setPage,
     searchQuery, setSearchQuery, debouncedSearchQuery,
     selectedCardId, setSelectedCardId,
+    showCardMenuId, setShowCardMenuId,
     handleGenerateCardsFromSource,
+    handleDeleteCard,
     generateCardAudio
   } = props;
 
@@ -121,7 +123,7 @@ export function StudioPanel(props: WorkspaceViewProps) {
               ) : (
                 <div className="divide-y divide-gray-200 dark:divide-gray-700">
                   {cards.map((card: any) => (
-                    <button
+                    <div
                       key={card.id}
                       onClick={async () => {
                         setSelectedCardId(card.id);
@@ -130,21 +132,53 @@ export function StudioPanel(props: WorkspaceViewProps) {
                           await generateCardAudio(card);
                         }
                       }}
-                      className={`w-full text-left p-2 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors ${
+                      className={`group relative w-full text-left p-2 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors cursor-pointer ${
                         selectedCardId === card.id
                       ? 'bg-indigo-50 dark:bg-indigo-900/20 border-l-2 border-indigo-600'
                           : ''
                       }`}
                     >
-                  <p className="text-xs font-medium text-gray-900 dark:text-white line-clamp-2 mb-1">
+                      <div className="flex items-start justify-between gap-2">
+                        <p className="text-xs font-medium text-gray-900 dark:text-white line-clamp-2 flex-1">
                           {card.frontContent}
                         </p>
-                  <div className="flex items-center justify-end">
-                        <span className="text-xs text-gray-400 dark:text-gray-500">
-                      {new Date(card.createdAt).toLocaleDateString(locale)}
+                        <div className="relative card-menu-container flex-shrink-0">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setShowCardMenuId(showCardMenuId === card.id ? null : card.id);
+                            }}
+                            className="p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 opacity-0 group-hover:opacity-100 transition-opacity"
+                          >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
+                            </svg>
+                          </button>
+                          {showCardMenuId === card.id && (
+                            <div className="absolute right-0 top-8 z-20 w-32 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg py-1">
+                              <button
+                                onClick={async (e) => {
+                                  e.stopPropagation();
+                                  handleDeleteCard(card.id);
+                                  setShowCardMenuId(null);
+                                }}
+                                className="w-full px-4 py-2 text-left text-sm text-red-600 dark:text-red-400 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2"
+                              >
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                </svg>
+                                {cardT('delete') || '删除'}
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                      <div className="flex items-center justify-end mt-1">
+                        <span className="text-[10px] text-gray-400 dark:text-gray-500">
+                          {new Date(card.createdAt).toLocaleDateString(locale)}
                         </span>
                       </div>
-                    </button>
+                    </div>
                   ))}
                 </div>
               )}

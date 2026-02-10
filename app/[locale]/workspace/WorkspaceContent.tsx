@@ -72,6 +72,7 @@ export function WorkspacePageContent() {
   const [total, setTotal] = useState(0);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCardId, setSelectedCardId] = useState<string | null>(null);
+  const [showCardMenuId, setShowCardMenuId] = useState<string | null>(null);
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('');
   
   // 通用状态
@@ -312,6 +313,18 @@ export function WorkspacePageContent() {
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [showSourceMenuId]);
+
+  // 点击外部区域关闭卡片菜单
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as HTMLElement;
+      if (showCardMenuId && !target.closest('.card-menu-container')) {
+        setShowCardMenuId(null);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [showCardMenuId]);
 
   useEffect(() => {
       fetchCards();
@@ -915,6 +928,8 @@ export function WorkspacePageContent() {
       selectedCardId={selectedCardId}
       setSelectedCardId={setSelectedCardId}
       selectedCard={selectedCard}
+      showCardMenuId={showCardMenuId}
+      setShowCardMenuId={setShowCardMenuId}
       
       handleGeneratePreview={handleGeneratePreview}
       handleSaveCard={handleSaveCard}
