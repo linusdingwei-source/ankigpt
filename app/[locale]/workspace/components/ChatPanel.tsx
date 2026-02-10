@@ -1,180 +1,156 @@
 'use client';
 
+import { useRef, useEffect } from 'react';
 import { WorkspaceViewProps } from '../types';
 
 export function ChatPanel(props: WorkspaceViewProps) {
   const {
-    t, workspaceT, cardT,
-    paymentSuccess, setPaymentSuccess,
-    preview,
-    cardText, setCardText,
-    cardLoading, cardError,
-    includePronunciation, setIncludePronunciation,
-    handleGeneratePreview, handleSaveCard,
-    sources, setShowAddSourceModal
+    workspaceT,
+    messages, chatInput, setChatInput, chatLoading, handleSendMessage
   } = props;
 
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages, chatLoading]);
+
+  const onKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleSendMessage();
+    }
+  };
+
   return (
-    <div className="flex-1 flex flex-col border-r border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
+    <div className="flex-1 flex flex-col border-r border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 h-full relative">
       {/* 面板标题 */}
-      <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
+      <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between bg-white dark:bg-gray-800 z-10">
         <h2 className="text-sm font-semibold text-gray-900 dark:text-white">
           {workspaceT('chat')}
         </h2>
-        <button className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
-          </svg>
-        </button>
+        <div className="flex items-center gap-2">
+          <span className="text-[10px] px-1.5 py-0.5 bg-gray-100 dark:bg-gray-700 text-gray-500 rounded">Qwen Plus</span>
+        </div>
       </div>
 
-      {/* 主要内容区域 */}
-      <div className="flex-1 overflow-y-auto p-6">
-      {paymentSuccess && (
-          <div className="mb-4 p-3 bg-green-100 dark:bg-green-900 border border-green-400 dark:border-green-700 text-green-700 dark:text-green-300 rounded text-sm">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center">
-              <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-              </svg>
-              <span>{t('payment.successMessage')}</span>
-              </div>
-              <button
-              onClick={() => setPaymentSuccess(false)}
-              className="text-green-700 dark:text-green-300 hover:text-green-900 dark:hover:text-green-100"
-              >
-              ✕
-              </button>
-            </div>
-        </div>
-      )}
-
-        {/* 空状态或内容 */}
-        {!preview && !cardText && (
-          <div className="flex flex-col items-center justify-center h-full text-center">
-            <div className="mb-4">
-              <svg className="w-16 h-16 mx-auto text-gray-300 dark:text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" />
+      {/* 聊天消息区域 */}
+      <div className="flex-1 overflow-y-auto p-4 space-y-6">
+        {messages.length === 0 ? (
+          <div className="h-full flex flex-col items-center justify-center text-center px-8">
+            <div className="w-16 h-16 bg-indigo-50 dark:bg-indigo-900/30 rounded-full flex items-center justify-center mb-4">
+              <svg className="w-8 h-8 text-indigo-600 dark:text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
               </svg>
             </div>
-            <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
-              {workspaceT('addSourceToStart')}
+            <h3 className="text-sm font-medium text-gray-900 dark:text-white mb-1">开始日文学习对话</h3>
+            <p className="text-xs text-gray-500 dark:text-gray-400">
+              您可以直接输入日文句子进行分析，或者从左侧选择来源进行批量处理。
             </p>
-            <button 
-              onClick={() => setShowAddSourceModal(true)}
-              className="px-4 py-2 text-sm bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
-            >
-              {workspaceT('uploadSource')}
-            </button>
-              </div>
-            )}
-
-        {/* 卡片生成表单 */}
-        <div className="space-y-4">
-              <div>
-              <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
-              {cardT('japaneseTextInput')}
-                </label>
-                <textarea
-                  value={cardText}
-                  onChange={(e) => setCardText(e.target.value)}
-              className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent resize-none"
-                rows={4}
-              placeholder={cardT('japaneseTextPlaceholder')}
-                  disabled={cardLoading}
-                />
-              </div>
-
-
-              <div className="flex items-center">
-                <input
-                  type="checkbox"
-                  id="includePronunciation"
-                  checked={includePronunciation}
-                  onChange={(e) => setIncludePronunciation(e.target.checked)}
-              className="mr-2"
-                  disabled={cardLoading}
-                />
-            <label htmlFor="includePronunciation" className="text-sm text-gray-700 dark:text-gray-300">
-              {cardT('includePronunciation')}
-                </label>
-              </div>
-
-              {cardError && (
-            <div className="p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg text-sm text-red-600 dark:text-red-400">
-              {cardError}
-                </div>
-              )}
-
-              <div className="flex gap-2">
-                <button
-                  onClick={handleGeneratePreview}
-                  disabled={cardLoading || !cardText.trim()}
-              className="px-4 py-2 text-sm bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                >
-              {cardLoading ? t('common.loading') : cardT('generatePreviewButton')}
-                </button>
-                {preview && (
-                  <button
-                    onClick={handleSaveCard}
-                    disabled={cardLoading}
-                className="px-4 py-2 text-sm bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                  >
-                {cardLoading ? t('common.loading') : cardT('saveCardButton')}
-                  </button>
-                )}
           </div>
-
-          {/* 预览 */}
-          {preview && (
-            <div className="mt-4 p-4 bg-gray-50 dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600">
-              <h3 className="text-sm font-semibold mb-3 text-gray-900 dark:text-white">
-                {cardT('cardPreview')}
-              </h3>
-        <div className="space-y-3">
-                <div>
-                  <h4 className="text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    {cardT('frontContent')}
-                  </h4>
-                  <div className="p-3 bg-white dark:bg-gray-800 rounded border border-gray-200 dark:border-gray-600">
-                    <p className="text-sm">{preview.frontContent}</p>
-                  </div>
+        ) : (
+          messages.map((message) => (
+            <div 
+              key={message.id} 
+              className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
+            >
+              <div className={`max-w-[85%] flex flex-col ${message.role === 'user' ? 'items-end' : 'items-start'}`}>
+                <div className={`rounded-2xl px-4 py-2.5 text-sm ${
+                  message.role === 'user' 
+                    ? 'bg-indigo-600 text-white rounded-br-none' 
+                    : 'bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-bl-none'
+                }`}>
+                  {message.type === 'analysis' ? (
+                    <div 
+                      className="prose dark:prose-invert prose-sm max-w-none"
+                      dangerouslySetInnerHTML={{ __html: message.data?.html || message.content }}
+                    />
+                  ) : message.type === 'flashcards' ? (
+                    <div className="space-y-3 min-w-[240px]">
+                      <div className="flex items-center gap-2 text-xs font-semibold pb-2 border-b border-gray-200 dark:border-gray-600">
+                        <svg className="w-4 h-4 text-green-500" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                        </svg>
+                        批量生成结果
+                      </div>
+                      <div className="grid grid-cols-2 gap-2 text-center py-1">
+                        <div className="bg-green-50 dark:bg-green-900/20 p-2 rounded-lg">
+                          <div className="text-lg font-bold text-green-600">{message.data?.successCount}</div>
+                          <div className="text-[10px] text-green-700 dark:text-green-400">成功</div>
+                        </div>
+                        <div className="bg-red-50 dark:bg-red-900/20 p-2 rounded-lg">
+                          <div className="text-lg font-bold text-red-600">{message.data?.failCount}</div>
+                          <div className="text-[10px] text-red-700 dark:text-red-400">失败</div>
+                        </div>
+                      </div>
+                      <div className="max-h-48 overflow-y-auto space-y-1 pr-1 custom-scrollbar">
+                        {message.data?.cards?.map((card: { id: string; frontContent: string }) => (
+                          <div 
+                            key={card.id}
+                            className="text-[11px] p-2 bg-white dark:bg-gray-800 rounded border border-gray-200 dark:border-gray-600 truncate"
+                          >
+                            {card.frontContent}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ) : (
+                    <p className="whitespace-pre-wrap leading-relaxed">{message.content}</p>
+                  )}
                 </div>
-                <div>
-                  <h4 className="text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    {cardT('backContent')}
-                  </h4>
-                  <div 
-                    className="p-3 bg-white dark:bg-gray-800 rounded border border-gray-200 dark:border-gray-600 prose dark:prose-invert max-w-none prose-sm"
-                    dangerouslySetInnerHTML={{ __html: preview.backContent }}
-                  />
-                </div>
-                {preview.audioUrl && (
-                  <div>
-                    <h4 className="text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
-                      {cardT('pronunciationPreview')}
-                    </h4>
-                    <audio controls className="w-full">
-                      <source src={preview.audioUrl} type="audio/mpeg" />
-                      {cardT('audioNotSupported')}
-                    </audio>
-                  </div>
-                )}
+                <span className="text-[10px] text-gray-400 dark:text-gray-500 mt-1 px-1">
+                  {new Date(message.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                </span>
               </div>
             </div>
-          )}
-        </div>
+          ))
+        )}
+        {chatLoading && (
+          <div className="flex justify-start">
+            <div className="bg-gray-100 dark:bg-gray-700 rounded-2xl rounded-bl-none px-4 py-3 flex gap-1">
+              <div className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce" />
+              <div className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce [animation-delay:0.2s]" />
+              <div className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce [animation-delay:0.4s]" />
+            </div>
+          </div>
+        )}
+        <div ref={messagesEndRef} />
       </div>
 
-      {/* 底部状态栏 */}
-      <div className="px-4 py-2 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 flex items-center justify-between text-xs text-gray-600 dark:text-gray-400">
-        <span>{workspaceT('addSourceToStart')}</span>
-        <span>{workspaceT('sourcesCount', { count: sources.length })}</span>
-        <button className="text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300">
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-          </svg>
-        </button>
+      {/* 聊天输入区域 */}
+      <div className="p-4 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
+        <div className="relative group">
+          <textarea
+            value={chatInput}
+            onChange={(e) => setChatInput(e.target.value)}
+            onKeyDown={onKeyDown}
+            placeholder="输入日文句子或提问..."
+            rows={1}
+            className="w-full pl-4 pr-12 py-3 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-2xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none resize-none text-sm transition-all min-h-[48px] max-h-32"
+            style={{ height: 'auto' }}
+            onInput={(e) => {
+              const target = e.target as HTMLTextAreaElement;
+              target.style.height = 'auto';
+              target.style.height = `${target.scrollHeight}px`;
+            }}
+          />
+          <button
+            onClick={() => handleSendMessage()}
+            disabled={!chatInput.trim() || chatLoading}
+            className="absolute right-2 bottom-2 p-2 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-sm active:scale-95"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+            </svg>
+          </button>
+        </div>
+        <p className="text-[10px] text-center text-gray-400 dark:text-gray-500 mt-2">
+          由 Qwen 提供支持 · 聊天记录将自动保存
+        </p>
       </div>
     </div>
   );

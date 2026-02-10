@@ -114,6 +114,25 @@ export function WorkspacePageContent() {
   const [isResizingSource, setIsResizingSource] = useState(false);
   const [isResizingStudio, setIsResizingStudio] = useState(false);
 
+  // Chat 相关状态
+  const [messages, setMessages] = useState<Array<{
+    id: string;
+    role: 'user' | 'assistant';
+    content: string;
+    type?: 'chat' | 'analysis' | 'flashcards';
+    data?: {
+      markdown?: string;
+      html?: string;
+      kanaText?: string;
+      successCount?: number;
+      failCount?: number;
+      cards?: Array<{ id: string; frontContent: string }>;
+    };
+    timestamp: number;
+  }>>([]);
+  const [chatInput, setChatInput] = useState('');
+  const [chatLoading, setChatLoading] = useState(false);
+
   // Resize Handlers
   const startResizingSource = useCallback(() => setIsResizingSource(true), []);
   const startResizingStudio = useCallback(() => setIsResizingStudio(true), []);
@@ -497,12 +516,22 @@ export function WorkspacePageContent() {
         return;
       }
 
+      // 在对话框中添加一个提示消息
+      const statusMessageId = Date.now().toString();
+      setMessages(prev => [...prev, {
+        id: statusMessageId,
+        role: 'assistant',
+        content: `正在为 ${sentences.length} 个句子批量生成卡片...`,
+        type: 'chat',
+        timestamp: Date.now(),
+      }]);
+
       let successCount = 0;
       let failCount = 0;
+      const generatedCards = [];
 
       for (let i = 0; i < sentences.length; i++) {
         const sentence = sentences[i];
-        console.log(`正在生成第 ${i + 1}/${sentences.length} 个句子:`, sentence);
         
         try {
           const genRes = await fetch('/api/cards/generate', {
@@ -516,8 +545,10 @@ export function WorkspacePageContent() {
             }),
           });
 
-          if (genRes.ok) {
+          const genResponse = await genRes.json();
+          if (genRes.ok && genResponse.success) {
             successCount++;
+            generatedCards.push(genResponse.data.card);
           } else {
             failCount++;
           }
@@ -530,10 +561,29 @@ export function WorkspacePageContent() {
       await fetchCards();
       await fetchCredits();
       
-      alert(`批量生成完成！成功: ${successCount}, 失败: ${failCount}`);
+      // 更新对话框中的消息，显示结果
+      setMessages(prev => {
+        const newMessages = prev.filter(m => m.id !== statusMessageId);
+        return [...newMessages, {
+          id: Date.now().toString(),
+          role: 'assistant',
+          content: `批量生成完成！\n成功: ${successCount}\n失败: ${failCount}`,
+          type: 'flashcards',
+          data: { successCount, failCount, cards: generatedCards },
+          timestamp: Date.now(),
+        }];
+      });
+      
     } catch (err) {
       console.error('Batch generation error:', err);
-      alert(err instanceof Error ? err.message : '批量生成失败');
+      // alert(err instanceof Error ? err.message : '批量生成失败');
+      setMessages(prev => [...prev, {
+        id: Date.now().toString(),
+        role: 'assistant',
+        content: `批量生成失败: ${err instanceof Error ? err.message : '未知错误'}`,
+        type: 'chat',
+        timestamp: Date.now(),
+      }]);
     } finally {
       setCardLoading(false);
     }
@@ -726,6 +776,60 @@ export function WorkspacePageContent() {
     }
   };
 
+  const handleSendMessage = async (text?: string) => {
+    const content = text || chatInput;
+    if (!content.trim() || chatLoading) return;
+
+    const userMessage = {
+      id: Date.now().toString(),
+      role: 'user' as const,
+      content: content.trim(),
+      timestamp: Date.now(),
+    };
+
+    setMessages(prev => [...prev, userMessage]);
+    setChatInput('');
+    setChatLoading(true);
+
+    try {
+      const { getAnonymousHeaders } = await import('@/hooks/useAnonymousUser');
+      const headers = getAnonymousHeaders();
+      
+      const res = await fetch('/api/llm/analyze', {
+        method: 'POST',
+        headers: { ...headers, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text: content.trim() }),
+      });
+
+      const response = await res.json();
+      if (response.success) {
+        const assistantMessage = {
+          id: (Date.now() + 1).toString(),
+          role: 'assistant' as const,
+          content: response.data.analysis.markdown,
+          type: 'analysis' as const,
+          data: response.data.analysis,
+          timestamp: Date.now(),
+        };
+        setMessages(prev => [...prev, assistantMessage]);
+        await fetchCredits();
+      } else {
+        throw new Error(response.error?.message || 'Chat failed');
+      }
+    } catch (err) {
+      console.error('Chat error:', err);
+      const errorMessage = {
+        id: (Date.now() + 1).toString(),
+        role: 'assistant' as const,
+        content: `抱歉，出错了: ${err instanceof Error ? err.message : '未知错误'}`,
+        timestamp: Date.now(),
+      };
+      setMessages(prev => [...prev, errorMessage]);
+    } finally {
+      setChatLoading(false);
+    }
+  };
+
   if (status === 'loading') {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -823,6 +927,12 @@ export function WorkspacePageContent() {
       handleUploadAudio={handleUploadAudio}
       handlePasteImage={handlePasteImage}
       handleInsertPastedText={handleInsertPastedText}
+      
+      messages={messages}
+      chatInput={chatInput}
+      setChatInput={setChatInput}
+      chatLoading={chatLoading}
+      handleSendMessage={handleSendMessage}
       
       sourcePanelWidth={sourcePanelWidth}
       studioPanelWidth={studioPanelWidth}

@@ -80,6 +80,13 @@ export interface WorkspaceViewProps {
   handlePasteImage: () => void;
   handleInsertPastedText: () => Promise<void>;
   
+  // Chat
+  messages: any[];
+  chatInput: string;
+  setChatInput: (v: string) => void;
+  chatLoading: boolean;
+  handleSendMessage: (text?: string) => Promise<void>;
+  
   sourcePanelWidth: number;
   studioPanelWidth: number;
   startResizingSource: () => void;
