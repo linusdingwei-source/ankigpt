@@ -80,4 +80,5 @@ export interface WorkspaceViewProps {
   studioPanelWidth: number;
   startResizingSource: () => void;
   startResizingStudio: () => void;
+  workspaceLayoutRef?: React.RefObject<HTMLDivElement | null>;
 }

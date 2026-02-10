@@ -62,14 +62,15 @@ export function WorkspaceView(props: WorkspaceViewProps) {
       </nav>
 
       {/* 三栏布局 - Resizable */}
-      <div className="flex-1 flex overflow-hidden">
-        {/* Left Panel - Sources */}
-        <div style={{ width: props.isSourcePanelCollapsed ? 'auto' : props.sourcePanelWidth }} className="flex-shrink-0 flex">
+      <div ref={props.workspaceLayoutRef} className="flex-1 flex overflow-hidden">
+        {/* Left Panel - Sources（可左右拖动改变宽度） */}
+        <div style={{ width: props.isSourcePanelCollapsed ? 'auto' : `${props.sourcePanelWidth}px` }} className="flex-shrink-0 flex min-w-0">
           <SourcesPanel {...props} />
           {!props.isSourcePanelCollapsed && (
             <div
-              className="w-1 bg-gray-200 dark:bg-gray-700 hover:bg-indigo-500 cursor-col-resize flex items-center justify-center transition-colors"
+              className="w-1 flex-shrink-0 bg-gray-200 dark:bg-gray-700 hover:bg-indigo-500 dark:hover:bg-indigo-600 cursor-col-resize flex items-center justify-center transition-colors"
               onMouseDown={props.startResizingSource}
+              title="拖动调整来源面板宽度"
             >
               <div className="w-0.5 h-8 bg-gray-400 dark:bg-gray-500 rounded-full" />
             </div>
@@ -81,8 +82,8 @@ export function WorkspaceView(props: WorkspaceViewProps) {
           <ChatPanel {...props} />
         </div>
 
-        {/* Right Panel - Studio */}
-        <div style={{ width: props.isStudioPanelCollapsed ? 'auto' : props.studioPanelWidth }} className="flex-shrink-0 flex">
+        {/* Right Panel - Studio（可左右拖动改变宽度） */}
+        <div style={{ width: props.isStudioPanelCollapsed ? 'auto' : `${props.studioPanelWidth}px` }} className="flex-shrink-0 flex min-w-0">
           {!props.isStudioPanelCollapsed && (
             <div
               className="w-1 bg-gray-200 dark:bg-gray-700 hover:bg-indigo-500 cursor-col-resize flex items-center justify-center transition-colors"

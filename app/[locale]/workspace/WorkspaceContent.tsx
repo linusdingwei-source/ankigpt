@@ -123,15 +123,16 @@ export function WorkspacePageContent() {
 
   const resize = useCallback(
     (mouseMoveEvent: MouseEvent) => {
-      if (isResizingSource) {
-        const newWidth = mouseMoveEvent.clientX;
-        if (newWidth > 200 && newWidth < 600) { // Min/Max constraints
+      if (isResizingSource && workspaceLayoutRef.current) {
+        const rect = workspaceLayoutRef.current.getBoundingClientRect();
+        const newWidth = mouseMoveEvent.clientX - rect.left;
+        if (newWidth >= 240 && newWidth <= 600) {
           setSourcePanelWidth(newWidth);
         }
       }
       if (isResizingStudio) {
         const newWidth = window.innerWidth - mouseMoveEvent.clientX;
-        if (newWidth > 250 && newWidth < 600) { // Min/Max constraints
+        if (newWidth >= 250 && newWidth <= 600) {
           setStudioPanelWidth(newWidth);
         }
       }
@@ -150,6 +151,7 @@ export function WorkspacePageContent() {
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const audioInputRef = useRef<HTMLInputElement>(null);
+  const workspaceLayoutRef = useRef<HTMLDivElement>(null);
 
   // 防抖搜索
   useEffect(() => {
@@ -701,6 +703,7 @@ export function WorkspacePageContent() {
       studioPanelWidth={studioPanelWidth}
       startResizingSource={startResizingSource}
       startResizingStudio={startResizingStudio}
+      workspaceLayoutRef={workspaceLayoutRef}
     />
     </>
   );
