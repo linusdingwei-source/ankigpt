@@ -78,6 +78,7 @@ export interface WorkspaceViewProps {
   handleUploadFile: () => void;
   handleUploadAudio: () => void;
   handlePasteImage: () => void;
+  handleInsertPastedText: () => Promise<void>;
   
   sourcePanelWidth: number;
   studioPanelWidth: number;

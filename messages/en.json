@@ -178,6 +178,7 @@
     "pasteTextInstruction": "Paste the copied text below to upload it as a source to NotebookLM.",
     "pasteTextHere": "Paste text here",
     "insert": "Insert",
+    "cancel": "Cancel",
     "orDragFilesHere": "Or drag files here",
     "generateAudioVideoOverview": "Generate audio overview and video overview based on the following content",
     "yourDocument": "Your Document"

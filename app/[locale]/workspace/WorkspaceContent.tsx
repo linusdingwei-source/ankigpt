@@ -692,6 +692,40 @@ export function WorkspacePageContent() {
     }
   };
 
+  const handleInsertPastedText = async () => {
+    if (!pastedText.trim()) return;
+
+    setSourcesLoading(true);
+    try {
+      const { getAnonymousHeaders } = await import('@/hooks/useAnonymousUser');
+      const headers = getAnonymousHeaders();
+      
+      const res = await fetch('/api/sources', {
+        method: 'POST',
+        headers: { ...headers, 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: pastedText.trim().substring(0, 20) + (pastedText.trim().length > 20 ? '...' : ''),
+          type: 'text',
+          content: pastedText.trim(),
+        }),
+      });
+
+      const response = await res.json();
+      if (response.success) {
+        await fetchSources();
+        setShowPasteTextModal(false);
+        setPastedText('');
+      } else {
+        throw new Error(response.error?.message || 'Save failed');
+      }
+    } catch (err) {
+      console.error('Save text error:', err);
+      alert('Save failed: ' + (err instanceof Error ? err.message : 'Unknown error'));
+    } finally {
+      setSourcesLoading(false);
+    }
+  };
+
   if (status === 'loading') {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -788,6 +822,7 @@ export function WorkspacePageContent() {
       handleUploadFile={handleUploadFile}
       handleUploadAudio={handleUploadAudio}
       handlePasteImage={handlePasteImage}
+      handleInsertPastedText={handleInsertPastedText}
       
       sourcePanelWidth={sourcePanelWidth}
       studioPanelWidth={studioPanelWidth}

@@ -181,6 +181,7 @@
     "pasteTextInstruction": "在下方粘贴复制的文字，即可将其作为来源上传到 NotebookLM。",
     "pasteTextHere": "在此处粘贴文字",
     "insert": "插入",
+    "cancel": "取消",
     "orDragFilesHere": "或将文件拖至此处",
     "generateAudioVideoOverview": "根据以下内容生成音频概览和视频概览",
     "yourDocument": "您的文档"

@@ -7,7 +7,8 @@ export function SourcesPanel(props: WorkspaceViewProps) {
     locale, workspaceT,
     isSourcePanelCollapsed, setIsSourcePanelCollapsed,
     sources, sourcesLoading, setShowAddSourceModal,
-    setShowPasteTextModal,
+    showPasteTextModal, setShowPasteTextModal,
+    pastedText, setPastedText,
     showSourceMenuId, setShowSourceMenuId,
     editingSourceId, setEditingSourceId,
     editingSourceName, setEditingSourceName,
@@ -15,9 +16,57 @@ export function SourcesPanel(props: WorkspaceViewProps) {
     setSourceContent, setSelectedSourceId, selectedSourceId,
     viewingSourceId, setViewingSourceId,
     handleUploadFile, handleUploadAudio,
-    handlePasteImage,
+    handlePasteImage, handleInsertPastedText,
     sourceContent
   } = props;
+
+  // 粘贴文字视图
+  if (showPasteTextModal) {
+    return (
+      <div style={{ width: props.isSourcePanelCollapsed ? 'auto' : '100%' }} className="flex-shrink-0 border-r border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 flex flex-col">
+        <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
+          <h2 className="text-sm font-semibold text-gray-900 dark:text-white">
+            {workspaceT('pasteCopiedText')}
+          </h2>
+          <button 
+            onClick={() => setShowPasteTextModal(false)}
+            className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+        <div className="flex-1 p-4 flex flex-col gap-4 overflow-y-auto">
+          <p className="text-xs text-gray-500 dark:text-gray-400 leading-relaxed">
+            {workspaceT('pasteTextInstruction')}
+          </p>
+          <textarea
+            value={pastedText}
+            onChange={(e) => setPastedText(e.target.value)}
+            placeholder={workspaceT('pasteTextHere')}
+            className="flex-1 w-full p-3 text-sm border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none resize-none"
+            autoFocus
+          />
+          <div className="flex gap-2">
+            <button
+              onClick={() => setShowPasteTextModal(false)}
+              className="flex-1 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+            >
+              {workspaceT('cancel')}
+            </button>
+            <button
+              onClick={handleInsertPastedText}
+              disabled={!pastedText.trim()}
+              className="flex-1 px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {workspaceT('insert')}
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   // 如果有正在查看的来源，显示来源内容视图
   if (props.viewingSourceId) {
