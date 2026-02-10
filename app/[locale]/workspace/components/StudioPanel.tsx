@@ -93,8 +93,9 @@ export function StudioPanel(props: WorkspaceViewProps) {
                 </p>
               </div>
             </div>
-                  </button>
+          </button>
         </div>
+      </div>
 
       {/* 卡片列表（在 Studio 面板底部） */}
       <div className="border-t border-gray-200 dark:border-gray-700 flex flex-col flex-1">
