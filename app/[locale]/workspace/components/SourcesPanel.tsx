@@ -118,13 +118,48 @@ export function SourcesPanel(props: WorkspaceViewProps) {
             if (isImage && url) {
               // 确保使用完整的 URL，防止由于数据问题导致的相对路径引用
               const fullUrl = url.startsWith('http') ? url : url.startsWith('//') ? `https:${url}` : url;
+              // 确保缓存刷新参数是一个纯数字时间戳，避免非法字符导致 URL 损坏
+              const version = selectedSource?.updatedAt ? new Date(selectedSource.updatedAt).getTime() : Date.now();
+              const displayUrl = `${fullUrl}${fullUrl.includes('?') ? '&' : '?'}v=${version}`;
+              
               return (
                 <div className="w-full h-full flex flex-col items-center justify-center p-4">
-                  <img 
-                    src={fullUrl} 
-                    alt={selectedSource?.name} 
-                    className="max-w-full max-h-full object-contain rounded-lg shadow-md"
-                  />
+                  <div className="relative group max-w-full max-h-full">
+                    <img 
+                      src={displayUrl} 
+                      alt={selectedSource?.name} 
+                      className="max-w-full max-h-full object-contain rounded-lg shadow-md border border-gray-200 dark:border-gray-700"
+                      onError={(e) => {
+                        console.error('Image failed to load:', displayUrl);
+                        const target = e.target as HTMLImageElement;
+                        target.style.display = 'none';
+                        const errorSibling = target.nextElementSibling as HTMLElement;
+                        if (errorSibling) errorSibling.style.display = 'flex';
+                      }}
+                    />
+                    <div className="hidden flex-col items-center justify-center p-8 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg text-gray-500">
+                      <svg className="w-12 h-12 mb-2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                      </svg>
+                      <p className="text-sm">图片加载失败</p>
+                      <a href={fullUrl} target="_blank" rel="noopener noreferrer" className="mt-4 text-xs text-indigo-600 hover:underline">
+                        点击此处尝试直接打开
+                      </a>
+                    </div>
+                  </div>
+                  <div className="mt-4 flex gap-4">
+                    <a 
+                      href={fullUrl} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="text-xs text-gray-500 hover:text-indigo-600 flex items-center gap-1"
+                    >
+                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                      </svg>
+                      新窗口打开
+                    </a>
+                  </div>
                 </div>
               );
             } else if (isAudio && url) {

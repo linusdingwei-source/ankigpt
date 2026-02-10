@@ -51,9 +51,9 @@ export async function GET(
       );
     }
 
-    // 如果内容存储在 contentUrl 中，尝试从 URL 获取
+    // 如果内容存储在 contentUrl 中，且类型是 text，尝试从 URL 获取
     let finalContent = source.content;
-    if (!finalContent && source.contentUrl) {
+    if (!finalContent && source.contentUrl && source.type === 'text') {
       try {
         const response = await fetch(source.contentUrl);
         if (response.ok) {
