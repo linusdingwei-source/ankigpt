@@ -528,7 +528,7 @@ export function WorkspacePageContent() {
 
       let successCount = 0;
       let failCount = 0;
-      const generatedCards = [];
+      const generatedCards: Card[] = [];
 
       for (let i = 0; i < sentences.length; i++) {
         const sentence = sentences[i];
