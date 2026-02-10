@@ -62,36 +62,49 @@ export function WorkspaceView(props: WorkspaceViewProps) {
       </nav>
 
       {/* 三栏布局 - Resizable */}
-      <div ref={props.workspaceLayoutRef} className="flex-1 flex overflow-hidden">
-        {/* Left Panel - Sources（可左右拖动改变宽度） */}
-        <div style={{ width: props.isSourcePanelCollapsed ? 'auto' : `${props.sourcePanelWidth}px` }} className="flex-shrink-0 flex min-w-0">
+      <div ref={props.workspaceLayoutRef} className="flex-1 flex overflow-hidden relative">
+        {/* Left Panel - Sources */}
+        <div 
+          style={{ width: props.isSourcePanelCollapsed ? '48px' : `${props.sourcePanelWidth}px` }} 
+          className="flex-shrink-0 flex flex-col min-w-0"
+        >
           <SourcesPanel {...props} />
-          {!props.isSourcePanelCollapsed && (
-            <div
-              className="w-1 flex-shrink-0 bg-gray-200 dark:bg-gray-700 hover:bg-indigo-500 dark:hover:bg-indigo-600 cursor-col-resize flex items-center justify-center transition-colors"
-              onMouseDown={props.startResizingSource}
-              title="拖动调整来源面板宽度"
-            >
-              <div className="w-0.5 h-8 bg-gray-400 dark:bg-gray-500 rounded-full" />
-            </div>
-          )}
         </div>
 
+        {/* Left Resize Handle - 放置在 Sources 和 Chat 之间 */}
+        {!props.isSourcePanelCollapsed && (
+          <div
+            className="w-1.5 flex-shrink-0 bg-transparent hover:bg-indigo-500/30 cursor-col-resize flex items-center justify-center transition-colors group z-10"
+            onMouseDown={props.startResizingSource}
+            title="拖动调整来源面板宽度"
+          >
+            <div className="w-[1px] h-full bg-gray-200 dark:bg-gray-700 group-hover:bg-indigo-500" />
+            <div className="absolute w-0.5 h-8 bg-gray-400 dark:bg-gray-500 rounded-full opacity-0 group-hover:opacity-100" />
+          </div>
+        )}
+
         {/* Middle Panel - Chat */}
-        <div className="flex-1 min-w-0">
+        <div className="flex-1 min-w-0 overflow-hidden">
           <ChatPanel {...props} />
         </div>
 
-        {/* Right Panel - Studio（可左右拖动改变宽度） */}
-        <div style={{ width: props.isStudioPanelCollapsed ? 'auto' : `${props.studioPanelWidth}px` }} className="flex-shrink-0 flex min-w-0">
-          {!props.isStudioPanelCollapsed && (
-            <div
-              className="w-1 bg-gray-200 dark:bg-gray-700 hover:bg-indigo-500 cursor-col-resize flex items-center justify-center transition-colors"
-              onMouseDown={props.startResizingStudio}
-            >
-              <div className="w-0.5 h-8 bg-gray-400 dark:bg-gray-500 rounded-full" />
-            </div>
-          )}
+        {/* Right Resize Handle - 放置在 Chat 和 Studio 之间 */}
+        {!props.isStudioPanelCollapsed && (
+          <div
+            className="w-1.5 flex-shrink-0 bg-transparent hover:bg-indigo-500/30 cursor-col-resize flex items-center justify-center transition-colors group z-10"
+            onMouseDown={props.startResizingStudio}
+            title="拖动调整 Studio 面板宽度"
+          >
+            <div className="w-[1px] h-full bg-gray-200 dark:bg-gray-700 group-hover:bg-indigo-500" />
+            <div className="absolute w-0.5 h-8 bg-gray-400 dark:bg-gray-500 rounded-full opacity-0 group-hover:opacity-100" />
+          </div>
+        )}
+
+        {/* Right Panel - Studio */}
+        <div 
+          style={{ width: props.isStudioPanelCollapsed ? '48px' : `${props.studioPanelWidth}px` }} 
+          className="flex-shrink-0 flex flex-col min-w-0"
+        >
           <StudioPanel {...props} />
         </div>
       </div>

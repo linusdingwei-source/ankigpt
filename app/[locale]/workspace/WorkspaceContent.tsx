@@ -123,16 +123,23 @@ export function WorkspacePageContent() {
 
   const resize = useCallback(
     (mouseMoveEvent: MouseEvent) => {
-      if (isResizingSource && workspaceLayoutRef.current) {
-        const rect = workspaceLayoutRef.current.getBoundingClientRect();
-        const newWidth = mouseMoveEvent.clientX - rect.left;
-        if (newWidth >= 240 && newWidth <= 600) {
+      if (isResizingSource) {
+        let newWidth = mouseMoveEvent.clientX;
+        if (workspaceLayoutRef.current) {
+          const rect = workspaceLayoutRef.current.getBoundingClientRect();
+          newWidth = mouseMoveEvent.clientX - rect.left;
+        }
+        if (newWidth >= 200 && newWidth <= 600) {
           setSourcePanelWidth(newWidth);
         }
       }
       if (isResizingStudio) {
-        const newWidth = window.innerWidth - mouseMoveEvent.clientX;
-        if (newWidth >= 250 && newWidth <= 600) {
+        let newWidth = window.innerWidth - mouseMoveEvent.clientX;
+        if (workspaceLayoutRef.current) {
+          const rect = workspaceLayoutRef.current.getBoundingClientRect();
+          newWidth = rect.right - mouseMoveEvent.clientX;
+        }
+        if (newWidth >= 200 && newWidth <= 600) {
           setStudioPanelWidth(newWidth);
         }
       }
