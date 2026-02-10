@@ -11,7 +11,7 @@ export function SourcesPanel(props: WorkspaceViewProps) {
     showSourceMenuId, setShowSourceMenuId,
     editingSourceId, setEditingSourceId,
     editingSourceName, setEditingSourceName,
-    fetchSources, setShowSourceViewModal,
+    fetchSources, 
     setSourceContent, setSelectedSourceId, selectedSourceId,
     handleUploadFile, handleUploadAudio,
     handlePasteImage,
