@@ -72,6 +72,8 @@ export function markdownToHtml(markdown: string): string {
   // 简单的 Markdown 转 HTML 转换
   // 生产环境建议使用 marked 库
   let html = markdown
+    // 处理换行符 (Markdown 的 \n\n 是段落)
+    .replace(/\n\n/g, '</p><p>')
     // 标题
     .replace(/^### (.*$)/gim, '<h3>$1</h3>')
     .replace(/^## (.*$)/gim, '<h2>$1</h2>')
@@ -80,11 +82,17 @@ export function markdownToHtml(markdown: string): string {
     .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
     // 列表
     .replace(/^\- (.*$)/gim, '<li>$1</li>')
-    // 换行
+    .replace(/^\* (.*$)/gim, '<li>$1</li>')
+    // 简单的换行
     .replace(/\n/g, '<br>');
 
-  // 包装列表项（使用 [\s\S] 代替 . 以匹配包括换行符的所有字符）
+  // 包装段落
+  html = `<p>${html}</p>`;
+  
+  // 包装列表项
   html = html.replace(/(<li>[\s\S]*?<\/li>)/g, '<ul>$1</ul>');
+  // 清理多余的嵌套
+  html = html.replace(/<\/ul><ul>/g, '');
 
   return html;
 }

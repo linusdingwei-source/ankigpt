@@ -510,21 +510,101 @@ export function WorkspacePageContent() {
       const res = await fetch(`/api/sources/${selectedSourceId}`, { headers });
       const response = await res.json();
       
-      if (!res.ok || !response.success || !response.data?.source?.content) {
+      if (!res.ok || !response.success || !response.data?.source) {
         throw new Error('未能获取到来源内容');
       }
 
-      const content = response.data.source.content;
-      const { splitJapaneseSentences } = await import('@/lib/llm-utils');
-      const sentences = splitJapaneseSentences(content);
+      const source = response.data.source;
+      let content = source.content;
+      let targetSentences: string[] = [];
 
-      if (sentences.length === 0) {
-        alert('未能从来源中识别出有效的日文句子');
+      // 步骤 1: 如果是图片，先进行 OCR / 文档解析
+      if (source.type === 'image' && (source.contentUrl || source.fileUrl)) {
+        const imageUrl = source.contentUrl || source.fileUrl;
+        
+        setMessages(prev => [...prev, {
+          id: Date.now().toString(),
+          role: 'assistant',
+          content: '检测到图片来源，正在使用 Qwen3-VL 进行文档解析...',
+          type: 'chat',
+          timestamp: Date.now(),
+        }]);
+
+        const parseRes = await fetch('/api/llm/parse-image', {
+          method: 'POST',
+          headers: { ...headers, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ imageUrl }),
+        });
+
+        const parseData = await parseRes.json();
+        if (parseRes.ok && parseData.success) {
+          content = parseData.data.content;
+          
+          // 在对话框中展示解析出的 Markdown 内容
+          setMessages(prev => [...prev, {
+            id: Date.now().toString(),
+            role: 'assistant',
+            content: content || '',
+            type: 'analysis',
+            timestamp: Date.now(),
+          }]);
+
+          // 更新视图内容
+          if (viewingSourceId === selectedSourceId) {
+            setSourceContent(content || '');
+          }
+        } else {
+          throw new Error(parseData.error?.message || '图片解析失败');
+        }
+      }
+
+      // 步骤 2: 文本提炼与知识点例句生成 (针对文档类内容)
+      // 如果内容包含较多非日文字符，或者是解析出的 Markdown
+      if (content && content.length > 50) {
+        setMessages(prev => [...prev, {
+          id: Date.now().toString(),
+          role: 'assistant',
+          content: '正在提炼文档中的核心知识点并生成练习句子...',
+          type: 'chat',
+          timestamp: Date.now(),
+        }]);
+
+        const refineRes = await fetch('/api/llm/refine-content', {
+          method: 'POST',
+          headers: { ...headers, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ markdown: content }),
+        });
+
+        const refineData = await refineRes.json();
+        if (refineRes.ok && refineData.success) {
+          targetSentences = refineData.data.sentences;
+          
+          // 在对话框中展示提炼出的日语句子
+          setMessages(prev => [...prev, {
+            id: Date.now().toString(),
+            role: 'assistant',
+            content: `提炼出的核心练习句子如下：\n\n${targetSentences.map((s: string) => `- ${s}`).join('\n')}`,
+            type: 'chat',
+            timestamp: Date.now(),
+          }]);
+        } else {
+          console.warn('Refinement failed, falling back to direct split');
+        }
+      }
+
+      // 步骤 3: 确定最终要生成卡片的句子列表
+      if (targetSentences.length === 0) {
+        const { splitJapaneseSentences } = await import('@/lib/llm-utils');
+        targetSentences = splitJapaneseSentences(content || '');
+      }
+
+      if (targetSentences.length === 0) {
+        alert('未能从来源中识别出有效的日文内容');
         setCardLoading(false);
         return;
       }
 
-      if (!confirm(`识别出 ${sentences.length} 个句子，是否开始批量生成卡片？`)) {
+      if (!confirm(`准备为 ${targetSentences.length} 个生成的练习句子创建卡片，是否继续？`)) {
         setCardLoading(false);
         return;
       }
@@ -534,7 +614,7 @@ export function WorkspacePageContent() {
       setMessages(prev => [...prev, {
         id: statusMessageId,
         role: 'assistant',
-        content: `正在为 ${sentences.length} 个句子批量生成卡片...`,
+        content: `正在为 ${targetSentences.length} 个句子批量生成卡片...`,
         type: 'chat',
         timestamp: Date.now(),
       }]);
@@ -543,8 +623,8 @@ export function WorkspacePageContent() {
       let failCount = 0;
       const generatedCards: Card[] = [];
 
-      for (let i = 0; i < sentences.length; i++) {
-        const sentence = sentences[i];
+      for (let i = 0; i < targetSentences.length; i++) {
+        const sentence = targetSentences[i];
         
         try {
           const genRes = await fetch('/api/cards/generate', {
@@ -589,11 +669,10 @@ export function WorkspacePageContent() {
       
     } catch (err) {
       console.error('Batch generation error:', err);
-      // alert(err instanceof Error ? err.message : '批量生成失败');
       setMessages(prev => [...prev, {
         id: Date.now().toString(),
         role: 'assistant',
-        content: `批量生成失败: ${err instanceof Error ? err.message : '未知错误'}`,
+        content: `操作失败: ${err instanceof Error ? err.message : '未知错误'}`,
         type: 'chat',
         timestamp: Date.now(),
       }]);

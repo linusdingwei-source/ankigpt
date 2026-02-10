@@ -2,6 +2,7 @@
 
 import { useRef, useEffect } from 'react';
 import { WorkspaceViewProps } from '../types';
+import { markdownToHtml } from '@/lib/llm-utils';
 
 export function ChatPanel(props: WorkspaceViewProps) {
   const {
@@ -64,10 +65,12 @@ export function ChatPanel(props: WorkspaceViewProps) {
                     ? 'bg-indigo-600 text-white rounded-br-none' 
                     : 'bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-bl-none'
                 }`}>
-                  {message.type === 'analysis' ? (
+                  {message.role === 'assistant' && (message.type === 'analysis' || message.type === 'chat') ? (
                     <div 
                       className="prose dark:prose-invert prose-sm max-w-none"
-                      dangerouslySetInnerHTML={{ __html: message.data?.html || message.content }}
+                      dangerouslySetInnerHTML={{ 
+                        __html: message.data?.html || (message.content ? markdownToHtml(message.content) : '')
+                      }}
                     />
                   ) : message.type === 'flashcards' ? (
                     <div className="space-y-3 min-w-[240px]">
