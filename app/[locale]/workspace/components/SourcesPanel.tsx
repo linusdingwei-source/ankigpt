@@ -284,8 +284,16 @@ export function SourcesPanel(props: WorkspaceViewProps) {
           </button>
               </div>
                 ) : (
-                  <>
-                    <div className="flex items-start gap-2">
+                  <div className="flex items-start gap-3">
+                    <div className="mt-1 flex-shrink-0">
+                      <input
+                        type="checkbox"
+                        checked={selectedSourceId === source.id}
+                        onChange={() => {}} // Click is handled by the parent div
+                        className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded cursor-pointer"
+                      />
+                    </div>
+                    <div className="flex items-start gap-2 flex-1 min-w-0">
                       <svg className="w-4 h-4 text-gray-400 dark:text-gray-500 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                       </svg>
@@ -296,9 +304,9 @@ export function SourcesPanel(props: WorkspaceViewProps) {
                         <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
                           {new Date(source.createdAt).toLocaleDateString(locale, { month: 'short', day: 'numeric' })}
                         </p>
-            </div>
+                      </div>
                       <div className="relative source-menu-container">
-            <button
+                        <button
                           onClick={(e) => {
                             e.stopPropagation();
                             setShowSourceMenuId(showSourceMenuId === source.id ? null : source.id);
@@ -308,7 +316,7 @@ export function SourcesPanel(props: WorkspaceViewProps) {
                           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
                           </svg>
-            </button>
+                        </button>
                         {showSourceMenuId === source.id && (
                           <div className="absolute right-0 top-8 z-10 w-40 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg py-1">
                             <button
@@ -375,11 +383,11 @@ export function SourcesPanel(props: WorkspaceViewProps) {
                               </svg>
                               删除
                             </button>
-                </div>
-              )}
-            </div>
+                          </div>
+                        )}
+                      </div>
                     </div>
-                  </>
+                  </div>
                 )}
               </div>
             ))}
