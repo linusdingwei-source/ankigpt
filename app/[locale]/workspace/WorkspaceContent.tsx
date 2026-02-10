@@ -766,14 +766,18 @@ export function WorkspacePageContent() {
     setSourcesLoading(true);
     try {
       const { getAnonymousHeaders } = await import('@/hooks/useAnonymousUser');
-      const headers = getAnonymousHeaders();
+      const headers = getAnonymousHeaders() as Record<string, string>;
+      // 当发送 FormData 时，不需要手动设置 Content-Type，浏览器会自动设置带 boundary 的 Header
+      if (headers['Content-Type']) {
+        delete headers['Content-Type'];
+      }
       
       const formData = new FormData();
       formData.append('file', file);
       
       const res = await fetch('/api/sources', {
         method: 'POST',
-        headers, // FormData automatically sets Content-Type
+        headers, 
         body: formData,
       });
 
@@ -803,7 +807,11 @@ export function WorkspacePageContent() {
             
             setSourcesLoading(true);
             const { getAnonymousHeaders } = await import('@/hooks/useAnonymousUser');
-            const headers = getAnonymousHeaders();
+            const headers = getAnonymousHeaders() as Record<string, string>;
+            // 当发送 FormData 时，不需要手动设置 Content-Type
+            if (headers['Content-Type']) {
+              delete headers['Content-Type'];
+            }
             
             const formData = new FormData();
             formData.append('file', file);
