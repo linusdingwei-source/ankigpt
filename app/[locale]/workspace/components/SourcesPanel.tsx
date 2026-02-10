@@ -109,12 +109,34 @@ export function SourcesPanel(props: WorkspaceViewProps) {
         </div>
 
         {/* 来源内容 */}
-        <div className="flex-1 overflow-y-auto p-4">
-          <div className="prose dark:prose-invert max-w-none prose-sm">
-            <pre className="whitespace-pre-wrap text-sm text-gray-700 dark:text-gray-300 font-sans">
-              {sourceContent || '正在加载内容...'}
-            </pre>
-          </div>
+        <div className="flex-1 overflow-y-auto p-4 flex flex-col items-center">
+          {(() => {
+            const isImage = selectedSource?.type === 'image';
+            const isAudio = selectedSource?.type === 'audio';
+            const url = selectedSource?.contentUrl || selectedSource?.fileUrl;
+
+            if (isImage && url) {
+              return (
+                <div className="w-full h-full flex items-center justify-center">
+                  <img src={url} alt={selectedSource?.name} className="max-w-full max-h-full object-contain rounded-lg shadow-sm" />
+                </div>
+              );
+            } else if (isAudio && url) {
+              return (
+                <div className="w-full py-12 flex flex-col items-center justify-center">
+                  <audio controls src={url} className="w-full max-w-md" />
+                </div>
+              );
+            } else {
+              return (
+                <div className="prose dark:prose-invert max-w-none prose-sm w-full">
+                  <pre className="whitespace-pre-wrap text-sm text-gray-700 dark:text-gray-300 font-sans">
+                    {sourceContent || '正在加载内容...'}
+                  </pre>
+                </div>
+              );
+            }
+          })()}
         </div>
       </div>
     );
