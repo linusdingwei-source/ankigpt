@@ -79,6 +79,7 @@ export async function POST(request: NextRequest) {
       const timestamp = Date.now();
       const safeName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_');
       const filename = `sources/${timestamp}-${safeName}`;
+      console.log(`[POST /api/sources] Uploading file: ${filename}, type: ${file.type}`);
 
       let contentUrl: string | null = null;
       try {

@@ -23,6 +23,7 @@ export async function GET(
     }
 
     const { id } = await params;
+    console.log(`[GET /api/sources/${id}] Fetching source details`);
 
     const source = await prisma.source.findFirst({
       where: {

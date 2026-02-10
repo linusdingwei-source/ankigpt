@@ -118,19 +118,17 @@ export function SourcesPanel(props: WorkspaceViewProps) {
             if (isImage && url) {
               // 确保使用完整的 URL，防止由于数据问题导致的相对路径引用
               const fullUrl = url.startsWith('http') ? url : url.startsWith('//') ? `https:${url}` : url;
-              // 确保缓存刷新参数是一个纯数字时间戳，避免非法字符导致 URL 损坏
-              const version = selectedSource?.updatedAt ? new Date(selectedSource.updatedAt).getTime() : Date.now();
-              const displayUrl = `${fullUrl}${fullUrl.includes('?') ? '&' : '?'}v=${version}`;
               
               return (
                 <div className="w-full h-full flex flex-col items-center justify-center p-4">
                   <div className="relative group max-w-full max-h-full">
                     <img 
-                      src={displayUrl} 
+                      src={fullUrl} 
                       alt={selectedSource?.name} 
+                      referrerPolicy="no-referrer"
                       className="max-w-full max-h-full object-contain rounded-lg shadow-md border border-gray-200 dark:border-gray-700"
                       onError={(e) => {
-                        console.error('Image failed to load:', displayUrl);
+                        console.error('Image failed to load:', fullUrl);
                         const target = e.target as HTMLImageElement;
                         target.style.display = 'none';
                         const errorSibling = target.nextElementSibling as HTMLElement;
@@ -143,7 +141,7 @@ export function SourcesPanel(props: WorkspaceViewProps) {
                       </svg>
                       <p className="text-sm">图片加载失败</p>
                       <a href={fullUrl} target="_blank" rel="noopener noreferrer" className="mt-4 text-xs text-indigo-600 hover:underline">
-                        点击此处尝试直接打开
+                        在新窗口打开图片
                       </a>
                     </div>
                   </div>
