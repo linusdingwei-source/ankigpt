@@ -33,7 +33,13 @@ export function WorkspaceView(props: WorkspaceViewProps) {
                 {/* 牌组名称 */}
                 <h1 className="text-lg font-medium text-gray-900 dark:text-white leading-tight">
                   {currentWorkspaceDeck && currentWorkspaceDeck !== 'default'
-                    ? currentWorkspaceDeck
+                    ? (
+                      <span className="flex items-center gap-2">
+                        <span className="opacity-60 font-normal text-sm">{t('common.appName')}</span>
+                        <span className="text-gray-300 dark:text-gray-600">/</span>
+                        <span>{currentWorkspaceDeck}</span>
+                      </span>
+                    )
                     : t('common.appName')}
               </h1>
             </Link>

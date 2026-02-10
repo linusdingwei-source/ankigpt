@@ -209,7 +209,7 @@ export function SourcesPanel(props: WorkspaceViewProps) {
                     const response = await res.json();
                     if (res.ok && response.success) {
                       setSourceContent(response.data.source.content || '');
-                      setShowSourceViewModal(true); // Now we show content in panel, not modal
+                      // setShowSourceViewModal(true); // Now we show content in panel, not modal
                     }
                   } catch (error) {
                     console.error('Failed to fetch source content:', error);
@@ -321,7 +321,7 @@ export function SourcesPanel(props: WorkspaceViewProps) {
                                   if (res.ok && response.success) {
                                     setSourceContent(response.data.source.content || '');
                                     setSelectedSourceId(source.id);
-                                    setShowSourceViewModal(true);
+                                    // setShowSourceViewModal(true);
                                     setShowSourceMenuId(null);
                                   }
                                 } catch (error) {
