@@ -49,6 +49,17 @@ export async function POST(request: NextRequest) {
 
     let analysis = providedAnalysis;
 
+    // 准备请求头（支持 Bearer Token）
+    const headers: HeadersInit = {
+      'Content-Type': 'application/json',
+    };
+    const bearerToken = getBearerTokenFromRequest(request);
+    if (bearerToken) {
+      headers['Authorization'] = `Bearer ${bearerToken}`;
+    } else {
+      headers['Cookie'] = request.headers.get('cookie') || '';
+    }
+
     if (!analysis) {
       // 检查 DashScope API Key
       if (!process.env.DASHSCOPE_API_KEY) {
@@ -56,17 +67,6 @@ export async function POST(request: NextRequest) {
           errorResponse(ErrorCodes.INTERNAL_ERROR, 'DashScope API key is not configured'),
           { status: 500 }
         );
-      }
-
-      // 准备请求头（支持 Bearer Token）
-      const headers: HeadersInit = {
-        'Content-Type': 'application/json',
-      };
-      const bearerToken = getBearerTokenFromRequest(request);
-      if (bearerToken) {
-        headers['Authorization'] = `Bearer ${bearerToken}`;
-      } else {
-        headers['Cookie'] = request.headers.get('cookie') || '';
       }
 
       // 1. 调用 LLM 分析
