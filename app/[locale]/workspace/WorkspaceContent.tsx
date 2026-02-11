@@ -25,6 +25,22 @@ interface Card {
   updatedAt: string;
 }
 
+type ChatMessage = {
+  id: string;
+  role: 'user' | 'assistant';
+  content: string;
+  type?: 'chat' | 'analysis' | 'flashcards';
+  data?: {
+    markdown?: string;
+    html?: string;
+    kanaText?: string;
+    successCount?: number;
+    failCount?: number;
+    cards?: Array<{ id: string; frontContent: string }>;
+  };
+  timestamp: number;
+};
+
 export function WorkspacePageContent() {
   const t = useTranslations();
   const workspaceT = useTranslations('workspace');
@@ -117,23 +133,13 @@ export function WorkspacePageContent() {
   const [isResizingStudio, setIsResizingStudio] = useState(false);
 
   // Chat 相关状态
-  const [messages, setMessages] = useState<Array<{
-    id: string;
-    role: 'user' | 'assistant';
-    content: string;
-    type?: 'chat' | 'analysis' | 'flashcards';
-    data?: {
-      markdown?: string;
-      html?: string;
-      kanaText?: string;
-      successCount?: number;
-      failCount?: number;
-      cards?: Array<{ id: string; frontContent: string }>;
-    };
-    timestamp: number;
-  }>>([]);
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [chatInput, setChatInput] = useState('');
   const [chatLoading, setChatLoading] = useState(false);
+
+  const addMessage = useCallback((msg: Omit<ChatMessage, 'timestamp'>) => {
+    setMessages(prev => [...prev, { ...msg, timestamp: Date.now() }].slice(-50));
+  }, []);
 
   // Resize Handlers
   const startResizingSource = useCallback(() => setIsResizingSource(true), []);
@@ -527,13 +533,12 @@ export function WorkspacePageContent() {
       if (source.type === 'image' && (source.contentUrl || source.fileUrl)) {
         const imageUrl = source.contentUrl || source.fileUrl;
         
-        setMessages(prev => [...prev, {
+        addMessage({
           id: Date.now().toString(),
           role: 'assistant',
           content: '检测到图片来源，正在使用 Qwen3-VL 进行文档解析...',
           type: 'chat',
-          timestamp: Date.now(),
-        }]);
+        });
 
         const parseRes = await fetch('/api/llm/parse-image', {
           method: 'POST',
@@ -546,13 +551,12 @@ export function WorkspacePageContent() {
           content = parseData.data.content;
           
           // 在对话框中展示解析出的 Markdown 内容
-          setMessages(prev => [...prev, {
+          addMessage({
             id: Date.now().toString(),
             role: 'assistant',
             content: content || '',
             type: 'analysis',
-            timestamp: Date.now(),
-          }]);
+          });
 
           // 更新视图内容
           if (viewingSourceId === selectedSourceId) {
@@ -565,13 +569,12 @@ export function WorkspacePageContent() {
 
       // 步骤 2: 文本提炼与知识点例句生成 (针对文档类内容)
       if (content && content.length > 50) {
-        setMessages(prev => [...prev, {
+        addMessage({
           id: Date.now().toString(),
           role: 'assistant',
           content: '正在提炼文档中的核心单词和练习句子...',
           type: 'chat',
-          timestamp: Date.now(),
-        }]);
+        });
 
         const refineRes = await fetch('/api/llm/refine-content', {
           method: 'POST',
@@ -589,13 +592,12 @@ export function WorkspacePageContent() {
           ];
           
           // 在对话框中展示提炼结果
-          setMessages(prev => [...prev, {
+          addMessage({
             id: Date.now().toString(),
             role: 'assistant',
             content: `提炼结果：\n\n**核心单词：**\n${vocabulary.map((v: string) => `- ${v}`).join('\n')}\n\n**练习句子：**\n${sentences.map((s: string) => `- ${s}`).join('\n')}`,
             type: 'chat',
-            timestamp: Date.now(),
-          }]);
+          });
         } else {
           console.warn('Refinement failed, falling back to direct split');
         }
@@ -621,13 +623,12 @@ export function WorkspacePageContent() {
 
       // 在对话框中添加一个提示消息
       const statusMessageId = Date.now().toString();
-      setMessages(prev => [...prev, {
+      addMessage({
         id: statusMessageId,
         role: 'assistant',
         content: `正在生成 ${targetItems.length} 张卡片...`,
         type: 'chat',
-        timestamp: Date.now(),
-      }].slice(-50));
+      });
 
       let successCount = 0;
       let failCount = 0;
@@ -668,25 +669,26 @@ export function WorkspacePageContent() {
       // 更新对话框中的消息，显示结果
       setMessages(prev => {
         const newMessages = prev.filter(m => m.id !== statusMessageId);
-        return [...newMessages, {
+        const resultMsg: ChatMessage = {
           id: Date.now().toString(),
           role: 'assistant',
           content: `批量生成完成！\n成功: ${successCount}\n失败: ${failCount}`,
           type: 'flashcards',
           data: { successCount, failCount, cards: generatedCards },
           timestamp: Date.now(),
-        }].slice(-50);
+        };
+        return [...newMessages, resultMsg].slice(-50);
       });
       
     } catch (err) {
       console.error('Batch generation error:', err);
-      setMessages(prev => [...prev, {
+      // alert(err instanceof Error ? err.message : '批量生成失败');
+      addMessage({
         id: Date.now().toString(),
         role: 'assistant',
         content: `操作失败: ${err instanceof Error ? err.message : '未知错误'}`,
         type: 'chat',
-        timestamp: Date.now(),
-      }].slice(-50));
+      });
     } finally {
       setCardLoading(false);
     }
@@ -914,13 +916,12 @@ export function WorkspacePageContent() {
         if (activeStudioTab === 'NOTE') {
           await fetchCards();
         }
-        setMessages(prev => [...prev, {
+        addMessage({
           id: Date.now().toString(),
           role: 'assistant',
           content: '已成功保存到我的笔记',
           type: 'chat',
-          timestamp: Date.now(),
-        }].slice(-50));
+        });
       } else {
         throw new Error(response.error?.message || 'Save failed');
       }
@@ -934,9 +935,9 @@ export function WorkspacePageContent() {
     const content = text || chatInput;
     if (!content.trim() || chatLoading) return;
 
-    const userMessage = {
+    const userMessage: ChatMessage = {
       id: Date.now().toString(),
-      role: 'user' as const,
+      role: 'user',
       content: content.trim(),
       timestamp: Date.now(),
     };
@@ -957,28 +958,24 @@ export function WorkspacePageContent() {
 
       const response = await res.json();
       if (response.success) {
-        const assistantMessage = {
+        addMessage({
           id: (Date.now() + 1).toString(),
-          role: 'assistant' as const,
+          role: 'assistant',
           content: response.data.analysis.markdown,
-          type: 'analysis' as const,
+          type: 'analysis',
           data: response.data.analysis,
-          timestamp: Date.now(),
-        };
-        setMessages(prev => [...prev, assistantMessage].slice(-50));
+        });
         await fetchCredits();
       } else {
         throw new Error(response.error?.message || 'Chat failed');
       }
     } catch (err) {
       console.error('Chat error:', err);
-      const errorMessage = {
+      addMessage({
         id: (Date.now() + 1).toString(),
-        role: 'assistant' as const,
+        role: 'assistant',
         content: `抱歉，出错了: ${err instanceof Error ? err.message : '未知错误'}`,
-        timestamp: Date.now(),
-      };
-      setMessages(prev => [...prev, errorMessage].slice(-50));
+      });
     } finally {
       setChatLoading(false);
     }
