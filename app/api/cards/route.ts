@@ -20,6 +20,7 @@ export async function GET(request: NextRequest) {
 
     const { searchParams } = new URL(request.url);
     const deckName = searchParams.get('deck');
+    const sourceId = searchParams.get('sourceId');
     const searchQuery = searchParams.get('search'); // 搜索关键词
     const page = parseInt(searchParams.get('page') || '1');
     const limit = Math.min(parseInt(searchParams.get('limit') || '20'), 100);
@@ -28,6 +29,7 @@ export async function GET(request: NextRequest) {
     const where: {
       userId: string;
       deckName?: string;
+      sourceId?: string;
       OR?: Array<{
         frontContent?: { contains: string; mode: 'insensitive' };
         backContent?: { contains: string; mode: 'insensitive' };
@@ -38,6 +40,10 @@ export async function GET(request: NextRequest) {
 
     if (deckName) {
       where.deckName = deckName;
+    }
+
+    if (sourceId) {
+      where.sourceId = sourceId;
     }
 
     // 添加搜索功能：搜索正面和背面内容

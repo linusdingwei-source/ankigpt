@@ -221,6 +221,9 @@ export function WorkspacePageContent() {
       if (currentWorkspaceDeck && currentWorkspaceDeck !== 'default') {
         params.append('deck', currentWorkspaceDeck);
       }
+      if (selectedSourceId) {
+        params.append('sourceId', selectedSourceId);
+      }
       if (debouncedSearchQuery.trim()) {
         params.append('search', debouncedSearchQuery.trim());
       }
@@ -255,7 +258,7 @@ export function WorkspacePageContent() {
     } finally {
       setCardsLoading(false);
     }
-  }, [currentWorkspaceDeck, page, debouncedSearchQuery, cardT]);
+  }, [currentWorkspaceDeck, selectedSourceId, page, debouncedSearchQuery, cardT]);
 
   // 检查 URL 参数中的 deck（同步更新状态）
   useEffect(() => {
@@ -634,6 +637,7 @@ export function WorkspacePageContent() {
               text: sentence,
               cardType: '问答题（附翻转卡片）',
               deckName: currentWorkspaceDeck.trim() || 'default',
+              sourceId: selectedSourceId,
               includePronunciation: true,
             }),
           });

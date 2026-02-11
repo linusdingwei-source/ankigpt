@@ -21,7 +21,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { text, cardType, deckName, includePronunciation } = await request.json();
+    const { text, cardType, deckName, includePronunciation, sourceId } = await request.json();
 
     if (!text || typeof text !== 'string') {
       return NextResponse.json(
@@ -156,6 +156,7 @@ export async function POST(request: NextRequest) {
       data: {
         userId,
         deckId: deck.id,
+        sourceId: sourceId || null,
         frontContent: text,
         backContent: analysis.html,
         cardType: cardType || '问答题（附翻转卡片）',

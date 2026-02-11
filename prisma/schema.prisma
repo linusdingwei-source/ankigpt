@@ -143,6 +143,9 @@ model Card {
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
   
+  sourceId      String?
+  source        Source?  @relation(fields: [sourceId], references: [id], onDelete: SetNull)
+  
   @@index([userId])
   @@index([deckName])
   @@index([deckId])
@@ -161,6 +164,8 @@ model Source {
   contentUrl  String?  // 内容存储 URL（存储在 Vercel Blob 或其他云存储）
   fileUrl     String?  // 文件 URL（如果是文件类型）
   fileName    String?  // 文件名
+  
+  cards       Card[]
   
   // 元数据
   mimeType    String?  // MIME 类型
