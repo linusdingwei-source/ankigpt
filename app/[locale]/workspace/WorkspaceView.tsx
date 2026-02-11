@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 'use client';
 
 import { Link } from '@/i18n/routing';
@@ -9,7 +10,11 @@ import { ChatPanel } from './components/ChatPanel';
 import { StudioPanel } from './components/StudioPanel';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import remarkMath from 'remark-math';
+import rehypeKatex from 'rehype-katex';
 import rehypeRaw from 'rehype-raw';
+import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
+import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
 
 export function WorkspaceView(props: WorkspaceViewProps) {
   const {
@@ -18,6 +23,21 @@ export function WorkspaceView(props: WorkspaceViewProps) {
     showSourceViewModal, setShowSourceViewModal, selectedSourceId, setSelectedSourceId, sources, sourceContent, setSourceContent,
     selectedCard, setSelectedCardId, cardT, handleDeleteCard
   } = props;
+
+  const preprocessContent = (content: string) => {
+    if (!content) return '';
+    // 如果整个内容被包裹在 ```markdown ... ``` 中，去掉外层包裹
+    const match = content.match(/^```markdown\n([\s\S]*)\n```$/i);
+    if (match) {
+      return match[1];
+    }
+    // 处理通用的 ``` ... ``` 包裹
+    const genericMatch = content.match(/^```\n([\s\S]*)\n```$/);
+    if (genericMatch) {
+      return genericMatch[1];
+    }
+    return content;
+  };
 
   return (
     <div className="h-screen bg-gray-50 dark:bg-gray-900 flex flex-col overflow-hidden">
@@ -221,8 +241,62 @@ export function WorkspaceView(props: WorkspaceViewProps) {
                     className="p-4 bg-gray-50 dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600 prose dark:prose-invert max-w-none prose-sm"
                         >
                     {selectedCard.category === 'NOTE' ? (
-                      <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw]}>
-                        {selectedCard.backContent}
+                      <ReactMarkdown 
+                        remarkPlugins={[remarkGfm, remarkMath]} 
+                        rehypePlugins={[rehypeKatex, rehypeRaw]}
+                        components={{
+                          code({ node: _node, inline, className, children, ...props }: any) {
+                            const match = /language-(\w+)/.exec(className || '');
+                            return !inline && match ? (
+                              <SyntaxHighlighter
+                                style={vscDarkPlus as any}
+                                language={match[1]}
+                                PreTag="div"
+                                className="rounded-md my-2"
+                                {...props}
+                              >
+                                {String(children).replace(/\n$/, '')}
+                              </SyntaxHighlighter>
+                            ) : (
+                              <code className={`${className} bg-gray-200 dark:bg-gray-600 px-1 rounded`} {...props}>
+                                {children}
+                              </code>
+                            );
+                          },
+                          table({ children }) {
+                            return (
+                              <div className="overflow-x-auto my-4 rounded-lg border border-gray-200 dark:border-gray-700">
+                                <table className="border-collapse w-full text-left text-sm">{children}</table>
+                              </div>
+                            );
+                          },
+                          th({ children }) {
+                            return <th className="border-b border-gray-200 dark:border-gray-700 p-3 bg-gray-50 dark:bg-gray-800 font-bold text-gray-900 dark:text-white">{children}</th>;
+                          },
+                          td({ children }) {
+                            return <td className="border-b border-gray-200 dark:border-gray-700 p-3 text-gray-700 dark:text-gray-300">{children}</td>;
+                          },
+                          h1({ children }) {
+                            return <h1 className="text-2xl font-extrabold text-indigo-600 dark:text-indigo-400 mb-4 mt-6 pb-2 border-b border-indigo-100 dark:border-indigo-900/50">{children}</h1>;
+                          },
+                          h2({ children }) {
+                            return <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-3 mt-5 flex items-center gap-2">
+                              <span className="w-1.5 h-1.5 rounded-full bg-indigo-500" />
+                              {children}
+                            </h2>;
+                          },
+                          h3({ children }) {
+                            return <h3 className="text-lg font-bold text-gray-800 dark:text-gray-200 mb-2 mt-4">{children}</h3>;
+                          },
+                          hr() {
+                            return <hr className="my-6 border-gray-200 dark:border-gray-700" />;
+                          },
+                          blockquote({ children }) {
+                            return <blockquote className="border-l-4 border-indigo-500 pl-4 py-1 italic bg-indigo-50/50 dark:bg-indigo-900/20 my-4 rounded-r-lg">{children}</blockquote>;
+                          }
+                        }}
+                      >
+                        {preprocessContent(selectedCard.backContent)}
                       </ReactMarkdown>
                     ) : (
                       <div dangerouslySetInnerHTML={{ __html: selectedCard.backContent }} />
