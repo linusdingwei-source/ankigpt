@@ -521,7 +521,7 @@ export function WorkspacePageContent() {
 
       const source = response.data.source;
       let content = source.content;
-      let targetSentences: string[] = [];
+      let targetItems: Array<{ text: string; type: 'SENTENCE' | 'WORD' }> = [];
 
       // 步骤 1: 如果是图片，先进行 OCR / 文档解析
       if (source.type === 'image' && (source.contentUrl || source.fileUrl)) {
@@ -564,12 +564,11 @@ export function WorkspacePageContent() {
       }
 
       // 步骤 2: 文本提炼与知识点例句生成 (针对文档类内容)
-      // 如果内容包含较多非日文字符，或者是解析出的 Markdown
       if (content && content.length > 50) {
         setMessages(prev => [...prev, {
           id: Date.now().toString(),
           role: 'assistant',
-          content: '正在提炼文档中的核心知识点并生成练习句子...',
+          content: '正在提炼文档中的核心单词和练习句子...',
           type: 'chat',
           timestamp: Date.now(),
         }]);
@@ -582,13 +581,18 @@ export function WorkspacePageContent() {
 
         const refineData = await refineRes.json();
         if (refineRes.ok && refineData.success) {
-          targetSentences = refineData.data.sentences;
+          const { vocabulary = [], sentences = [] } = refineData.data;
           
-          // 在对话框中展示提炼出的日语句子
+          targetItems = [
+            ...vocabulary.map((v: string) => ({ text: v, type: 'WORD' as const })),
+            ...sentences.map((s: string) => ({ text: s, type: 'SENTENCE' as const }))
+          ];
+          
+          // 在对话框中展示提炼结果
           setMessages(prev => [...prev, {
             id: Date.now().toString(),
             role: 'assistant',
-            content: `提炼出的核心练习句子如下：\n\n${targetSentences.map((s: string) => `- ${s}`).join('\n')}`,
+            content: `提炼结果：\n\n**核心单词：**\n${vocabulary.map((v: string) => `- ${v}`).join('\n')}\n\n**练习句子：**\n${sentences.map((s: string) => `- ${s}`).join('\n')}`,
             type: 'chat',
             timestamp: Date.now(),
           }]);
@@ -597,19 +601,20 @@ export function WorkspacePageContent() {
         }
       }
 
-      // 步骤 3: 确定最终要生成卡片的句子列表
-      if (targetSentences.length === 0) {
+      // 步骤 3: 确定最终要生成卡片的列表
+      if (targetItems.length === 0) {
         const { splitJapaneseSentences } = await import('@/lib/llm-utils');
-        targetSentences = splitJapaneseSentences(content || '');
+        const sentences = splitJapaneseSentences(content || '');
+        targetItems = sentences.map(s => ({ text: s, type: 'SENTENCE' as const }));
       }
 
-      if (targetSentences.length === 0) {
+      if (targetItems.length === 0) {
         alert('未能从来源中识别出有效的日文内容');
         setCardLoading(false);
         return;
       }
 
-      if (!confirm(`准备为 ${targetSentences.length} 个生成的练习句子创建卡片，是否继续？`)) {
+      if (!confirm(`识别出 ${targetItems.filter(i => i.type === 'WORD').length} 个单词和 ${targetItems.filter(i => i.type === 'SENTENCE').length} 个句子，是否开始批量生成卡片？`)) {
         setCardLoading(false);
         return;
       }
@@ -619,7 +624,7 @@ export function WorkspacePageContent() {
       setMessages(prev => [...prev, {
         id: statusMessageId,
         role: 'assistant',
-        content: `正在为 ${targetSentences.length} 个句子批量生成卡片...`,
+        content: `正在生成 ${targetItems.length} 张卡片...`,
         type: 'chat',
         timestamp: Date.now(),
       }]);
@@ -628,16 +633,16 @@ export function WorkspacePageContent() {
       let failCount = 0;
       const generatedCards: Card[] = [];
 
-      for (let i = 0; i < targetSentences.length; i++) {
-        const sentence = targetSentences[i];
+      for (let i = 0; i < targetItems.length; i++) {
+        const item = targetItems[i];
         
         try {
           const genRes = await fetch('/api/cards/generate', {
             method: 'POST',
             headers: { ...headers, 'Content-Type': 'application/json' },
             body: JSON.stringify({
-              text: sentence,
-              cardType: '问答题（附翻转卡片）',
+              text: item.text,
+              cardType: item.type === 'WORD' ? '单词' : '问答题（附翻转卡片）',
               deckName: currentWorkspaceDeck.trim() || 'default',
               sourceId: selectedSourceId,
               includePronunciation: true,
@@ -652,7 +657,7 @@ export function WorkspacePageContent() {
             failCount++;
           }
         } catch (err) {
-          console.error(`第 ${i + 1} 个句子生成失败:`, err);
+          console.error(`第 ${i + 1} 个项目生成失败:`, err);
           failCount++;
         }
       }

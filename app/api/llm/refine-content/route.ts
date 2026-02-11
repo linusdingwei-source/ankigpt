@@ -52,12 +52,26 @@ export async function POST(request: NextRequest) {
     }
 
     // 构建 LLM Prompt
-    const systemContent = "你是一个专业的日语教学专家。你的任务是分析日语学习资料，提炼其中的核心知识点，并生成高质量的练习句子。";
+    const systemContent = "你是一个专业的日语教学专家。你的任务是分析日语学习资料，提炼其中的核心知识点，包括核心单词和练习句子。";
     const userContent = `以下是一段日语学习资料（Markdown格式），其中可能包含中文讲解、日语例句和词汇说明。请你：
-1. 提炼出资料中涉及的核心单词（Vocabulary）、语法点（Grammar）和知识点。
-2. 基于这些知识点，生成 5-10 个纯日语例句。
-3. 这些句子应该尽量覆盖提炼出的知识点，且难度适中。
-4. **注意：** 只输出生成的日语例句，每个句子占一行，不要包含任何编号、中文解释或其他描述性文字。直接输出日文句子。
+1. 提炼出资料中涉及的核心单词（Vocabulary）和核心知识点。
+2. 基于这些知识点，生成 5-10 个纯日语练习句子。
+3. 请按照以下严格格式输出，以便我进行程序解析：
+
+[VOCABULARY]
+单词1
+单词2
+...
+
+[SENTENCES]
+句子1
+句子2
+...
+
+注意：
+- [VOCABULARY] 下方只列出单词原文，不要包含假名、翻译或编号，每个单词占一行。
+- [SENTENCES] 下方只列出生成的日语例句，不要包含翻译或编号，每个句子占一行。
+- 不要包含任何其他描述性文字或 Markdown 格式（如 ### 或 **）。
 
 学习资料内容：
 ${markdown}`;
@@ -106,15 +120,36 @@ ${markdown}`;
       
       const remainingCredits = await getCredits(userId);
 
-      // 按行拆分句子
-      const sentences = resultText
-        .split('\n')
-        .map((s: string) => s.trim())
-        .filter((s: string) => s.length > 0 && !s.startsWith('#') && !s.startsWith('*'));
+      // 解析结果
+      const vocabulary: string[] = [];
+      const sentences: string[] = [];
+      
+      let currentSection: 'NONE' | 'VOCABULARY' | 'SENTENCES' = 'NONE';
+      const lines = resultText.split('\n');
+      
+      for (const line of lines) {
+        const trimmed = line.trim();
+        if (!trimmed) continue;
+        
+        if (trimmed.includes('[VOCABULARY]')) {
+          currentSection = 'VOCABULARY';
+          continue;
+        } else if (trimmed.includes('[SENTENCES]')) {
+          currentSection = 'SENTENCES';
+          continue;
+        }
+        
+        if (currentSection === 'VOCABULARY') {
+          vocabulary.push(trimmed);
+        } else if (currentSection === 'SENTENCES') {
+          sentences.push(trimmed);
+        }
+      }
 
       return NextResponse.json(
         successResponse({
-          sentences: sentences,
+          vocabulary,
+          sentences,
           credits: remainingCredits,
         })
       );
