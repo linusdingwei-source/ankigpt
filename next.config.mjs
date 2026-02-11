@@ -4,6 +4,10 @@ const withNextIntl = createNextIntlPlugin('./i18n/request.ts');
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  // Increase body size limit for file uploads (PDF, audio, images, etc.)
+  serverActions: {
+    bodySizeLimit: '50mb',
+  },
   webpack: (config, { isServer, webpack }) => {
     if (!isServer) {
       config.resolve.fallback = {

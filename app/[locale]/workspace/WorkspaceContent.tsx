@@ -769,6 +769,43 @@ export function WorkspacePageContent() {
     audioInputRef.current?.click();
   };
 
+  // Helper: upload a single file to /api/sources
+  const uploadSingleFile = async (
+    file: File,
+    headers: Record<string, string>
+  ) => {
+    const formData = new FormData();
+    formData.append('file', file);
+
+    const res = await fetch('/api/sources', {
+      method: 'POST',
+      headers,
+      body: formData,
+    });
+
+    if (res.status === 413) {
+      throw new Error(`File "${file.name}" is too large. Please upload a file smaller than 50MB.`);
+    }
+
+    if (!res.ok) {
+      const text = await res.text();
+      let errorMsg = 'Upload failed';
+      try {
+        const json = JSON.parse(text);
+        errorMsg = json.error?.message || errorMsg;
+      } catch {
+        errorMsg = text || `Upload failed (status ${res.status})`;
+      }
+      throw new Error(errorMsg);
+    }
+
+    const response = await res.json();
+    if (!response.success) {
+      throw new Error(response.error?.message || 'Upload failed');
+    }
+    return response;
+  };
+
   const onFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -780,27 +817,26 @@ export function WorkspacePageContent() {
     try {
       const { getAnonymousHeaders } = await import('@/hooks/useAnonymousUser');
       const headers = getAnonymousHeaders() as Record<string, string>;
-      // 当发送 FormData 时，不需要手动设置 Content-Type，浏览器会自动设置带 boundary 的 Header
       if (headers['Content-Type']) {
         delete headers['Content-Type'];
       }
-      
-      const formData = new FormData();
-      formData.append('file', file);
-      
-      const res = await fetch('/api/sources', {
-        method: 'POST',
-        headers, 
-        body: formData,
-      });
 
-      const response = await res.json();
-      if (response.success) {
-        await fetchSources();
-        setShowAddSourceModal(false);
+      // Check if this is a large PDF that needs splitting
+      const { needsPdfSplit, splitPdfFile } = await import('@/lib/client/pdf-split');
+      if (needsPdfSplit(file)) {
+        const chunks = await splitPdfFile(file);
+        let uploaded = 0;
+        for (const chunk of chunks) {
+          await uploadSingleFile(chunk.file, headers);
+          uploaded++;
+          console.log(`Uploaded part ${uploaded}/${chunks.length}: ${chunk.file.name}`);
+        }
       } else {
-        throw new Error(response.error?.message || 'Upload failed');
+        await uploadSingleFile(file, headers);
       }
+
+      await fetchSources();
+      setShowAddSourceModal(false);
     } catch (err) {
       console.error('Upload error:', err);
       alert('Upload failed: ' + (err instanceof Error ? err.message : 'Unknown error'));
@@ -834,6 +870,22 @@ export function WorkspacePageContent() {
               headers,
               body: formData,
             });
+
+            if (res.status === 413) {
+              throw new Error('File is too large. Please upload a file smaller than 50MB.');
+            }
+
+            if (!res.ok) {
+              const text = await res.text();
+              let errorMsg = 'Upload failed';
+              try {
+                const json = JSON.parse(text);
+                errorMsg = json.error?.message || errorMsg;
+              } catch {
+                errorMsg = text || `Upload failed (status ${res.status})`;
+              }
+              throw new Error(errorMsg);
+            }
 
             const response = await res.json();
             if (response.success) {
