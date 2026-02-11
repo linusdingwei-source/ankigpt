@@ -627,7 +627,7 @@ export function WorkspacePageContent() {
         content: `正在生成 ${targetItems.length} 张卡片...`,
         type: 'chat',
         timestamp: Date.now(),
-      }]);
+      }].slice(-50));
 
       let successCount = 0;
       let failCount = 0;
@@ -675,7 +675,7 @@ export function WorkspacePageContent() {
           type: 'flashcards',
           data: { successCount, failCount, cards: generatedCards },
           timestamp: Date.now(),
-        }];
+        }].slice(-50);
       });
       
     } catch (err) {
@@ -686,7 +686,7 @@ export function WorkspacePageContent() {
         content: `操作失败: ${err instanceof Error ? err.message : '未知错误'}`,
         type: 'chat',
         timestamp: Date.now(),
-      }]);
+      }].slice(-50));
     } finally {
       setCardLoading(false);
     }
@@ -920,7 +920,7 @@ export function WorkspacePageContent() {
           content: '已成功保存到我的笔记',
           type: 'chat',
           timestamp: Date.now(),
-        }]);
+        }].slice(-50));
       } else {
         throw new Error(response.error?.message || 'Save failed');
       }
@@ -941,7 +941,7 @@ export function WorkspacePageContent() {
       timestamp: Date.now(),
     };
 
-    setMessages(prev => [...prev, userMessage]);
+    setMessages(prev => [...prev, userMessage].slice(-50));
     setChatInput('');
     setChatLoading(true);
 
@@ -965,7 +965,7 @@ export function WorkspacePageContent() {
           data: response.data.analysis,
           timestamp: Date.now(),
         };
-        setMessages(prev => [...prev, assistantMessage]);
+        setMessages(prev => [...prev, assistantMessage].slice(-50));
         await fetchCredits();
       } else {
         throw new Error(response.error?.message || 'Chat failed');
@@ -978,7 +978,7 @@ export function WorkspacePageContent() {
         content: `抱歉，出错了: ${err instanceof Error ? err.message : '未知错误'}`,
         timestamp: Date.now(),
       };
-      setMessages(prev => [...prev, errorMessage]);
+      setMessages(prev => [...prev, errorMessage].slice(-50));
     } finally {
       setChatLoading(false);
     }
