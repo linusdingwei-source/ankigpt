@@ -56,7 +56,7 @@ export function StudioPanel(props: WorkspaceViewProps) {
       </div>
 
       {/* Studio 输出选项网格 */}
-      <div className="flex-1 overflow-y-auto p-4">
+      <div className="flex-shrink-0 p-4">
         <div className="grid grid-cols-2 gap-3">
           {/* 闪卡 - 高亮显示 */}
                   <button
@@ -90,12 +90,12 @@ export function StudioPanel(props: WorkspaceViewProps) {
       {/* 卡片列表（在 Studio 面板底部） */}
       <div className="border-t border-gray-200 dark:border-gray-700 flex flex-col flex-1 min-h-0">
         {/* Tabs */}
-        <div className="flex border-b border-gray-200 dark:border-gray-700">
+        <div className="flex border-b border-gray-200 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-900/50">
           <button
             onClick={() => setActiveStudioTab('CARD')}
-            className={`flex-1 py-2 text-xs font-medium border-b-2 transition-colors ${
+            className={`flex-1 py-3 text-xs font-semibold border-b-2 transition-all ${
               activeStudioTab === 'CARD'
-                ? 'border-indigo-500 text-indigo-600 dark:text-indigo-400'
+                ? 'border-indigo-500 text-indigo-600 dark:text-indigo-400 bg-white dark:bg-gray-800'
                 : 'border-transparent text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'
             }`}
           >
@@ -103,9 +103,9 @@ export function StudioPanel(props: WorkspaceViewProps) {
           </button>
           <button
             onClick={() => setActiveStudioTab('NOTE')}
-            className={`flex-1 py-2 text-xs font-medium border-b-2 transition-colors ${
+            className={`flex-1 py-3 text-xs font-semibold border-b-2 transition-all ${
               activeStudioTab === 'NOTE'
-                ? 'border-indigo-500 text-indigo-600 dark:text-indigo-400'
+                ? 'border-indigo-500 text-indigo-600 dark:text-indigo-400 bg-white dark:bg-gray-800'
                 : 'border-transparent text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'
             }`}
           >
