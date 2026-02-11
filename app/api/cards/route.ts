@@ -21,6 +21,7 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const deckName = searchParams.get('deck');
     const sourceId = searchParams.get('sourceId');
+    const category = searchParams.get('category') || 'CARD';
     const searchQuery = searchParams.get('search'); // 搜索关键词
     const page = parseInt(searchParams.get('page') || '1');
     const limit = Math.min(parseInt(searchParams.get('limit') || '20'), 100);
@@ -30,12 +31,14 @@ export async function GET(request: NextRequest) {
       userId: string;
       deckName?: string;
       sourceId?: string;
+      category?: string;
       OR?: Array<{
         frontContent?: { contains: string; mode: 'insensitive' };
         backContent?: { contains: string; mode: 'insensitive' };
       }>;
     } = {
       userId,
+      category,
     };
 
     if (deckName) {

@@ -109,6 +109,7 @@ export function WorkspacePageContent() {
   // 面板收起/展开状态
   const [isSourcePanelCollapsed, setIsSourcePanelCollapsed] = useState(false);
   const [isStudioPanelCollapsed, setIsStudioPanelCollapsed] = useState(false);
+  const [activeStudioTab, setActiveStudioTab] = useState<'CARD' | 'NOTE'>('CARD');
 
   const [sourcePanelWidth, setSourcePanelWidth] = useState(320);
   const [studioPanelWidth, setStudioPanelWidth] = useState(360);
@@ -229,6 +230,7 @@ export function WorkspacePageContent() {
       }
       params.append('page', page.toString());
       params.append('limit', '50');
+      params.append('category', activeStudioTab);
 
       const res = await fetch(`/api/cards?${params.toString()}`, { headers });
       const response = await res.json();
@@ -258,7 +260,7 @@ export function WorkspacePageContent() {
     } finally {
       setCardsLoading(false);
     }
-  }, [currentWorkspaceDeck, selectedSourceId, page, debouncedSearchQuery, cardT]);
+  }, [currentWorkspaceDeck, selectedSourceId, activeStudioTab, page, debouncedSearchQuery, cardT]);
 
   // 检查 URL 参数中的 deck（同步更新状态）
   useEffect(() => {
@@ -880,6 +882,49 @@ export function WorkspacePageContent() {
     }
   };
 
+  const handleSaveNote = async (content: string, name?: string) => {
+    try {
+      const { getAnonymousHeaders } = await import('@/hooks/useAnonymousUser');
+      const headers = getAnonymousHeaders();
+      
+      const res = await fetch('/api/cards/generate', {
+        method: 'POST',
+        headers: { ...headers, 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          text: name || content.substring(0, 30).replace(/\n/g, ' ') + (content.length > 30 ? '...' : ''),
+          category: 'NOTE',
+          cardType: '笔记',
+          deckName: currentWorkspaceDeck.trim() || 'default',
+          includePronunciation: false,
+          sourceId: selectedSourceId,
+          // 把笔记内容存放在 backContent 中
+          analysis: {
+            html: content, // 这里直接存原始内容，渲染时由于 ChatPanel 已经支持 Markdown，可能需要调整
+          }
+        }),
+      });
+
+      const response = await res.json();
+      if (response.success) {
+        if (activeStudioTab === 'NOTE') {
+          await fetchCards();
+        }
+        setMessages(prev => [...prev, {
+          id: Date.now().toString(),
+          role: 'assistant',
+          content: '已成功保存到我的笔记',
+          type: 'chat',
+          timestamp: Date.now(),
+        }]);
+      } else {
+        throw new Error(response.error?.message || 'Save failed');
+      }
+    } catch (err) {
+      console.error('Save note error:', err);
+      alert('保存笔记失败: ' + (err instanceof Error ? err.message : '未知错误'));
+    }
+  };
+
   const handleSendMessage = async (text?: string) => {
     const content = text || chatInput;
     if (!content.trim() || chatLoading) return;
@@ -973,6 +1018,8 @@ export function WorkspacePageContent() {
       setIsSourcePanelCollapsed={setIsSourcePanelCollapsed}
       isStudioPanelCollapsed={isStudioPanelCollapsed}
       setIsStudioPanelCollapsed={setIsStudioPanelCollapsed}
+      activeStudioTab={activeStudioTab}
+      setActiveStudioTab={setActiveStudioTab}
       
       sources={sources}
       sourcesLoading={sourcesLoading}
@@ -1033,6 +1080,7 @@ export function WorkspacePageContent() {
       handleUploadAudio={handleUploadAudio}
       handlePasteImage={handlePasteImage}
       handleInsertPastedText={handleInsertPastedText}
+      handleSaveNote={handleSaveNote}
       
       messages={messages}
       chatInput={chatInput}

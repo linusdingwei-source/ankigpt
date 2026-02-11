@@ -17,6 +17,8 @@ export interface WorkspaceViewProps {
   setIsSourcePanelCollapsed: (v: boolean) => void;
   isStudioPanelCollapsed: boolean;
   setIsStudioPanelCollapsed: (v: boolean) => void;
+  activeStudioTab: 'CARD' | 'NOTE';
+  setActiveStudioTab: (v: 'CARD' | 'NOTE') => void;
   
   // Sources
   sources: any[];
@@ -81,6 +83,7 @@ export interface WorkspaceViewProps {
   handleUploadAudio: () => void;
   handlePasteImage: () => void;
   handleInsertPastedText: () => Promise<void>;
+  handleSaveNote: (content: string, name?: string) => Promise<void>;
   
   // Chat
   messages: any[];

@@ -7,6 +7,9 @@ import { WorkspaceViewProps } from './types';
 import { SourcesPanel } from './components/SourcesPanel';
 import { ChatPanel } from './components/ChatPanel';
 import { StudioPanel } from './components/StudioPanel';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
+import rehypeRaw from 'rehype-raw';
 
 export function WorkspaceView(props: WorkspaceViewProps) {
   const {
@@ -212,12 +215,19 @@ export function WorkspaceView(props: WorkspaceViewProps) {
 
                       <div>
                   <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                    {cardT('backContent')}
+                    {selectedCard.category === 'NOTE' ? '内容' : cardT('backContent')}
                         </h3>
                         <div
                     className="p-4 bg-gray-50 dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600 prose dark:prose-invert max-w-none prose-sm"
-                          dangerouslySetInnerHTML={{ __html: selectedCard.backContent }}
-                        />
+                        >
+                    {selectedCard.category === 'NOTE' ? (
+                      <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw]}>
+                        {selectedCard.backContent}
+                      </ReactMarkdown>
+                    ) : (
+                      <div dangerouslySetInnerHTML={{ __html: selectedCard.backContent }} />
+                    )}
+                  </div>
                       </div>
 
                       {selectedCard.audioUrl && (

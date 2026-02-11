@@ -21,7 +21,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { text, cardType, deckName, includePronunciation, sourceId } = await request.json();
+    const { text, cardType, deckName, includePronunciation, sourceId, category = 'CARD', analysis: providedAnalysis } = await request.json();
 
     if (!text || typeof text !== 'string') {
       return NextResponse.json(
@@ -33,7 +33,8 @@ export async function POST(request: NextRequest) {
     // 检查 credits
     const currentCredits = await getCredits(userId);
     
-    const requiredCredits = includePronunciation ? CARD_GENERATION_CREDITS_COST : 2;
+    // 如果提供了 analysis，可能不需要消耗 LLM credits
+    const requiredCredits = providedAnalysis ? 0 : (includePronunciation ? CARD_GENERATION_CREDITS_COST : 2);
     
     if (currentCredits < requiredCredits) {
       return NextResponse.json(
@@ -46,57 +47,61 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 检查 DashScope API Key
-    if (!process.env.DASHSCOPE_API_KEY) {
-      return NextResponse.json(
-        errorResponse(ErrorCodes.INTERNAL_ERROR, 'DashScope API key is not configured'),
-        { status: 500 }
-      );
+    let analysis = providedAnalysis;
+
+    if (!analysis) {
+      // 检查 DashScope API Key
+      if (!process.env.DASHSCOPE_API_KEY) {
+        return NextResponse.json(
+          errorResponse(ErrorCodes.INTERNAL_ERROR, 'DashScope API key is not configured'),
+          { status: 500 }
+        );
+      }
+
+      // 准备请求头（支持 Bearer Token）
+      const headers: HeadersInit = {
+        'Content-Type': 'application/json',
+      };
+      const bearerToken = getBearerTokenFromRequest(request);
+      if (bearerToken) {
+        headers['Authorization'] = `Bearer ${bearerToken}`;
+      } else {
+        headers['Cookie'] = request.headers.get('cookie') || '';
+      }
+
+      // 1. 调用 LLM 分析
+      const llmResponse = await fetch(`${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/api/llm/analyze`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({ text }),
+      });
+
+      if (!llmResponse.ok) {
+        const errorData = await llmResponse.json().catch(() => ({}));
+        return NextResponse.json(
+          errorResponse(
+            ErrorCodes.INTERNAL_ERROR,
+            'LLM analysis failed',
+            errorData
+          ),
+          { status: llmResponse.status }
+        );
+      }
+
+      const llmData = await llmResponse.json();
+      if (!llmData.success || !llmData.data?.analysis) {
+        return NextResponse.json(
+          errorResponse(
+            ErrorCodes.INTERNAL_ERROR,
+            'LLM analysis failed',
+            llmData
+          ),
+          { status: 500 }
+        );
+      }
+
+      analysis = llmData.data.analysis;
     }
-
-    // 准备请求头（支持 Bearer Token）
-    const headers: HeadersInit = {
-      'Content-Type': 'application/json',
-    };
-    const bearerToken = getBearerTokenFromRequest(request);
-    if (bearerToken) {
-      headers['Authorization'] = `Bearer ${bearerToken}`;
-    } else {
-      headers['Cookie'] = request.headers.get('cookie') || '';
-    }
-
-    // 1. 调用 LLM 分析
-    const llmResponse = await fetch(`${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/api/llm/analyze`, {
-      method: 'POST',
-      headers,
-      body: JSON.stringify({ text }),
-    });
-
-    if (!llmResponse.ok) {
-      const errorData = await llmResponse.json().catch(() => ({}));
-      return NextResponse.json(
-        errorResponse(
-          ErrorCodes.INTERNAL_ERROR,
-          'LLM analysis failed',
-          errorData
-        ),
-        { status: llmResponse.status }
-      );
-    }
-
-    const llmData = await llmResponse.json();
-    if (!llmData.success || !llmData.data?.analysis) {
-      return NextResponse.json(
-        errorResponse(
-          ErrorCodes.INTERNAL_ERROR,
-          'LLM analysis failed',
-          llmData
-        ),
-        { status: 500 }
-      );
-    }
-
-    const analysis = llmData.data.analysis;
 
     // 2. 生成 TTS（如果需要）
     let audioUrl: string | null = null;
@@ -157,6 +162,7 @@ export async function POST(request: NextRequest) {
         userId,
         deckId: deck.id,
         sourceId: sourceId || null,
+        category,
         frontContent: text,
         backContent: analysis.html,
         cardType: cardType || '问答题（附翻转卡片）',

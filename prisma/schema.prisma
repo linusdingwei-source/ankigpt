@@ -129,6 +129,7 @@ model Card {
   frontContent  String   // 日文原文
   backContent   String   @db.Text // HTML 格式的分析内容（翻译、解释等）
   cardType      String   @default("问答题（附翻转卡片）")
+  category      String   @default("CARD") // CARD, NOTE
   
   // 音频相关
   audioUrl      String?  // 音频文件 URL（存储在云存储或本地）
