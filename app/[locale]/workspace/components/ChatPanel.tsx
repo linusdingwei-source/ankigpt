@@ -35,6 +35,20 @@ export function ChatPanel(props: WorkspaceViewProps) {
     }
   };
 
+  const preprocessContent = (content: string) => {
+    // 如果整个内容被包裹在 ```markdown ... ``` 中，去掉外层包裹
+    const match = content.match(/^```markdown\n([\s\S]*)\n```$/i);
+    if (match) {
+      return match[1];
+    }
+    // 处理通用的 ``` ... ``` 包裹（如果没有指定语言或指定了其他语言但内容明显是 markdown）
+    const genericMatch = content.match(/^```\n([\s\S]*)\n```$/);
+    if (genericMatch) {
+      return genericMatch[1];
+    }
+    return content;
+  };
+
   return (
     <div className="flex-1 flex flex-col border-r border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 h-full relative">
       {/* 面板标题 */}
@@ -128,22 +142,48 @@ export function ChatPanel(props: WorkspaceViewProps) {
                               );
                             },
                             table({ children }) {
-                              return <table className="border-collapse border border-gray-300 dark:border-gray-600 my-2 w-full">{children}</table>;
+                              return (
+                                <div className="overflow-x-auto my-4 rounded-lg border border-gray-200 dark:border-gray-700">
+                                  <table className="border-collapse w-full text-left text-sm">{children}</table>
+                                </div>
+                              );
                             },
                             th({ children }) {
-                              return <th className="border border-gray-300 dark:border-gray-600 p-2 bg-gray-50 dark:bg-gray-800 font-semibold text-left">{children}</th>;
+                              return <th className="border-b border-gray-200 dark:border-gray-700 p-3 bg-gray-50 dark:bg-gray-800 font-bold text-gray-900 dark:text-white">{children}</th>;
                             },
                             td({ children }) {
-                              return <td className="border border-gray-300 dark:border-gray-600 p-2">{children}</td>;
+                              return <td className="border-b border-gray-200 dark:border-gray-700 p-3 text-gray-700 dark:text-gray-300">{children}</td>;
+                            },
+                            h1({ children }) {
+                              return <h1 className="text-2xl font-extrabold text-indigo-600 dark:text-indigo-400 mb-4 mt-6 pb-2 border-b border-indigo-100 dark:border-indigo-900/50">{children}</h1>;
+                            },
+                            h2({ children }) {
+                              return <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-3 mt-5 flex items-center gap-2">
+                                <span className="w-1.5 h-1.5 rounded-full bg-indigo-500" />
+                                {children}
+                              </h2>;
+                            },
+                            h3({ children }) {
+                              return <h3 className="text-lg font-bold text-gray-800 dark:text-gray-200 mb-2 mt-4">{children}</h3>;
+                            },
+                            hr() {
+                              return <hr className="my-6 border-gray-200 dark:border-gray-700" />;
+                            },
+                            blockquote({ children }) {
+                              return <blockquote className="border-l-4 border-indigo-500 pl-4 py-1 italic bg-indigo-50/50 dark:bg-indigo-900/20 my-4 rounded-r-lg">{children}</blockquote>;
                             }
                           }}
                         >
-                          {message.content}
+                          {preprocessContent(message.content)}
                         </ReactMarkdown>
                       </div>
                     )
                   ) : (
-                    <p className="whitespace-pre-wrap leading-relaxed">{message.content}</p>
+                    <div className="prose dark:prose-invert prose-sm max-w-none">
+                      <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                        {preprocessContent(message.content)}
+                      </ReactMarkdown>
+                    </div>
                   )}
                 </div>
                 <div className="flex items-center gap-2 mt-1 px-1">
