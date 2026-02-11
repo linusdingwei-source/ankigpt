@@ -1,8 +1,15 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 'use client';
 
 import { useRef, useEffect } from 'react';
 import { WorkspaceViewProps } from '../types';
-import { markdownToHtml } from '@/lib/llm-utils';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
+import remarkMath from 'remark-math';
+import rehypeKatex from 'rehype-katex';
+import rehypeRaw from 'rehype-raw';
+import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
+import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
 
 export function ChatPanel(props: WorkspaceViewProps) {
   const {
@@ -59,48 +66,81 @@ export function ChatPanel(props: WorkspaceViewProps) {
               key={message.id} 
               className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
             >
-              <div className={`max-w-[85%] flex flex-col ${message.role === 'user' ? 'items-end' : 'items-start'}`}>
+              <div className={`max-w-[90%] flex flex-col ${message.role === 'user' ? 'items-end' : 'items-start'}`}>
                 <div className={`rounded-2xl px-4 py-2.5 text-sm ${
                   message.role === 'user' 
-                    ? 'bg-indigo-600 text-white rounded-br-none' 
-                    : 'bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-bl-none'
+                    ? 'bg-indigo-600 text-white rounded-br-none shadow-sm' 
+                    : 'bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-bl-none shadow-sm'
                 }`}>
-                  {message.role === 'assistant' && (message.type === 'analysis' || message.type === 'chat') ? (
-                    <div 
-                      className="prose dark:prose-invert prose-sm max-w-none"
-                      dangerouslySetInnerHTML={{ 
-                        __html: message.data?.html || (message.content ? markdownToHtml(message.content) : '')
-                      }}
-                    />
-                  ) : message.type === 'flashcards' ? (
-                    <div className="space-y-3 min-w-[240px]">
-                      <div className="flex items-center gap-2 text-xs font-semibold pb-2 border-b border-gray-200 dark:border-gray-600">
-                        <svg className="w-4 h-4 text-green-500" fill="currentColor" viewBox="0 0 20 20">
-                          <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                        </svg>
-                        批量生成结果
-                      </div>
-                      <div className="grid grid-cols-2 gap-2 text-center py-1">
-                        <div className="bg-green-50 dark:bg-green-900/20 p-2 rounded-lg">
-                          <div className="text-lg font-bold text-green-600">{message.data?.successCount}</div>
-                          <div className="text-[10px] text-green-700 dark:text-green-400">成功</div>
+                  {message.role === 'assistant' ? (
+                    message.type === 'flashcards' ? (
+                      <div className="space-y-3 min-w-[240px]">
+                        <div className="flex items-center gap-2 text-xs font-semibold pb-2 border-b border-gray-200 dark:border-gray-600">
+                          <svg className="w-4 h-4 text-green-500" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                          </svg>
+                          批量生成结果
                         </div>
-                        <div className="bg-red-50 dark:bg-red-900/20 p-2 rounded-lg">
-                          <div className="text-lg font-bold text-red-600">{message.data?.failCount}</div>
-                          <div className="text-[10px] text-red-700 dark:text-red-400">失败</div>
-                        </div>
-                      </div>
-                      <div className="max-h-48 overflow-y-auto space-y-1 pr-1 custom-scrollbar">
-                        {message.data?.cards?.map((card: { id: string; frontContent: string }) => (
-                          <div 
-                            key={card.id}
-                            className="text-[11px] p-2 bg-white dark:bg-gray-800 rounded border border-gray-200 dark:border-gray-600 truncate"
-                          >
-                            {card.frontContent}
+                        <div className="grid grid-cols-2 gap-2 text-center py-1">
+                          <div className="bg-green-50 dark:bg-green-900/20 p-2 rounded-lg">
+                            <div className="text-lg font-bold text-green-600">{message.data?.successCount}</div>
+                            <div className="text-[10px] text-green-700 dark:text-green-400">成功</div>
                           </div>
-                        ))}
+                          <div className="bg-red-50 dark:bg-red-900/20 p-2 rounded-lg">
+                            <div className="text-lg font-bold text-red-600">{message.data?.failCount}</div>
+                            <div className="text-[10px] text-red-700 dark:text-red-400">失败</div>
+                          </div>
+                        </div>
+                        <div className="max-h-48 overflow-y-auto space-y-1 pr-1 custom-scrollbar">
+                          {message.data?.cards?.map((card: { id: string; frontContent: string }) => (
+                            <div 
+                              key={card.id}
+                              className="text-[11px] p-2 bg-white dark:bg-gray-800 rounded border border-gray-200 dark:border-gray-600 truncate"
+                            >
+                              {card.frontContent}
+                            </div>
+                          ))}
+                        </div>
                       </div>
-                    </div>
+                    ) : (
+                      <div className="markdown-content prose dark:prose-invert prose-sm max-w-none overflow-x-auto">
+                        <ReactMarkdown
+                          remarkPlugins={[remarkGfm, remarkMath]}
+                          rehypePlugins={[rehypeKatex, rehypeRaw]}
+                          components={{
+                            code({ node: _node, inline, className, children, ...props }: any) {
+                              const match = /language-(\w+)/.exec(className || '');
+                              return !inline && match ? (
+                                <SyntaxHighlighter
+                                  style={vscDarkPlus as any}
+                                  language={match[1]}
+                                  PreTag="div"
+                                  className="rounded-md my-2"
+                                  {...props}
+                                >
+                                  {String(children).replace(/\n$/, '')}
+                                </SyntaxHighlighter>
+                              ) : (
+                                <code className={`${className} bg-gray-200 dark:bg-gray-600 px-1 rounded`} {...props}>
+                                  {children}
+                                </code>
+                              );
+                            },
+                            table({ children }) {
+                              return <table className="border-collapse border border-gray-300 dark:border-gray-600 my-2 w-full">{children}</table>;
+                            },
+                            th({ children }) {
+                              return <th className="border border-gray-300 dark:border-gray-600 p-2 bg-gray-50 dark:bg-gray-800 font-semibold text-left">{children}</th>;
+                            },
+                            td({ children }) {
+                              return <td className="border border-gray-300 dark:border-gray-600 p-2">{children}</td>;
+                            }
+                          }}
+                        >
+                          {message.content}
+                        </ReactMarkdown>
+                      </div>
+                    )
                   ) : (
                     <p className="whitespace-pre-wrap leading-relaxed">{message.content}</p>
                   )}

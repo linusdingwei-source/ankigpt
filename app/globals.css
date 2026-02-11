@@ -2,6 +2,9 @@
 @tailwind components;
 @tailwind utilities;
 
+/* KaTeX Styles */
+@import 'katex/dist/katex.min.css';
+
 :root {
   --background: #ffffff;
   --foreground: #171717;
