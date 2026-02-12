@@ -1,6 +1,20 @@
 'use client';
 
+import { useState, useMemo } from 'react';
 import { WorkspaceViewProps } from '../types';
+
+// Parse "filename (Part X of Y).pdf" pattern
+function parseSplitPart(name: string): { baseName: string; partNum: number; totalParts: number } | null {
+  const match = name.match(/^(.+?)\s*\(Part\s+(\d+)\s+of\s+(\d+)\)\.pdf$/i);
+  if (match) {
+    return {
+      baseName: match[1].trim(),
+      partNum: parseInt(match[2], 10),
+      totalParts: parseInt(match[3], 10),
+    };
+  }
+  return null;
+}
 
 export function SourcesPanel(props: WorkspaceViewProps) {
   const {
@@ -19,6 +33,60 @@ export function SourcesPanel(props: WorkspaceViewProps) {
     handlePasteImage, handleInsertPastedText,
     sourceContent
   } = props;
+
+  // Track which folders are expanded
+  const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set());
+
+  // Group sources: split PDFs go into folders, others stay flat
+  const { groupedSources, ungroupedSources } = useMemo(() => {
+    const groups: Map<string, { sources: typeof sources; totalParts: number }> = new Map();
+    const ungrouped: typeof sources = [];
+
+    for (const source of sources) {
+      const parsed = parseSplitPart(source.name);
+      if (parsed && parsed.totalParts > 1) {
+        const existing = groups.get(parsed.baseName);
+        if (existing) {
+          existing.sources.push({ ...source, _partNum: parsed.partNum });
+        } else {
+          groups.set(parsed.baseName, {
+            sources: [{ ...source, _partNum: parsed.partNum }],
+            totalParts: parsed.totalParts,
+          });
+        }
+      } else {
+        ungrouped.push(source);
+      }
+    }
+
+    // Sort each group by part number
+    const sortedGroups: Array<{ baseName: string; sources: typeof sources; totalParts: number }> = [];
+    groups.forEach((group, baseName) => {
+      group.sources.sort((a: { _partNum?: number }, b: { _partNum?: number }) => 
+        (a._partNum || 0) - (b._partNum || 0)
+      );
+      sortedGroups.push({ baseName, ...group });
+    });
+
+    // Sort groups by creation date of first part
+    sortedGroups.sort((a, b) => 
+      new Date(b.sources[0]?.createdAt || 0).getTime() - new Date(a.sources[0]?.createdAt || 0).getTime()
+    );
+
+    return { groupedSources: sortedGroups, ungroupedSources: ungrouped };
+  }, [sources]);
+
+  const toggleFolder = (baseName: string) => {
+    setExpandedFolders(prev => {
+      const next = new Set(prev);
+      if (next.has(baseName)) {
+        next.delete(baseName);
+      } else {
+        next.add(baseName);
+      }
+      return next;
+    });
+  };
 
   // 粘贴文字视图
   if (showPasteTextModal) {
@@ -327,7 +395,40 @@ export function SourcesPanel(props: WorkspaceViewProps) {
             <p className="text-xs font-medium text-gray-700 dark:text-gray-300 mb-2 px-2">
               {workspaceT('savedSources')} ({sources.length})
             </p>
-            {sources.map((source) => (
+
+            {/* Grouped (split PDF) sources as folders */}
+            {groupedSources.map((group) => (
+              <div key={group.baseName} className="mb-2">
+                {/* Folder header */}
+                <div
+                  onClick={() => toggleFolder(group.baseName)}
+                  className="flex items-center gap-2 p-2 rounded-lg bg-gray-50 dark:bg-gray-700/50 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer transition-colors"
+                >
+                  <svg 
+                    className={`w-4 h-4 text-yellow-500 transition-transform ${expandedFolders.has(group.baseName) ? 'rotate-90' : ''}`} 
+                    fill="currentColor" 
+                    viewBox="0 0 20 20"
+                  >
+                    <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
+                  </svg>
+                  <svg className="w-4 h-4 text-yellow-500" fill="currentColor" viewBox="0 0 20 20">
+                    <path d="M2 6a2 2 0 012-2h5l2 2h5a2 2 0 012 2v6a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" />
+                  </svg>
+                  <span 
+                    className="text-sm font-medium text-gray-900 dark:text-white truncate flex-1 cursor-help"
+                    title={`${group.baseName} (${group.sources.length} parts)`}
+                  >
+                    {group.baseName}
+                  </span>
+                  <span className="text-xs text-gray-500 dark:text-gray-400 flex-shrink-0">
+                    {group.sources.length} 份
+                  </span>
+                </div>
+
+                {/* Expanded folder contents */}
+                {expandedFolders.has(group.baseName) && (
+                  <div className="ml-6 mt-1 space-y-1 border-l-2 border-gray-200 dark:border-gray-600 pl-2">
+                    {group.sources.map((source: typeof sources[0] & { _partNum?: number }) => (
               <div
                 key={source.id}
                 onClick={async () => {
@@ -529,6 +630,67 @@ export function SourcesPanel(props: WorkspaceViewProps) {
                     </div>
                   </div>
                 )}
+              </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            ))}
+
+            {/* Ungrouped (regular) sources */}
+            {ungroupedSources.map((source) => (
+              <div
+                key={source.id}
+                onClick={async () => {
+                  if (editingSourceId === source.id) return;
+                  try {
+                    const { getAnonymousHeaders } = await import('@/hooks/useAnonymousUser');
+                    const headers = getAnonymousHeaders();
+                    setSelectedSourceId(source.id);
+                    setViewingSourceId(source.id);
+                    setSourceContent('');
+                    
+                    const res = await fetch(`/api/sources/${source.id}`, { headers });
+                    const response = await res.json();
+                    if (res.ok && response.success) {
+                      setSourceContent(response.data.source.content || '');
+                    }
+                  } catch (error) {
+                    console.error('Failed to fetch source content:', error);
+                  }
+                }}
+                className={`group relative p-3 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-700 hover:border-indigo-300 dark:hover:border-indigo-600 hover:shadow-sm transition-all cursor-pointer ${viewingSourceId === source.id ? 'border-indigo-500 ring-1 ring-indigo-500' : ''}`}
+              >
+                <div className="flex items-start gap-3">
+                  <div className="mt-1 flex-shrink-0">
+                    <input
+                      type="checkbox"
+                      checked={selectedSourceId === source.id}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setSelectedSourceId(selectedSourceId === source.id ? null : source.id);
+                      }}
+                      onChange={() => {}}
+                      className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded cursor-pointer"
+                    />
+                  </div>
+                  <div className="flex items-start gap-2 flex-1 min-w-0">
+                    <svg className="w-4 h-4 text-gray-400 dark:text-gray-500 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                    <div className="flex-1 min-w-0">
+                      <p 
+                        className="text-sm font-medium text-gray-900 dark:text-white truncate cursor-help"
+                        title={source.name}
+                      >
+                        {source.name}
+                      </p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                        {new Date(source.createdAt).toLocaleDateString(locale, { month: 'short', day: 'numeric' })}
+                      </p>
+                    </div>
+                  </div>
+                </div>
               </div>
             ))}
           </div>
