@@ -19,14 +19,40 @@ export function ChatPanel(props: WorkspaceViewProps) {
   } = props;
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
+  const isUserScrollingRef = useRef(false);
+  const lastMessageCountRef = useRef(0);
 
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  // Only auto-scroll if user is near bottom or a new message was added
+  const scrollToBottom = (force = false) => {
+    const container = messagesContainerRef.current;
+    if (!container) return;
+    
+    const { scrollTop, scrollHeight, clientHeight } = container;
+    const isNearBottom = scrollHeight - scrollTop - clientHeight < 100;
+    
+    // Only scroll if near bottom, forced, or new message added
+    if (force || isNearBottom) {
+      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }
   };
 
   useEffect(() => {
-    scrollToBottom();
-  }, [messages, chatLoading]);
+    // Force scroll when new message is added (message count increased)
+    const forceScroll = messages.length > lastMessageCountRef.current;
+    lastMessageCountRef.current = messages.length;
+    
+    if (!isUserScrollingRef.current) {
+      scrollToBottom(forceScroll);
+    }
+  }, [messages]);
+
+  // Scroll when loading starts (user sent a message)
+  useEffect(() => {
+    if (chatLoading) {
+      scrollToBottom(true);
+    }
+  }, [chatLoading]);
 
   const onKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
@@ -62,7 +88,17 @@ export function ChatPanel(props: WorkspaceViewProps) {
       </div>
 
       {/* 聊天消息区域 */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-6">
+      <div 
+        ref={messagesContainerRef}
+        className="flex-1 overflow-y-auto p-4 space-y-6"
+        onScroll={() => {
+          const container = messagesContainerRef.current;
+          if (!container) return;
+          const { scrollTop, scrollHeight, clientHeight } = container;
+          // User is considered "scrolling" if not near the bottom
+          isUserScrollingRef.current = scrollHeight - scrollTop - clientHeight > 150;
+        }}
+      >
         {messages.length === 0 ? (
           <div className="h-full flex flex-col items-center justify-center text-center px-8">
             <div className="w-16 h-16 bg-indigo-50 dark:bg-indigo-900/30 rounded-full flex items-center justify-center mb-4">
