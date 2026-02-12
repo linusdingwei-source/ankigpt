@@ -1,6 +1,10 @@
 import { PDFDocument } from 'pdf-lib';
 
-const MAX_CHUNK_SIZE = 45 * 1024 * 1024; // 45MB (leave margin below 50MB limit)
+// Use a conservative limit: PDF pages have very uneven sizes (cover pages,
+// image-heavy pages can be 10x larger than text pages), so we target 10MB
+// per chunk. This keeps each part well under the server's body size limit
+// even for the heaviest pages.
+const MAX_CHUNK_SIZE = 10 * 1024 * 1024; // 10MB per chunk
 
 export interface PdfChunk {
   file: File;
@@ -9,8 +13,38 @@ export interface PdfChunk {
 }
 
 /**
+ * Convert pdf-lib Uint8Array to a File object.
+ * Uses .slice() to produce a proper ArrayBuffer (avoids SharedArrayBuffer TS issues).
+ */
+function pdfBytesToFile(pdfBytes: Uint8Array, name: string): File {
+  const ab = pdfBytes.buffer.slice(
+    pdfBytes.byteOffset,
+    pdfBytes.byteOffset + pdfBytes.byteLength
+  ) as ArrayBuffer;
+  return new File([ab], name, { type: 'application/pdf' });
+}
+
+/**
+ * Build a single-page PDF from the source document and return its byte size.
+ * Used to measure per-page sizes for smart splitting.
+ */
+async function measurePageSize(
+  srcDoc: PDFDocument,
+  pageIndex: number
+): Promise<number> {
+  const tmp = await PDFDocument.create();
+  const [page] = await tmp.copyPages(srcDoc, [pageIndex]);
+  tmp.addPage(page);
+  const bytes = await tmp.save();
+  return bytes.byteLength;
+}
+
+/**
  * Split a large PDF file into smaller chunks by pages.
  * Each chunk will be named like "filename (Part 1 of N).pdf".
+ *
+ * Uses per-page size measurement to build chunks that stay under the limit,
+ * handling PDFs with uneven page sizes (image-heavy pages, scanned docs, etc.).
  *
  * If the file is already under the size limit, returns a single-element array
  * with the original file.
@@ -33,21 +67,48 @@ export async function splitPdfFile(
     return [{ file, partNumber: 1, totalParts: 1 }];
   }
 
-  // Estimate how many parts we need based on file size
-  const estimatedParts = Math.ceil(file.size / maxChunkSize);
-  const pagesPerPart = Math.max(1, Math.floor(totalPages / estimatedParts));
+  // Measure each page's approximate size so we can bin-pack intelligently.
+  // PDF overhead per document is ~1-2KB, so we reserve a small buffer.
+  const PDF_OVERHEAD = 50 * 1024; // 50KB reserved for PDF structure overhead
+  const effectiveLimit = maxChunkSize - PDF_OVERHEAD;
 
-  // Build page ranges
-  const ranges: { start: number; end: number }[] = [];
-  for (let i = 0; i < totalPages; i += pagesPerPart) {
-    ranges.push({ start: i, end: Math.min(i + pagesPerPart, totalPages) });
+  const pageSizes: number[] = [];
+  for (let i = 0; i < totalPages; i++) {
+    pageSizes.push(await measurePageSize(pdfDoc, i));
   }
 
-  // Generate PDF chunks
-  const baseName = file.name.replace(/\.pdf$/i, '');
-  const chunks: PdfChunk[] = [];
+  // Greedy bin-packing: accumulate pages until adding one more would exceed the limit
+  const ranges: { start: number; end: number }[] = [];
+  let rangeStart = 0;
+  let accumulated = 0;
 
-  for (let i = 0; i < ranges.length; i++) {
+  for (let i = 0; i < totalPages; i++) {
+    const pageSize = pageSizes[i];
+
+    if (accumulated + pageSize > effectiveLimit && i > rangeStart) {
+      // Current page would exceed limit — close this range
+      ranges.push({ start: rangeStart, end: i });
+      rangeStart = i;
+      accumulated = pageSize;
+    } else {
+      accumulated += pageSize;
+    }
+  }
+  // Don't forget the last range
+  if (rangeStart < totalPages) {
+    ranges.push({ start: rangeStart, end: totalPages });
+  }
+
+  // Strip the .pdf extension and any existing "(Part X of Y)" suffix for clean naming
+  const baseName = file.name
+    .replace(/\.pdf$/i, '')
+    .replace(/\s*\(Part \d+ of \d+\)$/, '');
+
+  // Generate PDF chunks
+  const chunks: PdfChunk[] = [];
+  const totalParts = ranges.length;
+
+  for (let i = 0; i < totalParts; i++) {
     const { start, end } = ranges[i];
     const newPdf = await PDFDocument.create();
     const pages = await newPdf.copyPages(
@@ -57,44 +118,18 @@ export async function splitPdfFile(
     pages.forEach((page) => newPdf.addPage(page));
 
     const pdfBytes = await newPdf.save();
-    const partName = `${baseName} (Part ${i + 1} of ${ranges.length}).pdf`;
-    // Slice to get a clean ArrayBuffer (avoids SharedArrayBuffer type issues)
-    const ab = pdfBytes.buffer.slice(pdfBytes.byteOffset, pdfBytes.byteOffset + pdfBytes.byteLength) as ArrayBuffer;
-    const partFile = new File([ab], partName, { type: 'application/pdf' });
+    const partName = totalParts === 1
+      ? `${baseName}.pdf`
+      : `${baseName} (Part ${i + 1} of ${totalParts}).pdf`;
 
     chunks.push({
-      file: partFile,
+      file: pdfBytesToFile(pdfBytes, partName),
       partNumber: i + 1,
-      totalParts: ranges.length,
+      totalParts,
     });
   }
 
-  // Post-check: if any chunk is still too large, recursively split it
-  const result: PdfChunk[] = [];
-  for (const chunk of chunks) {
-    if (chunk.file.size > maxChunkSize && chunk.totalParts > 1) {
-      const subChunks = await splitPdfFile(chunk.file, maxChunkSize);
-      // Re-number the sub-chunks within the overall numbering
-      result.push(...subChunks);
-    } else {
-      result.push(chunk);
-    }
-  }
-
-  // Re-number all parts sequentially
-  const totalParts = result.length;
-  return result.map((chunk, idx) => ({
-    ...chunk,
-    partNumber: idx + 1,
-    totalParts,
-    file: totalParts !== chunk.totalParts
-      ? new File(
-          [chunk.file],
-          `${baseName} (Part ${idx + 1} of ${totalParts}).pdf`,
-          { type: 'application/pdf' }
-        )
-      : chunk.file,
-  }));
+  return chunks;
 }
 
 /**
