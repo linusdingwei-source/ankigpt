@@ -288,8 +288,8 @@ export function SourcesPanel(props: WorkspaceViewProps) {
                 <div className="w-full h-full flex flex-col min-h-0">
                   <Toolbar showDownload={false} />
                   <div className="flex-1 min-h-0 overflow-y-auto">
-                    <div className="prose dark:prose-invert max-w-none prose-sm w-full">
-                      <pre className="whitespace-pre-wrap text-sm text-gray-700 dark:text-gray-300 font-sans">
+                    <div className="w-full">
+                      <pre className="whitespace-pre-wrap text-sm text-gray-700 dark:text-gray-200 font-sans bg-gray-50 dark:bg-gray-800 p-4 rounded-lg">
                         {sourceContent || '正在加载内容...'}
                       </pre>
                     </div>
