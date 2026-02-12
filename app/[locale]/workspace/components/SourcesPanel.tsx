@@ -141,9 +141,9 @@ export function SourcesPanel(props: WorkspaceViewProps) {
     const selectedSource = sources.find(s => s.id === props.viewingSourceId);
     
     return (
-      <div style={{ width: props.isSourcePanelCollapsed ? 'auto' : '100%' }} className="flex-shrink-0 border-r border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 flex flex-col">
+      <div style={{ width: props.isSourcePanelCollapsed ? 'auto' : '100%' }} className="flex-shrink-0 border-r border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 flex flex-col h-full min-h-0">
         {/* 面板标题 */}
-        <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
+        <div className="flex-shrink-0 px-4 py-3 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
           <h2 className="text-sm font-semibold text-gray-900 dark:text-white">
             {workspaceT('source')}
           </h2>
@@ -159,7 +159,7 @@ export function SourcesPanel(props: WorkspaceViewProps) {
         </div>
 
         {/* 来源内容头部 */}
-        <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
+        <div className="flex-shrink-0 p-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
           <h3 className="font-medium text-gray-900 dark:text-white truncate pr-2" title={selectedSource?.name}>
             {selectedSource?.name || '来源内容'}
           </h3>
@@ -168,7 +168,7 @@ export function SourcesPanel(props: WorkspaceViewProps) {
               setViewingSourceId(null);
               setSourceContent('');
             }}
-            className="p-1 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+            className="flex-shrink-0 p-1 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -176,8 +176,8 @@ export function SourcesPanel(props: WorkspaceViewProps) {
           </button>
         </div>
 
-        {/* 来源内容 */}
-        <div className="flex-1 overflow-y-auto p-4 flex flex-col">
+        {/* 来源内容 - 填充剩余空间 */}
+        <div className="flex-1 min-h-0 overflow-hidden p-4 flex flex-col">
           {(() => {
             const isImage = selectedSource?.type === 'image';
             const isAudio = selectedSource?.type === 'audio';
@@ -235,14 +235,14 @@ export function SourcesPanel(props: WorkspaceViewProps) {
               const fullUrl = url.startsWith('http') ? url : url.startsWith('//') ? `https:${url}` : url;
               
               return (
-                <div className="w-full h-full flex flex-col">
+                <div className="w-full h-full flex flex-col min-h-0">
                   <Toolbar />
-                  <div className="flex-1 min-h-0 flex items-center justify-center">
+                  <div className="flex-1 min-h-0 overflow-auto">
                     <img 
                       src={fullUrl} 
                       alt={selectedSource?.name} 
                       referrerPolicy="no-referrer"
-                      className="max-w-full max-h-full object-contain rounded-lg shadow-md border border-gray-200 dark:border-gray-700"
+                      className="max-w-full rounded-lg shadow-md border border-gray-200 dark:border-gray-700"
                       onError={(e) => {
                         console.error('Image failed to load:', fullUrl);
                         const target = e.target as HTMLImageElement;
@@ -262,18 +262,18 @@ export function SourcesPanel(props: WorkspaceViewProps) {
               );
             } else if (isAudio && url) {
               return (
-                <div className="w-full h-full flex flex-col">
+                <div className="w-full h-full flex flex-col min-h-0">
                   <Toolbar />
-                  <div className="flex-1 min-h-0 flex items-center justify-center">
+                  <div className="flex-1 min-h-0 flex items-center justify-center overflow-auto">
                     <audio controls src={url} className="w-full max-w-md" />
                   </div>
                 </div>
               );
             } else if (isPdf && url) {
               return (
-                <div className="w-full h-full flex flex-col">
+                <div className="w-full h-full flex flex-col min-h-0">
                   <Toolbar />
-                  <div className="flex-1 min-h-0">
+                  <div className="flex-1 min-h-0 overflow-hidden">
                     <iframe
                       src={url}
                       className="w-full h-full border-0 rounded-lg"
@@ -285,7 +285,7 @@ export function SourcesPanel(props: WorkspaceViewProps) {
             } else {
               // 文本内容
               return (
-                <div className="w-full h-full flex flex-col">
+                <div className="w-full h-full flex flex-col min-h-0">
                   <Toolbar showDownload={false} />
                   <div className="flex-1 min-h-0 overflow-y-auto">
                     <div className="prose dark:prose-invert max-w-none prose-sm w-full">
