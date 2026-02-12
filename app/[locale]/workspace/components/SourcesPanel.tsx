@@ -198,7 +198,7 @@ export function SourcesPanel(props: WorkspaceViewProps) {
   }
 
   return (
-    <div style={{ width: props.isSourcePanelCollapsed ? 'auto' : '100%' }} className="flex-shrink-0 border-r border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 flex flex-col">
+    <div style={{ width: props.isSourcePanelCollapsed ? 'auto' : '100%' }} className="flex-shrink-0 border-r border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 flex flex-col min-h-0 h-full">
       {/* 面板标题 */}
       <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
         <h2 className="text-sm font-semibold text-gray-900 dark:text-white">
@@ -286,7 +286,7 @@ export function SourcesPanel(props: WorkspaceViewProps) {
       </div>
 
       {/* 已保存的来源列表 */}
-      <div className="flex-1 overflow-y-auto p-4">
+      <div className="flex-1 overflow-y-auto p-4 min-h-0">
         {sourcesLoading ? (
           <div className="text-center text-gray-500 dark:text-gray-400 py-8">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600 mx-auto"></div>
@@ -436,7 +436,10 @@ export function SourcesPanel(props: WorkspaceViewProps) {
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                       </svg>
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
+                        <p 
+                          className="text-sm font-medium text-gray-900 dark:text-white truncate cursor-help"
+                          title={source.name}
+                        >
                           {source.name}
                         </p>
                         <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
