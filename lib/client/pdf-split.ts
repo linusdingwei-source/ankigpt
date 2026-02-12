@@ -1,10 +1,9 @@
 import { PDFDocument } from 'pdf-lib';
 
-// Use a conservative limit: PDF pages have very uneven sizes (cover pages,
-// image-heavy pages can be 10x larger than text pages), so we target 10MB
-// per chunk. This keeps each part well under the server's body size limit
-// even for the heaviest pages.
-const MAX_CHUNK_SIZE = 10 * 1024 * 1024; // 10MB per chunk
+// The serverActions.bodySizeLimit in next.config.mjs only applies to Server Actions,
+// NOT to API Route Handlers. The default limit for Route Handlers is ~1-4MB.
+// Use 3.5MB per chunk to stay safely under common platform limits (Vercel Hobby: 4.5MB).
+const MAX_CHUNK_SIZE = 3.5 * 1024 * 1024; // 3.5MB per chunk
 
 export interface PdfChunk {
   file: File;
@@ -72,10 +71,19 @@ export async function splitPdfFile(
   const PDF_OVERHEAD = 50 * 1024; // 50KB reserved for PDF structure overhead
   const effectiveLimit = maxChunkSize - PDF_OVERHEAD;
 
+  console.log(`[PDF Split] File: ${file.name}, Size: ${(file.size / 1024 / 1024).toFixed(2)}MB, Pages: ${totalPages}`);
+  console.log(`[PDF Split] Chunk limit: ${(effectiveLimit / 1024 / 1024).toFixed(2)}MB`);
+
   const pageSizes: number[] = [];
   for (let i = 0; i < totalPages; i++) {
-    pageSizes.push(await measurePageSize(pdfDoc, i));
+    const size = await measurePageSize(pdfDoc, i);
+    pageSizes.push(size);
+    if (size > effectiveLimit) {
+      console.warn(`[PDF Split] Page ${i + 1} is ${(size / 1024 / 1024).toFixed(2)}MB - exceeds chunk limit!`);
+    }
   }
+
+  console.log(`[PDF Split] Page sizes (MB): ${pageSizes.map(s => (s / 1024 / 1024).toFixed(2)).join(', ')}`);
 
   // Greedy bin-packing: accumulate pages until adding one more would exceed the limit
   const ranges: { start: number; end: number }[] = [];
@@ -98,6 +106,12 @@ export async function splitPdfFile(
   if (rangeStart < totalPages) {
     ranges.push({ start: rangeStart, end: totalPages });
   }
+
+  console.log(`[PDF Split] Created ${ranges.length} chunks`);
+  ranges.forEach((r, i) => {
+    const chunkSize = pageSizes.slice(r.start, r.end).reduce((a, b) => a + b, 0);
+    console.log(`[PDF Split] Chunk ${i + 1}: pages ${r.start + 1}-${r.end}, est. ${(chunkSize / 1024 / 1024).toFixed(2)}MB`);
+  });
 
   // Strip the .pdf extension and any existing "(Part X of Y)" suffix for clean naming
   const baseName = file.name
