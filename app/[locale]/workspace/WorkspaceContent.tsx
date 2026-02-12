@@ -156,6 +156,17 @@ export function WorkspacePageContent() {
     setIsResizingStudio(false);
   }, []);
 
+  // Auto-collapse threshold and max width calculation
+  const COLLAPSE_THRESHOLD = 150; // Below this width, auto-collapse
+  const MIN_PANEL_WIDTH = 200; // Minimum visible width when not collapsed
+  const getMaxPanelWidth = () => {
+    if (workspaceLayoutRef.current) {
+      // Max is 50% of container, minus some space for the chat panel
+      return Math.min(workspaceLayoutRef.current.offsetWidth * 0.45, 800);
+    }
+    return 600;
+  };
+
   const resize = useCallback(
     (mouseMoveEvent: MouseEvent) => {
       if (isResizingSource) {
@@ -164,8 +175,21 @@ export function WorkspacePageContent() {
           const rect = workspaceLayoutRef.current.getBoundingClientRect();
           newWidth = mouseMoveEvent.clientX - rect.left;
         }
-        if (newWidth >= 200 && newWidth <= 600) {
+        
+        // Auto-collapse if dragged below threshold
+        if (newWidth < COLLAPSE_THRESHOLD) {
+          setIsSourcePanelCollapsed(true);
+          setIsResizingSource(false);
+          return;
+        }
+        
+        const maxWidth = getMaxPanelWidth();
+        if (newWidth >= MIN_PANEL_WIDTH && newWidth <= maxWidth) {
           setSourcePanelWidth(newWidth);
+        } else if (newWidth > maxWidth) {
+          setSourcePanelWidth(maxWidth);
+        } else if (newWidth >= COLLAPSE_THRESHOLD && newWidth < MIN_PANEL_WIDTH) {
+          setSourcePanelWidth(MIN_PANEL_WIDTH);
         }
       }
       if (isResizingStudio) {
@@ -174,8 +198,21 @@ export function WorkspacePageContent() {
           const rect = workspaceLayoutRef.current.getBoundingClientRect();
           newWidth = rect.right - mouseMoveEvent.clientX;
         }
-        if (newWidth >= 200 && newWidth <= 600) {
+        
+        // Auto-collapse if dragged below threshold
+        if (newWidth < COLLAPSE_THRESHOLD) {
+          setIsStudioPanelCollapsed(true);
+          setIsResizingStudio(false);
+          return;
+        }
+        
+        const maxWidth = getMaxPanelWidth();
+        if (newWidth >= MIN_PANEL_WIDTH && newWidth <= maxWidth) {
           setStudioPanelWidth(newWidth);
+        } else if (newWidth > maxWidth) {
+          setStudioPanelWidth(maxWidth);
+        } else if (newWidth >= COLLAPSE_THRESHOLD && newWidth < MIN_PANEL_WIDTH) {
+          setStudioPanelWidth(MIN_PANEL_WIDTH);
         }
       }
     },
