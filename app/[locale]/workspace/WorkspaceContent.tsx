@@ -184,19 +184,17 @@ export function WorkspacePageContent() {
           return;
         }
         
-        // Calculate max width based on StudioPanel state
+        // Calculate current max width based on StudioPanel state
         const studioWidth = isStudioPanelCollapsed ? COLLAPSED_PANEL_WIDTH : studioPanelWidth;
-        const maxSourceWidth = containerWidth - studioWidth - MIN_CHAT_WIDTH - 10; // 10px for resize handles
+        const currentMaxWidth = containerWidth - studioWidth - MIN_CHAT_WIDTH - 10;
         
-        // If expanding past a threshold where StudioPanel should collapse
-        const collapseStudioThreshold = containerWidth - COLLAPSED_PANEL_WIDTH - MIN_CHAT_WIDTH - 50;
-        if (newWidth > collapseStudioThreshold && !isStudioPanelCollapsed) {
-          // Auto-collapse StudioPanel to give more space
+        // If trying to expand beyond current max and StudioPanel is not collapsed, collapse it
+        if (newWidth > currentMaxWidth && !isStudioPanelCollapsed) {
           setIsStudioPanelCollapsed(true);
         }
         
         // Recalculate max after potential collapse
-        const effectiveStudioWidth = (newWidth > collapseStudioThreshold || isStudioPanelCollapsed) 
+        const effectiveStudioWidth = (newWidth > currentMaxWidth || isStudioPanelCollapsed) 
           ? COLLAPSED_PANEL_WIDTH 
           : studioPanelWidth;
         const effectiveMaxWidth = containerWidth - effectiveStudioWidth - MIN_CHAT_WIDTH - 10;
@@ -224,19 +222,17 @@ export function WorkspacePageContent() {
           return;
         }
         
-        // Calculate max width based on SourcePanel state
+        // Calculate current max width based on SourcePanel state
         const sourceWidth = isSourcePanelCollapsed ? COLLAPSED_PANEL_WIDTH : sourcePanelWidth;
-        const maxStudioWidth = containerWidth - sourceWidth - MIN_CHAT_WIDTH - 10;
+        const currentMaxWidth = containerWidth - sourceWidth - MIN_CHAT_WIDTH - 10;
         
-        // If expanding past a threshold where SourcePanel should collapse
-        const collapseSourceThreshold = containerWidth - COLLAPSED_PANEL_WIDTH - MIN_CHAT_WIDTH - 50;
-        if (newWidth > collapseSourceThreshold && !isSourcePanelCollapsed) {
-          // Auto-collapse SourcePanel to give more space
+        // If trying to expand beyond current max and SourcePanel is not collapsed, collapse it
+        if (newWidth > currentMaxWidth && !isSourcePanelCollapsed) {
           setIsSourcePanelCollapsed(true);
         }
         
         // Recalculate max after potential collapse
-        const effectiveSourceWidth = (newWidth > collapseSourceThreshold || isSourcePanelCollapsed) 
+        const effectiveSourceWidth = (newWidth > currentMaxWidth || isSourcePanelCollapsed) 
           ? COLLAPSED_PANEL_WIDTH 
           : sourcePanelWidth;
         const effectiveMaxWidth = containerWidth - effectiveSourceWidth - MIN_CHAT_WIDTH - 10;
