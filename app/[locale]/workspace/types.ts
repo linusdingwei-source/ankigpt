@@ -23,6 +23,12 @@ export interface WorkspaceViewProps {
   // Sources
   sources: any[];
   sourcesLoading: boolean;
+  uploadProgress: {
+    phase: 'splitting' | 'uploading' | null;
+    current: number;
+    total: number;
+    fileName?: string;
+  };
   showAddSourceModal: boolean;
   setShowAddSourceModal: (v: boolean) => void;
   showPasteTextModal: boolean;

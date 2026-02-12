@@ -6,7 +6,7 @@ export function SourcesPanel(props: WorkspaceViewProps) {
   const {
     locale, workspaceT,
     isSourcePanelCollapsed, setIsSourcePanelCollapsed,
-    sources, sourcesLoading, setShowAddSourceModal,
+    sources, sourcesLoading, uploadProgress, setShowAddSourceModal,
     showPasteTextModal, setShowPasteTextModal,
     pastedText, setPastedText,
     showSourceMenuId, setShowSourceMenuId,
@@ -290,7 +290,29 @@ export function SourcesPanel(props: WorkspaceViewProps) {
         {sourcesLoading ? (
           <div className="text-center text-gray-500 dark:text-gray-400 py-8">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600 mx-auto"></div>
-            <p className="text-xs mt-2">加载中...</p>
+            {uploadProgress.phase === 'splitting' ? (
+              <>
+                <p className="text-xs mt-2 font-medium text-indigo-600 dark:text-indigo-400">正在分割PDF...</p>
+                <p className="text-xs mt-1 text-gray-400 truncate px-2">{uploadProgress.fileName}</p>
+              </>
+            ) : uploadProgress.phase === 'uploading' && uploadProgress.total > 1 ? (
+              <>
+                <p className="text-xs mt-2 font-medium text-indigo-600 dark:text-indigo-400">
+                  上传中 {uploadProgress.current}/{uploadProgress.total}
+                </p>
+                <div className="mt-2 mx-4">
+                  <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-1.5">
+                    <div 
+                      className="bg-indigo-600 h-1.5 rounded-full transition-all duration-300"
+                      style={{ width: `${(uploadProgress.current / uploadProgress.total) * 100}%` }}
+                    />
+                  </div>
+                </div>
+                <p className="text-xs mt-1 text-gray-400 truncate px-2">{uploadProgress.fileName}</p>
+              </>
+            ) : (
+              <p className="text-xs mt-2">加载中...</p>
+            )}
           </div>
         ) : sources.length === 0 ? (
           <div className="text-center text-gray-500 dark:text-gray-400">

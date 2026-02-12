@@ -114,6 +114,13 @@ export function WorkspacePageContent() {
     updatedAt: string;
   }>>([]);
   const [sourcesLoading, setSourcesLoading] = useState(true);
+  // Upload progress for chunked PDF uploads
+  const [uploadProgress, setUploadProgress] = useState<{
+    phase: 'splitting' | 'uploading' | null;
+    current: number;
+    total: number;
+    fileName?: string;
+  }>({ phase: null, current: 0, total: 0 });
   const [selectedSourceId, setSelectedSourceId] = useState<string | null>(null);
   const [viewingSourceId, setViewingSourceId] = useState<string | null>(null);
   const [showSourceViewModal, setShowSourceViewModal] = useState(false);
@@ -814,6 +821,8 @@ export function WorkspacePageContent() {
     e.target.value = '';
 
     setSourcesLoading(true);
+    setUploadProgress({ phase: null, current: 0, total: 0 });
+    
     try {
       const { getAnonymousHeaders } = await import('@/hooks/useAnonymousUser');
       const headers = getAnonymousHeaders() as Record<string, string>;
@@ -824,15 +833,23 @@ export function WorkspacePageContent() {
       // Check if this is a large PDF that needs splitting
       const { needsPdfSplit, splitPdfFile } = await import('@/lib/client/pdf-split');
       if (needsPdfSplit(file)) {
+        // Show splitting phase
+        setUploadProgress({ phase: 'splitting', current: 0, total: 0, fileName: file.name });
+        
         const chunks = await splitPdfFile(file);
-        let uploaded = 0;
-        for (const chunk of chunks) {
-          await uploadSingleFile(chunk.file, headers);
-          uploaded++;
-          console.log(`Uploaded part ${uploaded}/${chunks.length}: ${chunk.file.name}`);
+        
+        // Show uploading phase with progress
+        setUploadProgress({ phase: 'uploading', current: 0, total: chunks.length, fileName: file.name });
+        
+        for (let i = 0; i < chunks.length; i++) {
+          await uploadSingleFile(chunks[i].file, headers);
+          setUploadProgress({ phase: 'uploading', current: i + 1, total: chunks.length, fileName: file.name });
+          console.log(`Uploaded part ${i + 1}/${chunks.length}: ${chunks[i].file.name}`);
         }
       } else {
+        setUploadProgress({ phase: 'uploading', current: 0, total: 1, fileName: file.name });
         await uploadSingleFile(file, headers);
+        setUploadProgress({ phase: 'uploading', current: 1, total: 1, fileName: file.name });
       }
 
       await fetchSources();
@@ -842,6 +859,7 @@ export function WorkspacePageContent() {
       alert('Upload failed: ' + (err instanceof Error ? err.message : 'Unknown error'));
     } finally {
       setSourcesLoading(false);
+      setUploadProgress({ phase: null, current: 0, total: 0 });
     }
   };
 
@@ -1077,6 +1095,7 @@ export function WorkspacePageContent() {
       
       sources={sources}
       sourcesLoading={sourcesLoading}
+      uploadProgress={uploadProgress}
       showAddSourceModal={showAddSourceModal}
       setShowAddSourceModal={setShowAddSourceModal}
       showPasteTextModal={showPasteTextModal}
