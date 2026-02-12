@@ -181,6 +181,7 @@ export function SourcesPanel(props: WorkspaceViewProps) {
           {(() => {
             const isImage = selectedSource?.type === 'image';
             const isAudio = selectedSource?.type === 'audio';
+            const isPdf = selectedSource?.mimeType === 'application/pdf' || selectedSource?.name?.toLowerCase().endsWith('.pdf');
             const url = selectedSource?.contentUrl || selectedSource?.fileUrl;
 
             if (isImage && url) {
@@ -232,6 +233,41 @@ export function SourcesPanel(props: WorkspaceViewProps) {
               return (
                 <div className="w-full py-12 flex flex-col items-center justify-center">
                   <audio controls src={url} className="w-full max-w-md" />
+                </div>
+              );
+            } else if (isPdf && url) {
+              return (
+                <div className="w-full h-full flex flex-col items-center justify-center gap-4">
+                  <svg className="w-16 h-16 text-red-500" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6zM6 20V4h7v5h5v11H6z"/>
+                    <path d="M8 12h1v5H8v-5zm3-1h1.5c.83 0 1.5.67 1.5 1.5v2c0 .83-.67 1.5-1.5 1.5H11v-5zm1 4h.5a.5.5 0 0 0 .5-.5v-2a.5.5 0 0 0-.5-.5H12v3zm3-4h2v1h-1v1h1v1h-1v2h-1v-5z"/>
+                  </svg>
+                  <p className="text-sm text-gray-600 dark:text-gray-400 text-center px-4">
+                    {selectedSource?.name}
+                  </p>
+                  <div className="flex gap-3">
+                    <a
+                      href={url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="px-4 py-2 text-sm bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 flex items-center gap-2"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                      </svg>
+                      在新窗口打开
+                    </a>
+                    <a
+                      href={url}
+                      download={selectedSource?.name}
+                      className="px-4 py-2 text-sm border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center gap-2"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                      </svg>
+                      下载
+                    </a>
+                  </div>
                 </div>
               );
             } else {
