@@ -26,17 +26,27 @@ export function WorkspaceView(props: WorkspaceViewProps) {
 
   const preprocessContent = (content: string) => {
     if (!content) return '';
-    // 如果整个内容被包裹在 ```markdown ... ``` 中，去掉外层包裹
-    const match = content.match(/^```markdown\n([\s\S]*)\n```$/i);
-    if (match) {
-      return match[1];
+    let result = content.trim();
+    
+    // Remove ```markdown ... ``` wrapper (flexible whitespace)
+    const markdownMatch = result.match(/^```markdown\s*([\s\S]*?)\s*```$/i);
+    if (markdownMatch) {
+      return markdownMatch[1].trim();
     }
-    // 处理通用的 ``` ... ``` 包裹
-    const genericMatch = content.match(/^```\n([\s\S]*)\n```$/);
+    
+    // Remove ```<language> ... ``` wrapper for any language
+    const langMatch = result.match(/^```\w*\s*([\s\S]*?)\s*```$/i);
+    if (langMatch) {
+      return langMatch[1].trim();
+    }
+    
+    // Remove generic ``` ... ``` wrapper
+    const genericMatch = result.match(/^```\s*([\s\S]*?)\s*```$/);
     if (genericMatch) {
-      return genericMatch[1];
+      return genericMatch[1].trim();
     }
-    return content;
+    
+    return result;
   };
 
   return (
