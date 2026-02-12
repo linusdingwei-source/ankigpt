@@ -3,6 +3,22 @@
 
 import { WorkspaceViewProps } from '../types';
 
+// Strip markdown code fence wrappers from content
+function preprocessContent(content: string): string {
+  if (!content) return '';
+  // Remove ```markdown ... ``` wrapper
+  const match = content.match(/^```markdown\n([\s\S]*)\n```$/i);
+  if (match) {
+    return match[1];
+  }
+  // Remove generic ``` ... ``` wrapper
+  const genericMatch = content.match(/^```\n([\s\S]*)\n```$/);
+  if (genericMatch) {
+    return genericMatch[1];
+  }
+  return content;
+}
+
 export function StudioPanel(props: WorkspaceViewProps) {
   const {
     workspaceT, cardT,     locale,
@@ -191,7 +207,7 @@ export function StudioPanel(props: WorkspaceViewProps) {
                     >
                       <div className="flex items-start justify-between gap-2">
                         <p className="text-xs font-medium text-gray-900 dark:text-white line-clamp-2 flex-1">
-                          {card.frontContent}
+                          {preprocessContent(card.frontContent)}
                         </p>
                         <div className="relative card-menu-container flex-shrink-0">
                           <button

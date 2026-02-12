@@ -228,7 +228,7 @@ export function WorkspaceView(props: WorkspaceViewProps) {
                         </h3>
                   <div className="p-4 bg-gray-50 dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600">
                           <p className="text-base text-gray-900 dark:text-white leading-relaxed">
-                            {selectedCard.frontContent}
+                            {preprocessContent(selectedCard.frontContent)}
                           </p>
                         </div>
                       </div>
