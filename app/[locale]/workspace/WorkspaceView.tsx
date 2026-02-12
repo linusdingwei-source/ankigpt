@@ -26,27 +26,25 @@ export function WorkspaceView(props: WorkspaceViewProps) {
 
   const preprocessContent = (content: string) => {
     if (!content) return '';
-    const result = content.trim();
+    let result = content.trim();
     
-    // Remove ```markdown ... ``` wrapper (flexible whitespace)
-    const markdownMatch = result.match(/^```markdown\s*([\s\S]*?)\s*```$/i);
-    if (markdownMatch) {
-      return markdownMatch[1].trim();
+    // First, try to match complete code fence blocks
+    // ```markdown ... ``` or ```<lang> ... ``` or ``` ... ```
+    const completeMatch = result.match(/^```(?:markdown|\w*)\s*([\s\S]*?)\s*```$/i);
+    if (completeMatch) {
+      return completeMatch[1].trim();
     }
     
-    // Remove ```<language> ... ``` wrapper for any language
-    const langMatch = result.match(/^```\w*\s*([\s\S]*?)\s*```$/i);
-    if (langMatch) {
-      return langMatch[1].trim();
+    // If no complete match, strip opening fence prefix (even without closing)
+    // This handles cases where LLM generates ```markdown at start but closing is missing/misplaced
+    if (result.startsWith('```')) {
+      // Remove ```markdown or ```<lang> or ``` prefix
+      result = result.replace(/^```(?:markdown|\w*)\s*/i, '');
+      // Also remove trailing ``` if present (might be at end or middle)
+      result = result.replace(/\s*```\s*$/, '');
     }
     
-    // Remove generic ``` ... ``` wrapper
-    const genericMatch = result.match(/^```\s*([\s\S]*?)\s*```$/);
-    if (genericMatch) {
-      return genericMatch[1].trim();
-    }
-    
-    return result;
+    return result.trim();
   };
 
   return (
