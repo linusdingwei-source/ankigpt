@@ -26,7 +26,7 @@ export function WorkspaceView(props: WorkspaceViewProps) {
 
   const preprocessContent = (content: string) => {
     if (!content) return '';
-    let result = content.trim();
+    const result = content.trim();
     
     // Remove ```markdown ... ``` wrapper (flexible whitespace)
     const markdownMatch = result.match(/^```markdown\s*([\s\S]*?)\s*```$/i);

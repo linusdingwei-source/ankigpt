@@ -6,7 +6,7 @@ import { WorkspaceViewProps } from '../types';
 // Strip markdown code fence wrappers from content
 function preprocessContent(content: string): string {
   if (!content) return '';
-  let result = content.trim();
+  const result = content.trim();
   
   // Remove ```markdown ... ``` wrapper (flexible whitespace)
   const markdownMatch = result.match(/^```markdown\s*([\s\S]*?)\s*```$/i);
