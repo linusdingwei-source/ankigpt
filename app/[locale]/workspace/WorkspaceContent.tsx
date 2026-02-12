@@ -156,19 +156,20 @@ export function WorkspacePageContent() {
     setIsResizingStudio(false);
   }, []);
 
-  // Auto-collapse threshold and max width calculation
-  const COLLAPSE_THRESHOLD = 150; // Below this width, auto-collapse
+  // Auto-collapse threshold and layout calculation
+  const COLLAPSE_THRESHOLD = 150; // Below this width, auto-collapse self
   const MIN_PANEL_WIDTH = 200; // Minimum visible width when not collapsed
-  const getMaxPanelWidth = () => {
-    if (workspaceLayoutRef.current) {
-      // Max is 50% of container, minus some space for the chat panel
-      return Math.min(workspaceLayoutRef.current.offsetWidth * 0.45, 800);
-    }
-    return 600;
+  const MIN_CHAT_WIDTH = 300; // Minimum chat panel width
+  const COLLAPSED_PANEL_WIDTH = 48; // Width when collapsed
+  
+  const getContainerWidth = () => {
+    return workspaceLayoutRef.current?.offsetWidth || window.innerWidth;
   };
 
   const resize = useCallback(
     (mouseMoveEvent: MouseEvent) => {
+      const containerWidth = getContainerWidth();
+      
       if (isResizingSource) {
         let newWidth = mouseMoveEvent.clientX;
         if (workspaceLayoutRef.current) {
@@ -176,22 +177,39 @@ export function WorkspacePageContent() {
           newWidth = mouseMoveEvent.clientX - rect.left;
         }
         
-        // Auto-collapse if dragged below threshold
+        // Auto-collapse SourcePanel if dragged below threshold (to the left)
         if (newWidth < COLLAPSE_THRESHOLD) {
           setIsSourcePanelCollapsed(true);
           setIsResizingSource(false);
           return;
         }
         
-        const maxWidth = getMaxPanelWidth();
-        if (newWidth >= MIN_PANEL_WIDTH && newWidth <= maxWidth) {
+        // Calculate max width based on StudioPanel state
+        const studioWidth = isStudioPanelCollapsed ? COLLAPSED_PANEL_WIDTH : studioPanelWidth;
+        const maxSourceWidth = containerWidth - studioWidth - MIN_CHAT_WIDTH - 10; // 10px for resize handles
+        
+        // If expanding past a threshold where StudioPanel should collapse
+        const collapseStudioThreshold = containerWidth - COLLAPSED_PANEL_WIDTH - MIN_CHAT_WIDTH - 50;
+        if (newWidth > collapseStudioThreshold && !isStudioPanelCollapsed) {
+          // Auto-collapse StudioPanel to give more space
+          setIsStudioPanelCollapsed(true);
+        }
+        
+        // Recalculate max after potential collapse
+        const effectiveStudioWidth = (newWidth > collapseStudioThreshold || isStudioPanelCollapsed) 
+          ? COLLAPSED_PANEL_WIDTH 
+          : studioPanelWidth;
+        const effectiveMaxWidth = containerWidth - effectiveStudioWidth - MIN_CHAT_WIDTH - 10;
+        
+        if (newWidth >= MIN_PANEL_WIDTH && newWidth <= effectiveMaxWidth) {
           setSourcePanelWidth(newWidth);
-        } else if (newWidth > maxWidth) {
-          setSourcePanelWidth(maxWidth);
+        } else if (newWidth > effectiveMaxWidth) {
+          setSourcePanelWidth(effectiveMaxWidth);
         } else if (newWidth >= COLLAPSE_THRESHOLD && newWidth < MIN_PANEL_WIDTH) {
           setSourcePanelWidth(MIN_PANEL_WIDTH);
         }
       }
+      
       if (isResizingStudio) {
         let newWidth = window.innerWidth - mouseMoveEvent.clientX;
         if (workspaceLayoutRef.current) {
@@ -199,24 +217,40 @@ export function WorkspacePageContent() {
           newWidth = rect.right - mouseMoveEvent.clientX;
         }
         
-        // Auto-collapse if dragged below threshold
+        // Auto-collapse StudioPanel if dragged below threshold (to the right)
         if (newWidth < COLLAPSE_THRESHOLD) {
           setIsStudioPanelCollapsed(true);
           setIsResizingStudio(false);
           return;
         }
         
-        const maxWidth = getMaxPanelWidth();
-        if (newWidth >= MIN_PANEL_WIDTH && newWidth <= maxWidth) {
+        // Calculate max width based on SourcePanel state
+        const sourceWidth = isSourcePanelCollapsed ? COLLAPSED_PANEL_WIDTH : sourcePanelWidth;
+        const maxStudioWidth = containerWidth - sourceWidth - MIN_CHAT_WIDTH - 10;
+        
+        // If expanding past a threshold where SourcePanel should collapse
+        const collapseSourceThreshold = containerWidth - COLLAPSED_PANEL_WIDTH - MIN_CHAT_WIDTH - 50;
+        if (newWidth > collapseSourceThreshold && !isSourcePanelCollapsed) {
+          // Auto-collapse SourcePanel to give more space
+          setIsSourcePanelCollapsed(true);
+        }
+        
+        // Recalculate max after potential collapse
+        const effectiveSourceWidth = (newWidth > collapseSourceThreshold || isSourcePanelCollapsed) 
+          ? COLLAPSED_PANEL_WIDTH 
+          : sourcePanelWidth;
+        const effectiveMaxWidth = containerWidth - effectiveSourceWidth - MIN_CHAT_WIDTH - 10;
+        
+        if (newWidth >= MIN_PANEL_WIDTH && newWidth <= effectiveMaxWidth) {
           setStudioPanelWidth(newWidth);
-        } else if (newWidth > maxWidth) {
-          setStudioPanelWidth(maxWidth);
+        } else if (newWidth > effectiveMaxWidth) {
+          setStudioPanelWidth(effectiveMaxWidth);
         } else if (newWidth >= COLLAPSE_THRESHOLD && newWidth < MIN_PANEL_WIDTH) {
           setStudioPanelWidth(MIN_PANEL_WIDTH);
         }
       }
     },
-    [isResizingSource, isResizingStudio]
+    [isResizingSource, isResizingStudio, isSourcePanelCollapsed, isStudioPanelCollapsed, sourcePanelWidth, studioPanelWidth]
   );
 
   useEffect(() => {
