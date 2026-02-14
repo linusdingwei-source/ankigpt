@@ -270,6 +270,7 @@ export function WorkspacePageContent() {
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const audioInputRef = useRef<HTMLInputElement>(null);
+  const audioFolderInputRef = useRef<HTMLInputElement>(null);
   const workspaceLayoutRef = useRef<HTMLDivElement>(null);
 
   // 防抖搜索
@@ -874,13 +875,24 @@ export function WorkspacePageContent() {
     audioInputRef.current?.click();
   };
 
-  // Helper: upload a single file to /api/sources
+  const handleUploadAudioFolder = () => {
+    audioFolderInputRef.current?.click();
+  };
+
+  // Helper: upload a single file to /api/sources with optional custom name
   const uploadSingleFile = async (
     file: File,
-    headers: Record<string, string>
+    headers: Record<string, string>,
+    customName?: string
   ) => {
     const formData = new FormData();
-    formData.append('file', file);
+    // If custom name is provided, create a new File with that name
+    if (customName) {
+      const renamedFile = new File([file], customName, { type: file.type });
+      formData.append('file', renamedFile);
+    } else {
+      formData.append('file', file);
+    }
 
     const res = await fetch('/api/sources', {
       method: 'POST',
@@ -955,6 +967,67 @@ export function WorkspacePageContent() {
     } catch (err) {
       console.error('Upload error:', err);
       alert('Upload failed: ' + (err instanceof Error ? err.message : 'Unknown error'));
+    } finally {
+      setSourcesLoading(false);
+      setUploadProgress({ phase: null, current: 0, total: 0 });
+    }
+  };
+
+  // Handler for audio folder upload
+  const onAudioFolderChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    // Reset input
+    e.target.value = '';
+
+    // Filter audio files and get folder structure
+    const audioFiles: Array<{ file: File; relativePath: string }> = [];
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
+      if (file.type.startsWith('audio/')) {
+        // webkitRelativePath contains the full path like "folder/subfolder/file.mp3"
+        const relativePath = (file as File & { webkitRelativePath?: string }).webkitRelativePath || file.name;
+        audioFiles.push({ file, relativePath });
+      }
+    }
+
+    if (audioFiles.length === 0) {
+      alert('未找到音频文件');
+      return;
+    }
+
+    // Sort by relative path to maintain order
+    audioFiles.sort((a, b) => a.relativePath.localeCompare(b.relativePath, undefined, { numeric: true }));
+
+    setSourcesLoading(true);
+    setUploadProgress({ phase: 'uploading', current: 0, total: audioFiles.length });
+
+    try {
+      const { getAnonymousHeaders } = await import('@/hooks/useAnonymousUser');
+      const headers = getAnonymousHeaders() as Record<string, string>;
+      if (headers['Content-Type']) {
+        delete headers['Content-Type'];
+      }
+
+      for (let i = 0; i < audioFiles.length; i++) {
+        const { file, relativePath } = audioFiles[i];
+        // Use the relative path as the file name to preserve folder structure
+        await uploadSingleFile(file, headers, relativePath);
+        setUploadProgress({ 
+          phase: 'uploading', 
+          current: i + 1, 
+          total: audioFiles.length,
+          fileName: relativePath 
+        });
+        console.log(`Uploaded ${i + 1}/${audioFiles.length}: ${relativePath}`);
+      }
+
+      await fetchSources();
+      setShowAddSourceModal(false);
+    } catch (err) {
+      console.error('Audio folder upload error:', err);
+      alert('上传失败: ' + (err instanceof Error ? err.message : 'Unknown error'));
     } finally {
       setSourcesLoading(false);
       setUploadProgress({ phase: null, current: 0, total: 0 });
@@ -1172,6 +1245,15 @@ export function WorkspacePageContent() {
         accept="audio/*"
         onChange={(e) => onFileChange(e)}
       />
+      <input
+        type="file"
+        ref={audioFolderInputRef}
+        className="hidden"
+        accept="audio/*"
+        {...({ webkitdirectory: 'true' } as React.InputHTMLAttributes<HTMLInputElement>)}
+        multiple
+        onChange={(e) => onAudioFolderChange(e)}
+      />
       <WorkspaceView
         locale={locale}
         session={session}
@@ -1252,6 +1334,7 @@ export function WorkspacePageContent() {
       fetchCards={fetchCards}
       handleUploadFile={handleUploadFile}
       handleUploadAudio={handleUploadAudio}
+      handleUploadAudioFolder={handleUploadAudioFolder}
       handlePasteImage={handlePasteImage}
       handleInsertPastedText={handleInsertPastedText}
       handleSaveNote={handleSaveNote}

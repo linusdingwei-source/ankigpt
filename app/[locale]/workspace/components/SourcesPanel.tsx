@@ -29,7 +29,7 @@ export function SourcesPanel(props: WorkspaceViewProps) {
     fetchSources, 
     setSourceContent, setSelectedSourceId, selectedSourceId,
     viewingSourceId, setViewingSourceId,
-    handleUploadFile, handleUploadAudio,
+    handleUploadFile, handleUploadAudio, handleUploadAudioFolder,
     handlePasteImage, handleInsertPastedText,
     sourceContent
   } = props;
@@ -37,12 +37,13 @@ export function SourcesPanel(props: WorkspaceViewProps) {
   // Track which folders are expanded
   const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set());
 
-  // Group sources: split PDFs go into folders, others stay flat
+  // Group sources: split PDFs and audio folders go into folders, others stay flat
   const { groupedSources, ungroupedSources } = useMemo(() => {
-    const groups: Map<string, { sources: typeof sources; totalParts: number }> = new Map();
+    const groups: Map<string, { sources: typeof sources; totalParts: number; isAudioFolder?: boolean }> = new Map();
     const ungrouped: typeof sources = [];
 
     for (const source of sources) {
+      // Check for split PDF pattern first
       const parsed = parseSplitPart(source.name);
       if (parsed && parsed.totalParts > 1) {
         const existing = groups.get(parsed.baseName);
@@ -54,17 +55,40 @@ export function SourcesPanel(props: WorkspaceViewProps) {
             totalParts: parsed.totalParts,
           });
         }
+      // Check for audio folder pattern (folder/filename.mp3)
+      } else if (source.type === 'audio' && source.name.includes('/')) {
+        const folderPath = source.name.substring(0, source.name.lastIndexOf('/'));
+        const fileName = source.name.substring(source.name.lastIndexOf('/') + 1);
+        const existing = groups.get(folderPath);
+        if (existing) {
+          existing.sources.push({ ...source, _fileName: fileName });
+        } else {
+          groups.set(folderPath, {
+            sources: [{ ...source, _fileName: fileName }],
+            totalParts: 0, // Will be updated after grouping
+            isAudioFolder: true,
+          });
+        }
       } else {
         ungrouped.push(source);
       }
     }
 
-    // Sort each group by part number
-    const sortedGroups: Array<{ baseName: string; sources: typeof sources; totalParts: number }> = [];
+    // Sort each group and finalize
+    const sortedGroups: Array<{ baseName: string; sources: typeof sources; totalParts: number; isAudioFolder?: boolean }> = [];
     groups.forEach((group, baseName) => {
-      group.sources.sort((a: { _partNum?: number }, b: { _partNum?: number }) => 
-        (a._partNum || 0) - (b._partNum || 0)
-      );
+      if (group.isAudioFolder) {
+        // Sort audio files by name naturally
+        group.sources.sort((a: { _fileName?: string }, b: { _fileName?: string }) => 
+          (a._fileName || '').localeCompare(b._fileName || '', undefined, { numeric: true })
+        );
+        group.totalParts = group.sources.length;
+      } else {
+        // Sort PDF parts by part number
+        group.sources.sort((a: { _partNum?: number }, b: { _partNum?: number }) => 
+          (a._partNum || 0) - (b._partNum || 0)
+        );
+      }
       sortedGroups.push({ baseName, ...group });
     });
 
@@ -343,6 +367,18 @@ export function SourcesPanel(props: WorkspaceViewProps) {
           </button>
 
           <button 
+            onClick={handleUploadAudioFolder}
+            className="flex flex-col items-center justify-center p-3 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors gap-2"
+          >
+            <div className="w-8 h-8 rounded-full bg-violet-100 dark:bg-violet-900/30 flex items-center justify-center text-violet-600 dark:text-violet-400">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
+              </svg>
+            </div>
+            <span className="text-xs text-gray-700 dark:text-gray-300">音频文件夹</span>
+          </button>
+
+          <button 
             onClick={handlePasteImage}
             className="flex flex-col items-center justify-center p-3 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors gap-2"
           >
@@ -399,7 +435,7 @@ export function SourcesPanel(props: WorkspaceViewProps) {
               {workspaceT('savedSources')} ({sources.length})
             </p>
 
-            {/* Grouped (split PDF) sources as folders */}
+            {/* Grouped (split PDF and audio folder) sources as folders */}
             {groupedSources.map((group) => (
               <div key={group.baseName} className="mb-2">
                 {/* Folder header */}
@@ -408,32 +444,42 @@ export function SourcesPanel(props: WorkspaceViewProps) {
                   className="flex items-center gap-2 p-2 rounded-lg bg-gray-50 dark:bg-gray-700/50 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer transition-colors"
                 >
                   <svg 
-                    className={`w-4 h-4 text-yellow-500 transition-transform ${expandedFolders.has(group.baseName) ? 'rotate-90' : ''}`} 
+                    className={`w-4 h-4 ${group.isAudioFolder ? 'text-violet-500' : 'text-yellow-500'} transition-transform ${expandedFolders.has(group.baseName) ? 'rotate-90' : ''}`} 
                     fill="currentColor" 
                     viewBox="0 0 20 20"
                   >
                     <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
                   </svg>
-                  <svg className="w-4 h-4 text-yellow-500" fill="currentColor" viewBox="0 0 20 20">
-                    <path d="M2 6a2 2 0 012-2h5l2 2h5a2 2 0 012 2v6a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" />
-                  </svg>
+                  {group.isAudioFolder ? (
+                    <svg className="w-4 h-4 text-violet-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
+                    </svg>
+                  ) : (
+                    <svg className="w-4 h-4 text-yellow-500" fill="currentColor" viewBox="0 0 20 20">
+                      <path d="M2 6a2 2 0 012-2h5l2 2h5a2 2 0 012 2v6a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" />
+                    </svg>
+                  )}
                   <span 
                     className="text-sm font-medium text-gray-900 dark:text-white truncate flex-1 cursor-help"
-                    title={`${group.baseName} (${group.sources.length} parts)`}
+                    title={`${group.baseName} (${group.sources.length} ${group.isAudioFolder ? '音频' : 'parts'})`}
                   >
                     {group.baseName}
                   </span>
                   <span className="text-xs text-gray-500 dark:text-gray-400 flex-shrink-0">
-                    {group.sources.length} 份
+                    {group.sources.length} {group.isAudioFolder ? '首' : '份'}
                   </span>
                 </div>
 
                 {/* Expanded folder contents */}
                 {expandedFolders.has(group.baseName) && (
                   <div className="ml-6 mt-1 space-y-1 border-l-2 border-gray-200 dark:border-gray-600 pl-2">
-                    {group.sources.map((source: typeof sources[0] & { _partNum?: number }) => (
-              <div
-                key={source.id}
+                    {group.sources.map((source: typeof sources[0] & { _partNum?: number; _fileName?: string }) => {
+                      // Display file name for audio folders, or full name for PDFs
+                      const displayName = source._fileName || source.name;
+                      const isAudio = source.type === 'audio';
+                      return (
+                        <div
+                          key={source.id}
                 onClick={async () => {
                   if (editingSourceId === source.id) return;
                   try {
@@ -536,15 +582,21 @@ export function SourcesPanel(props: WorkspaceViewProps) {
                       />
                     </div>
                     <div className="flex items-start gap-2 flex-1 min-w-0">
-                      <svg className="w-4 h-4 text-gray-400 dark:text-gray-500 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                      </svg>
+                      {isAudio ? (
+                        <svg className="w-4 h-4 text-violet-500 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
+                        </svg>
+                      ) : (
+                        <svg className="w-4 h-4 text-gray-400 dark:text-gray-500 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
+                      )}
                       <div className="flex-1 min-w-0">
                         <p 
                           className="text-sm font-medium text-gray-900 dark:text-white truncate cursor-help"
                           title={source.name}
                         >
-                          {source.name}
+                          {displayName}
                         </p>
                         <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
                           {new Date(source.createdAt).toLocaleDateString(locale, { month: 'short', day: 'numeric' })}
@@ -633,8 +685,9 @@ export function SourcesPanel(props: WorkspaceViewProps) {
                     </div>
                   </div>
                 )}
-              </div>
-                    ))}
+                      </div>
+                    );
+                  })}
                   </div>
                 )}
               </div>

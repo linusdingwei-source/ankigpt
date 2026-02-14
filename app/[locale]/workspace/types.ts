@@ -92,6 +92,7 @@ export interface WorkspaceViewProps {
   fetchCards: () => Promise<void>;
   handleUploadFile: () => void;
   handleUploadAudio: () => void;
+  handleUploadAudioFolder: () => void;
   handlePasteImage: () => void;
   handleInsertPastedText: () => Promise<void>;
   handleSaveNote: (content: string, name?: string) => Promise<void>;
