@@ -54,6 +54,11 @@ type ChatMessage = {
     successCount?: number;
     failCount?: number;
     cards?: Array<{ id: string; frontContent: string }>;
+    // ASR-related properties
+    sourceId?: string;
+    sourceName?: string;
+    timestamps?: Array<{ begin_time: number; end_time: number; text: string }>;
+    canSaveAsNote?: boolean;
   };
   timestamp: number;
 };
@@ -634,6 +639,81 @@ export function WorkspacePageContent() {
       const source = response.data.source;
       let content = source.content;
       let targetItems: Array<{ text: string; type: 'SENTENCE' | 'WORD' }> = [];
+
+      // Step 0: If audio source, first convert to text using ASR
+      const audioExtensions = ['.mp3', '.wav', '.ogg', '.m4a', '.aac', '.flac', '.wma', '.aiff', '.opus'];
+      const isAudioByType = source.type === 'audio';
+      const isAudioByExtension = source.name && audioExtensions.some(ext => source.name.toLowerCase().endsWith(ext));
+      const isAudioSource = isAudioByType || isAudioByExtension;
+
+      if (isAudioSource && (source.contentUrl || source.fileUrl)) {
+        const audioUrl = source.contentUrl || source.fileUrl;
+        
+        addMessage({
+          id: Date.now().toString(),
+          role: 'assistant',
+          content: '检测到音频来源，正在使用 ASR 进行语音识别...',
+          type: 'chat',
+        });
+
+        const asrRes = await fetch('/api/llm/asr', {
+          method: 'POST',
+          headers: { ...headers, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ audioUrl, languageHints: ['ja'] }),
+        });
+
+        const asrData = await asrRes.json();
+        if (asrRes.ok && asrData.success) {
+          const transcribedText = asrData.data.text;
+          const timestamps = asrData.data.timestamps || [];
+          content = transcribedText;
+          
+          // Format transcription result as markdown
+          let transcriptMarkdown = `## 音频转写结果\n\n`;
+          transcriptMarkdown += `**来源:** ${source.name}\n\n`;
+          transcriptMarkdown += `**转写文本:**\n\n${transcribedText}\n`;
+          
+          // Add timestamps if available
+          if (timestamps.length > 0) {
+            transcriptMarkdown += `\n---\n\n<details>\n<summary>时间戳详情 (点击展开)</summary>\n\n`;
+            for (const ts of timestamps.slice(0, 50)) { // Limit to first 50 for display
+              const startSec = (ts.begin_time / 1000).toFixed(2);
+              const endSec = (ts.end_time / 1000).toFixed(2);
+              transcriptMarkdown += `- [${startSec}s - ${endSec}s] ${ts.text}\n`;
+            }
+            if (timestamps.length > 50) {
+              transcriptMarkdown += `\n... 和其他 ${timestamps.length - 50} 个时间戳\n`;
+            }
+            transcriptMarkdown += `\n</details>\n`;
+          }
+          
+          // Display ASR result in chat as markdown (can be saved as note)
+          addMessage({
+            id: `asr-${Date.now()}`,
+            role: 'assistant',
+            content: transcriptMarkdown,
+            type: 'analysis',
+            data: {
+              sourceId: selectedSourceId,
+              sourceName: source.name,
+              timestamps,
+              canSaveAsNote: true,
+            },
+          });
+
+          // Update view content if this source is being viewed
+          if (viewingSourceId === selectedSourceId) {
+            setSourceContent(transcribedText || '');
+          }
+
+          // Update credits
+          if (asrData.data.credits !== undefined) {
+            setCredits(asrData.data.credits);
+          }
+        } else {
+          throw new Error(asrData.error?.message || '音频转写失败');
+        }
+      }
 
       // 步骤 1: 如果是图片，先进行 OCR / 文档解析
       if (source.type === 'image' && (source.contentUrl || source.fileUrl)) {
