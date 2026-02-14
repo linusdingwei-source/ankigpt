@@ -86,6 +86,8 @@ export async function GET(request: NextRequest) {
           tags: true,
           createdAt: true,
           updatedAt: true,
+          sourceId: true,
+          category: true,
         },
       }),
       prisma.card.count({ where }),
