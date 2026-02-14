@@ -975,13 +975,17 @@ export function WorkspacePageContent() {
 
   // Handler for audio folder upload
   const onAudioFolderChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (!files || files.length === 0) {
+    const fileList = e.target.files;
+    if (!fileList || fileList.length === 0) {
       alert('未选择任何文件');
       return;
     }
 
-    // Reset input
+    // IMPORTANT: Convert FileList to array BEFORE resetting input
+    // FileList is a live collection that gets cleared when input is reset
+    const files = Array.from(fileList);
+    
+    // Reset input now that we have a copy of the files
     e.target.value = '';
 
     // Debug: log all files received
