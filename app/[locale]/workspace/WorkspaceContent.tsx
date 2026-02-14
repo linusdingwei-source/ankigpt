@@ -23,6 +23,23 @@ interface Card {
   tags?: string[];
   createdAt: string;
   updatedAt: string;
+  sourceId?: string | null;
+  category?: string;
+}
+
+interface Source {
+  id: string;
+  name: string;
+  type: string;
+  contentUrl: string | null;
+  fileUrl: string | null;
+  fileName: string | null;
+  mimeType: string | null;
+  size: number | null;
+  createdAt: string;
+  updatedAt: string;
+  url?: string;
+  content?: string;
 }
 
 type ChatMessage = {
@@ -91,6 +108,10 @@ export function WorkspacePageContent() {
   const [showCardMenuId, setShowCardMenuId] = useState<string | null>(null);
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('');
   
+  // Comparison view for notes
+  const [showComparisonView, setShowComparisonView] = useState(false);
+  const [comparisonSource, setComparisonSource] = useState<Source | null>(null);
+  
   // 通用状态
   const [credits, setCredits] = useState<number | null>(null);
   const [paymentSuccess, setPaymentSuccess] = useState(false);
@@ -101,18 +122,7 @@ export function WorkspacePageContent() {
   const [pastedText, setPastedText] = useState('');
   
   // 来源相关状态
-  const [sources, setSources] = useState<Array<{
-    id: string;
-    name: string;
-    type: string;
-    contentUrl: string | null;
-    fileUrl: string | null;
-    fileName: string | null;
-    mimeType: string | null;
-    size: number | null;
-    createdAt: string;
-    updatedAt: string;
-  }>>([]);
+  const [sources, setSources] = useState<Source[]>([]);
   const [sourcesLoading, setSourcesLoading] = useState(true);
   // Upload progress for chunked PDF uploads
   const [uploadProgress, setUploadProgress] = useState<{
@@ -418,6 +428,27 @@ export function WorkspacePageContent() {
   const selectedCard = useMemo(() => {
     return cards.find(card => card.id === selectedCardId) || null;
   }, [cards, selectedCardId]);
+
+  // Fetch comparison source when comparison view is enabled
+  useEffect(() => {
+    if (showComparisonView && selectedCard?.sourceId) {
+      const source = sources.find(s => s.id === selectedCard.sourceId);
+      if (source) {
+        // Add url property based on source type
+        const url = source.fileUrl || source.contentUrl || '';
+        setComparisonSource({ ...source, url });
+      } else {
+        setComparisonSource(null);
+      }
+    } else {
+      setComparisonSource(null);
+    }
+  }, [showComparisonView, selectedCard?.sourceId, sources]);
+
+  // Reset comparison view when card changes
+  useEffect(() => {
+    setShowComparisonView(false);
+  }, [selectedCardId]);
 
   // 自动为卡片生成音频
   const generateCardAudio = useCallback(async (card: Card) => {
@@ -1208,6 +1239,9 @@ export function WorkspacePageContent() {
       selectedCard={selectedCard}
       showCardMenuId={showCardMenuId}
       setShowCardMenuId={setShowCardMenuId}
+      showComparisonView={showComparisonView}
+      setShowComparisonView={setShowComparisonView}
+      comparisonSource={comparisonSource}
       
       handleGeneratePreview={handleGeneratePreview}
       handleSaveCard={handleSaveCard}

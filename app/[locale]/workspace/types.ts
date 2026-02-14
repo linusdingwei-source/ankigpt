@@ -77,6 +77,11 @@ export interface WorkspaceViewProps {
   showCardMenuId: string | null;
   setShowCardMenuId: (v: string | null) => void;
   
+  // Comparison view for notes
+  showComparisonView: boolean;
+  setShowComparisonView: (v: boolean) => void;
+  comparisonSource: any;
+  
   // Handlers
   handleGeneratePreview: () => void;
   handleSaveCard: () => void;
