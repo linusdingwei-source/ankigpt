@@ -231,10 +231,10 @@ export function WorkspaceView(props: WorkspaceViewProps) {
                   <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
                     {cardT('frontContent')}
                         </h3>
-                  <div className="p-4 bg-gray-50 dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600">
-                          <p className="text-base text-gray-900 dark:text-white leading-relaxed">
-                            {preprocessContent(selectedCard.frontContent)}
-                          </p>
+                  <div className="p-4 bg-gray-50 dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600 prose dark:prose-invert max-w-none prose-sm">
+                    <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                      {preprocessContent(selectedCard.frontContent)}
+                    </ReactMarkdown>
                         </div>
                       </div>
 
@@ -245,7 +245,6 @@ export function WorkspaceView(props: WorkspaceViewProps) {
                         <div
                     className="p-4 bg-gray-50 dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600 prose dark:prose-invert max-w-none prose-sm"
                         >
-                    {selectedCard.category === 'NOTE' ? (
                       <ReactMarkdown 
                         remarkPlugins={[remarkGfm, remarkMath]} 
                         rehypePlugins={[rehypeKatex, rehypeRaw]}
@@ -303,9 +302,6 @@ export function WorkspaceView(props: WorkspaceViewProps) {
                       >
                         {preprocessContent(selectedCard.backContent)}
                       </ReactMarkdown>
-                    ) : (
-                      <div dangerouslySetInnerHTML={{ __html: preprocessContent(selectedCard.backContent) }} />
-                    )}
                   </div>
                       </div>
 
