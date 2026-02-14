@@ -8,21 +8,18 @@ function preprocessContent(content: string): string {
   if (!content) return '';
   let result = content.trim();
   
-  // First, try to match complete code fence blocks
-  // ```markdown ... ``` or ```<lang> ... ``` or ``` ... ```
-  const completeMatch = result.match(/^```(?:markdown|\w*)\s*([\s\S]*?)\s*```$/i);
+  // Method 1: Try to match complete code fence block
+  // Pattern: ```markdown<content>``` or ```<content>```
+  const completeMatch = result.match(/^```(?:markdown)?\s*([\s\S]*?)\s*```$/i);
   if (completeMatch) {
     return completeMatch[1].trim();
   }
   
-  // If no complete match, strip opening fence prefix (even without closing)
-  // This handles cases where LLM generates ```markdown at start but closing is missing/misplaced
-  if (result.startsWith('```')) {
-    // Remove ```markdown or ```<lang> or ``` prefix
-    result = result.replace(/^```(?:markdown|\w*)\s*/i, '');
-    // Also remove trailing ``` if present (might be at end or middle)
-    result = result.replace(/\s*```\s*$/, '');
-  }
+  // Method 2: Aggressively strip fence patterns
+  // Remove opening fence at start (```markdown or ``` followed by optional language)
+  result = result.replace(/^```(?:markdown|\w*)?\s*/i, '');
+  // Remove closing fence at end
+  result = result.replace(/\s*```\s*$/, '');
   
   return result.trim();
 }

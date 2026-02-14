@@ -62,17 +62,20 @@ export function ChatPanel(props: WorkspaceViewProps) {
   };
 
   const preprocessContent = (content: string) => {
-    // 如果整个内容被包裹在 ```markdown ... ``` 中，去掉外层包裹
-    const match = content.match(/^```markdown\n([\s\S]*)\n```$/i);
-    if (match) {
-      return match[1];
+    if (!content) return '';
+    let result = content.trim();
+    
+    // Method 1: Try to match complete code fence block
+    const completeMatch = result.match(/^```(?:markdown)?\s*([\s\S]*?)\s*```$/i);
+    if (completeMatch) {
+      return completeMatch[1].trim();
     }
-    // 处理通用的 ``` ... ``` 包裹（如果没有指定语言或指定了其他语言但内容明显是 markdown）
-    const genericMatch = content.match(/^```\n([\s\S]*)\n```$/);
-    if (genericMatch) {
-      return genericMatch[1];
-    }
-    return content;
+    
+    // Method 2: Aggressively strip fence patterns
+    result = result.replace(/^```(?:markdown|\w*)?\s*/i, '');
+    result = result.replace(/\s*```\s*$/, '');
+    
+    return result.trim();
   };
 
   return (
