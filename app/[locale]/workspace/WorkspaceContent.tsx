@@ -976,10 +976,21 @@ export function WorkspacePageContent() {
   // Handler for audio folder upload
   const onAudioFolderChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
-    if (!files || files.length === 0) return;
+    if (!files || files.length === 0) {
+      alert('未选择任何文件');
+      return;
+    }
 
     // Reset input
     e.target.value = '';
+
+    // Debug: log all files received
+    console.log(`Received ${files.length} files from folder`);
+    for (let i = 0; i < Math.min(files.length, 5); i++) {
+      const file = files[i];
+      const relativePath = (file as File & { webkitRelativePath?: string }).webkitRelativePath || file.name;
+      console.log(`File ${i}: name=${file.name}, type=${file.type}, path=${relativePath}`);
+    }
 
     // Filter audio files and get folder structure
     const audioFiles: Array<{ file: File; relativePath: string }> = [];
@@ -1000,7 +1011,7 @@ export function WorkspacePageContent() {
     }
 
     if (audioFiles.length === 0) {
-      alert('未找到音频文件');
+      alert(`未找到音频文件。\n共检测到 ${files.length} 个文件，但没有找到支持的音频格式 (.mp3, .wav, .ogg, .m4a 等)。\n请确保文件夹包含音频文件。`);
       return;
     }
 
@@ -1256,7 +1267,6 @@ export function WorkspacePageContent() {
         type="file"
         ref={audioFolderInputRef}
         className="hidden"
-        accept="audio/*"
         {...({ webkitdirectory: 'true' } as React.InputHTMLAttributes<HTMLInputElement>)}
         multiple
         onChange={(e) => onAudioFolderChange(e)}
