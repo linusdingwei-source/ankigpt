@@ -45,6 +45,13 @@ export function SourcesPanel(props: WorkspaceViewProps) {
     for (const source of sources) {
       // Check for split PDF pattern first
       const parsed = parseSplitPart(source.name);
+      
+      // Check for audio folder pattern (folder/filename.mp3)
+      const audioExtensions = ['.mp3', '.wav', '.ogg', '.m4a', '.aac', '.flac', '.wma', '.aiff', '.opus'];
+      const isAudioByType = source.type === 'audio';
+      const isAudioByExtension = audioExtensions.some(ext => source.name.toLowerCase().endsWith(ext));
+      const isAudio = isAudioByType || isAudioByExtension;
+      
       if (parsed && parsed.totalParts > 1) {
         const existing = groups.get(parsed.baseName);
         if (existing) {
@@ -55,8 +62,7 @@ export function SourcesPanel(props: WorkspaceViewProps) {
             totalParts: parsed.totalParts,
           });
         }
-      // Check for audio folder pattern (folder/filename.mp3)
-      } else if (source.type === 'audio' && source.name.includes('/')) {
+      } else if (isAudio && source.name.includes('/')) {
         const folderPath = source.name.substring(0, source.name.lastIndexOf('/'));
         const fileName = source.name.substring(source.name.lastIndexOf('/') + 1);
         const existing = groups.get(folderPath);

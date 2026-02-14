@@ -983,9 +983,16 @@ export function WorkspacePageContent() {
 
     // Filter audio files and get folder structure
     const audioFiles: Array<{ file: File; relativePath: string }> = [];
+    // Audio file extensions to detect
+    const audioExtensions = ['.mp3', '.wav', '.ogg', '.m4a', '.aac', '.flac', '.wma', '.aiff', '.opus'];
+    
     for (let i = 0; i < files.length; i++) {
       const file = files[i];
-      if (file.type.startsWith('audio/')) {
+      const fileName = file.name.toLowerCase();
+      const isAudioByType = file.type.startsWith('audio/');
+      const isAudioByExtension = audioExtensions.some(ext => fileName.endsWith(ext));
+      
+      if (isAudioByType || isAudioByExtension) {
         // webkitRelativePath contains the full path like "folder/subfolder/file.mp3"
         const relativePath = (file as File & { webkitRelativePath?: string }).webkitRelativePath || file.name;
         audioFiles.push({ file, relativePath });
