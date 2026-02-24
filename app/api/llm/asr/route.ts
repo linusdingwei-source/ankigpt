@@ -228,12 +228,15 @@ export async function POST(request: NextRequest) {
     }
 
     // Check API key
-    if (!process.env.DASHSCOPE_API_KEY) {
+    const apiKey = process.env.DASHSCOPE_API_KEY;
+    if (!apiKey) {
+      console.error('[ASR] DASHSCOPE_API_KEY not configured');
       return NextResponse.json(
         errorResponse(ErrorCodes.INTERNAL_ERROR, 'DashScope API key is not configured'),
         { status: 500 }
       );
     }
+    console.log('[ASR] API key present, length:', apiKey.length, ', starts with:', apiKey.substring(0, 5));
 
     // Submit ASR task (async)
     console.log('[ASR] Submitting task for:', audioUrl);
