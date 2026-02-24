@@ -38,16 +38,23 @@ async function submitAsrTask(audioUrl: string, languageHints: string[] = DEFAULT
     };
     
     console.log('[ASR] Submit request body:', JSON.stringify(requestBody, null, 2));
+    console.log('[ASR] Calling DashScope API...');
+    
+    // Add timeout with AbortController
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
     
     const response = await fetch('https://dashscope.aliyuncs.com/api/v1/services/audio/asr/transcription', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${apiKey}`,
         'Content-Type': 'application/json',
-        // Transcription API is async by default, no special header needed
       },
       body: JSON.stringify(requestBody),
+      signal: controller.signal,
     });
+    
+    clearTimeout(timeoutId);
 
     const responseText = await response.text();
     console.log('[ASR] Submit response status:', response.status);
@@ -69,9 +76,15 @@ async function submitAsrTask(audioUrl: string, languageHints: string[] = DEFAULT
     } else {
       return { error: data.message || 'Failed to submit ASR task - no task_id in response' };
     }
-  } catch (error) {
-    console.error('[ASR] Submit task error:', error);
-    return { error: `Submit task failed: ${error}` };
+  } catch (error: unknown) {
+    const err = error as Error;
+    console.error('[ASR] Submit task error:', err.name, err.message);
+    
+    if (err.name === 'AbortError') {
+      return { error: 'DashScope API request timed out (30s)' };
+    }
+    
+    return { error: `Submit task failed: ${err.name} - ${err.message}` };
   }
 }
 
@@ -87,12 +100,18 @@ async function checkTaskStatus(taskId: string): Promise<{
   }
 
   try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 second timeout
+    
     const response = await fetch(`https://dashscope.aliyuncs.com/api/v1/tasks/${taskId}`, {
       method: 'GET',
       headers: {
         'Authorization': `Bearer ${apiKey}`,
       },
+      signal: controller.signal,
     });
+    
+    clearTimeout(timeoutId);
 
     const data = await response.json();
     const taskStatus = data.output?.task_status;
@@ -114,9 +133,13 @@ async function checkTaskStatus(taskId: string): Promise<{
     } else {
       return { status: 'PENDING' };
     }
-  } catch (error) {
-    console.error('[ASR] Check task status error:', error);
-    return { status: 'FAILED', error: `Check status failed: ${error}` };
+  } catch (error: unknown) {
+    const err = error as Error;
+    console.error('[ASR] Check task status error:', err.name, err.message);
+    if (err.name === 'AbortError') {
+      return { status: 'FAILED', error: 'Status check timed out' };
+    }
+    return { status: 'FAILED', error: `Check status failed: ${err.message}` };
   }
 }
 
