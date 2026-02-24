@@ -49,6 +49,7 @@ async function submitAsrTask(audioUrl: string, languageHints: string[] = DEFAULT
       headers: {
         'Authorization': `Bearer ${apiKey}`,
         'Content-Type': 'application/json',
+        'X-DashScope-Async': 'enable',
       },
       body: JSON.stringify(requestBody),
       signal: controller.signal,
