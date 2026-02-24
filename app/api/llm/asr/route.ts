@@ -27,6 +27,18 @@ async function submitAsrTask(audioUrl: string, languageHints: string[] = DEFAULT
   }
 
   try {
+    const requestBody = {
+      model: DASHSCOPE_ASR_MODEL,
+      input: {
+        file_urls: [audioUrl],
+      },
+      parameters: {
+        language_hints: languageHints,
+      },
+    };
+    
+    console.log('[ASR] Submit request body:', JSON.stringify(requestBody, null, 2));
+    
     const response = await fetch('https://dashscope.aliyuncs.com/api/v1/services/audio/asr/transcription', {
       method: 'POST',
       headers: {
@@ -34,24 +46,28 @@ async function submitAsrTask(audioUrl: string, languageHints: string[] = DEFAULT
         'Content-Type': 'application/json',
         'X-DashScope-Async': 'enable',  // Enable async mode
       },
-      body: JSON.stringify({
-        model: DASHSCOPE_ASR_MODEL,
-        input: {
-          file_urls: [audioUrl],
-        },
-        parameters: {
-          language_hints: languageHints,
-        },
-      }),
+      body: JSON.stringify(requestBody),
     });
 
-    const data = await response.json();
-    console.log('[ASR] Submit task response:', JSON.stringify(data, null, 2));
+    const responseText = await response.text();
+    console.log('[ASR] Submit response status:', response.status);
+    console.log('[ASR] Submit response body:', responseText);
+    
+    let data;
+    try {
+      data = JSON.parse(responseText);
+    } catch {
+      return { error: `Invalid JSON response: ${responseText}` };
+    }
+
+    if (!response.ok) {
+      return { error: data.message || data.error?.message || `HTTP ${response.status}: ${responseText}` };
+    }
 
     if (data.output?.task_id) {
       return { taskId: data.output.task_id };
     } else {
-      return { error: data.message || 'Failed to submit ASR task' };
+      return { error: data.message || 'Failed to submit ASR task - no task_id in response' };
     }
   } catch (error) {
     console.error('[ASR] Submit task error:', error);
