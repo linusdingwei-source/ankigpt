@@ -44,7 +44,7 @@ async function submitAsrTask(audioUrl: string, languageHints: string[] = DEFAULT
       headers: {
         'Authorization': `Bearer ${apiKey}`,
         'Content-Type': 'application/json',
-        'X-DashScope-Async': 'enable',  // Enable async mode
+        // Transcription API is async by default, no special header needed
       },
       body: JSON.stringify(requestBody),
     });
