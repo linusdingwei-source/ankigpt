@@ -89,7 +89,7 @@ async function submitAsrTask(audioUrl: string, languageHints: string[] = DEFAULT
   }
 }
 
-// Check task status
+// Check task status (must use POST per DashScope docs)
 async function checkTaskStatus(taskId: string): Promise<{ 
   status: 'PENDING' | 'RUNNING' | 'SUCCEEDED' | 'FAILED'; 
   transcriptionUrl?: string; 
@@ -104,10 +104,13 @@ async function checkTaskStatus(taskId: string): Promise<{
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 second timeout
     
+    // DashScope requires POST for task status query
     const response = await fetch(`https://dashscope.aliyuncs.com/api/v1/tasks/${taskId}`, {
-      method: 'GET',
+      method: 'POST',
       headers: {
         'Authorization': `Bearer ${apiKey}`,
+        'Content-Type': 'application/json',
+        'X-DashScope-Async': 'enable',
       },
       signal: controller.signal,
     });
