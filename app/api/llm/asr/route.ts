@@ -19,6 +19,7 @@ interface TranscriptionResult {
   error?: string;
 }
 
+// Submit ASR task (async)
 async function submitAsrTask(audioUrl: string, languageHints: string[] = DEFAULT_LANGUAGE_HINTS): Promise<{ taskId?: string; error?: string }> {
   const apiKey = process.env.DASHSCOPE_API_KEY;
   if (!apiKey) {
@@ -57,53 +58,52 @@ async function submitAsrTask(audioUrl: string, languageHints: string[] = DEFAULT
   }
 }
 
-async function waitForTask(taskId: string, maxAttempts = 60, interval = 3000): Promise<{ transcriptionUrl?: string; error?: string }> {
+// Check task status
+async function checkTaskStatus(taskId: string): Promise<{ 
+  status: 'PENDING' | 'RUNNING' | 'SUCCEEDED' | 'FAILED'; 
+  transcriptionUrl?: string; 
+  error?: string 
+}> {
   const apiKey = process.env.DASHSCOPE_API_KEY;
   if (!apiKey) {
-    return { error: 'DASHSCOPE_API_KEY is not configured' };
+    return { status: 'FAILED', error: 'DASHSCOPE_API_KEY is not configured' };
   }
 
-  for (let attempt = 0; attempt < maxAttempts; attempt++) {
-    try {
-      const response = await fetch(`https://dashscope.aliyuncs.com/api/v1/tasks/${taskId}`, {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${apiKey}`,
-        },
-      });
+  try {
+    const response = await fetch(`https://dashscope.aliyuncs.com/api/v1/tasks/${taskId}`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${apiKey}`,
+      },
+    });
 
-      const data = await response.json();
-      console.log(`[ASR] Poll task ${taskId} attempt ${attempt + 1}:`, data.output?.task_status);
+    const data = await response.json();
+    const taskStatus = data.output?.task_status;
+    console.log(`[ASR] Check task ${taskId} status:`, taskStatus);
 
-      const taskStatus = data.output?.task_status;
-      
-      if (taskStatus === 'SUCCEEDED') {
-        const results = data.output?.results;
-        if (results && results.length > 0) {
-          const result = results[0];
-          if (result.subtask_status === 'SUCCEEDED' && result.transcription_url) {
-            return { transcriptionUrl: result.transcription_url };
-          }
+    if (taskStatus === 'SUCCEEDED') {
+      const results = data.output?.results;
+      if (results && results.length > 0) {
+        const result = results[0];
+        if (result.subtask_status === 'SUCCEEDED' && result.transcription_url) {
+          return { status: 'SUCCEEDED', transcriptionUrl: result.transcription_url };
         }
-        return { error: 'Transcription succeeded but no URL found' };
-      } else if (taskStatus === 'FAILED') {
-        return { error: `ASR task failed: ${data.output?.message || 'Unknown error'}` };
       }
-
-      // Still running, wait and retry
-      await new Promise(resolve => setTimeout(resolve, interval));
-    } catch (error) {
-      console.error(`[ASR] Poll task error (attempt ${attempt + 1}):`, error);
-      if (attempt === maxAttempts - 1) {
-        return { error: `Poll task failed: ${error}` };
-      }
-      await new Promise(resolve => setTimeout(resolve, interval));
+      return { status: 'FAILED', error: 'Transcription succeeded but no URL found' };
+    } else if (taskStatus === 'FAILED') {
+      return { status: 'FAILED', error: data.output?.message || 'ASR task failed' };
+    } else if (taskStatus === 'RUNNING') {
+      return { status: 'RUNNING' };
+    } else {
+      return { status: 'PENDING' };
     }
+  } catch (error) {
+    console.error('[ASR] Check task status error:', error);
+    return { status: 'FAILED', error: `Check status failed: ${error}` };
   }
-
-  return { error: 'ASR task timed out' };
 }
 
+// Download transcription result
 async function downloadTranscription(transcriptionUrl: string): Promise<TranscriptionResult> {
   try {
     const response = await fetch(transcriptionUrl);
@@ -152,6 +152,7 @@ async function downloadTranscription(transcriptionUrl: string): Promise<Transcri
   }
 }
 
+// POST: Submit ASR task (async, returns taskId immediately)
 export async function POST(request: NextRequest) {
   try {
     const session = await auth();
@@ -194,7 +195,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Step 1: Submit ASR task
+    // Submit ASR task (async)
     console.log('[ASR] Submitting task for:', audioUrl);
     const submitResult = await submitAsrTask(audioUrl, languageHints || DEFAULT_LANGUAGE_HINTS);
     if (!submitResult.taskId) {
@@ -204,41 +205,87 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Step 2: Wait for task completion
-    console.log('[ASR] Waiting for task:', submitResult.taskId);
-    const waitResult = await waitForTask(submitResult.taskId);
-    if (!waitResult.transcriptionUrl) {
-      return NextResponse.json(
-        errorResponse(ErrorCodes.INTERNAL_ERROR, waitResult.error || 'ASR task failed'),
-        { status: 500 }
-      );
-    }
-
-    // Step 3: Download transcription
-    console.log('[ASR] Downloading transcription from:', waitResult.transcriptionUrl);
-    const transcription = await downloadTranscription(waitResult.transcriptionUrl);
-    if (!transcription.success) {
-      return NextResponse.json(
-        errorResponse(ErrorCodes.INTERNAL_ERROR, transcription.error || 'Failed to get transcription'),
-        { status: 500 }
-      );
-    }
-
-    // Consume credits
+    // Consume credits immediately after successful submission
     await consumeCredits(userId, ASR_CREDITS_COST);
     const remainingCredits = await getCredits(userId);
 
+    // Return taskId for client to poll
     return NextResponse.json(
       successResponse({
-        text: transcription.text,
-        timestamps: transcription.timestamps,
+        taskId: submitResult.taskId,
+        status: 'PENDING',
         credits: remainingCredits,
       })
     );
   } catch (error) {
-    console.error('[ASR] Error:', error);
+    console.error('[ASR] Submit error:', error);
     return NextResponse.json(
-      errorResponse(ErrorCodes.INTERNAL_ERROR, 'ASR processing failed'),
+      errorResponse(ErrorCodes.INTERNAL_ERROR, 'ASR task submission failed'),
+      { status: 500 }
+    );
+  }
+}
+
+// GET: Check ASR task status and get result
+export async function GET(request: NextRequest) {
+  try {
+    const session = await auth();
+    const userId = await getUserId(session, request);
+    
+    if (!userId) {
+      return NextResponse.json(
+        errorResponse(ErrorCodes.UNAUTHORIZED, 'Unauthorized'),
+        { status: 401 }
+      );
+    }
+
+    const { searchParams } = new URL(request.url);
+    const taskId = searchParams.get('taskId');
+
+    if (!taskId) {
+      return NextResponse.json(
+        errorResponse(ErrorCodes.BAD_REQUEST, 'taskId is required'),
+        { status: 400 }
+      );
+    }
+
+    // Check task status
+    const statusResult = await checkTaskStatus(taskId);
+
+    if (statusResult.status === 'SUCCEEDED' && statusResult.transcriptionUrl) {
+      // Download and return transcription
+      const transcription = await downloadTranscription(statusResult.transcriptionUrl);
+      if (!transcription.success) {
+        return NextResponse.json(
+          errorResponse(ErrorCodes.INTERNAL_ERROR, transcription.error || 'Failed to get transcription'),
+          { status: 500 }
+        );
+      }
+
+      return NextResponse.json(
+        successResponse({
+          status: 'SUCCEEDED',
+          text: transcription.text,
+          timestamps: transcription.timestamps,
+        })
+      );
+    } else if (statusResult.status === 'FAILED') {
+      return NextResponse.json(
+        errorResponse(ErrorCodes.INTERNAL_ERROR, statusResult.error || 'ASR task failed'),
+        { status: 500 }
+      );
+    } else {
+      // Still pending or running
+      return NextResponse.json(
+        successResponse({
+          status: statusResult.status,
+        })
+      );
+    }
+  } catch (error) {
+    console.error('[ASR] Status check error:', error);
+    return NextResponse.json(
+      errorResponse(ErrorCodes.INTERNAL_ERROR, 'Failed to check ASR status'),
       { status: 500 }
     );
   }

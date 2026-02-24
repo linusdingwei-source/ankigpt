@@ -652,66 +652,110 @@ export function WorkspacePageContent() {
         addMessage({
           id: Date.now().toString(),
           role: 'assistant',
-          content: '检测到音频来源，正在使用 ASR 进行语音识别...',
+          content: '检测到音频来源，正在提交 ASR 语音识别任务...',
           type: 'chat',
         });
 
-        const asrRes = await fetch('/api/llm/asr', {
+        // Step 1: Submit ASR task (async)
+        const submitRes = await fetch('/api/llm/asr', {
           method: 'POST',
           headers: { ...headers, 'Content-Type': 'application/json' },
           body: JSON.stringify({ audioUrl, languageHints: ['ja'] }),
         });
 
-        const asrData = await asrRes.json();
-        if (asrRes.ok && asrData.success) {
-          const transcribedText = asrData.data.text;
-          const timestamps = asrData.data.timestamps || [];
-          content = transcribedText;
+        const submitData = await submitRes.json();
+        if (!submitRes.ok || !submitData.success) {
+          throw new Error(submitData.error?.message || 'ASR 任务提交失败');
+        }
+
+        const taskId = submitData.data.taskId;
+        
+        // Update credits after submission
+        if (submitData.data.credits !== undefined) {
+          setCredits(submitData.data.credits);
+        }
+
+        // Step 2: Poll for completion (async)
+        addMessage({
+          id: Date.now().toString(),
+          role: 'assistant',
+          content: `ASR 任务已提交 (ID: ${taskId.slice(0, 8)}...)，正在等待转写结果...`,
+          type: 'chat',
+        });
+
+        let asrResult: { text?: string; timestamps?: Array<{ begin_time: number; end_time: number; text: string }> } | null = null;
+        const maxPolls = 60; // Max 3 minutes (60 * 3s)
+        const pollInterval = 3000; // 3 seconds
+
+        for (let poll = 0; poll < maxPolls; poll++) {
+          await new Promise(resolve => setTimeout(resolve, pollInterval));
           
-          // Format transcription result as markdown
-          let transcriptMarkdown = `## 音频转写结果\n\n`;
-          transcriptMarkdown += `**来源:** ${source.name}\n\n`;
-          transcriptMarkdown += `**转写文本:**\n\n${transcribedText}\n`;
-          
-          // Add timestamps if available
-          if (timestamps.length > 0) {
-            transcriptMarkdown += `\n---\n\n<details>\n<summary>时间戳详情 (点击展开)</summary>\n\n`;
-            for (const ts of timestamps.slice(0, 50)) { // Limit to first 50 for display
-              const startSec = (ts.begin_time / 1000).toFixed(2);
-              const endSec = (ts.end_time / 1000).toFixed(2);
-              transcriptMarkdown += `- [${startSec}s - ${endSec}s] ${ts.text}\n`;
-            }
-            if (timestamps.length > 50) {
-              transcriptMarkdown += `\n... 和其他 ${timestamps.length - 50} 个时间戳\n`;
-            }
-            transcriptMarkdown += `\n</details>\n`;
-          }
-          
-          // Display ASR result in chat as markdown (can be saved as note)
-          addMessage({
-            id: `asr-${Date.now()}`,
-            role: 'assistant',
-            content: transcriptMarkdown,
-            type: 'analysis',
-            data: {
-              sourceId: selectedSourceId,
-              sourceName: source.name,
-              timestamps,
-              canSaveAsNote: true,
-            },
+          const statusRes = await fetch(`/api/llm/asr?taskId=${taskId}`, {
+            headers,
           });
-
-          // Update view content if this source is being viewed
-          if (viewingSourceId === selectedSourceId) {
-            setSourceContent(transcribedText || '');
+          
+          const statusData = await statusRes.json();
+          
+          if (!statusRes.ok) {
+            throw new Error(statusData.error?.message || 'ASR 状态查询失败');
           }
-
-          // Update credits
-          if (asrData.data.credits !== undefined) {
-            setCredits(asrData.data.credits);
+          
+          if (statusData.success && statusData.data.status === 'SUCCEEDED') {
+            asrResult = {
+              text: statusData.data.text,
+              timestamps: statusData.data.timestamps || [],
+            };
+            break;
+          } else if (statusData.data.status === 'FAILED') {
+            throw new Error(statusData.error?.message || 'ASR 任务失败');
           }
-        } else {
-          throw new Error(asrData.error?.message || '音频转写失败');
+          // Still PENDING or RUNNING, continue polling
+        }
+
+        if (!asrResult) {
+          throw new Error('ASR 任务超时');
+        }
+
+        const transcribedText = asrResult.text || '';
+        const timestamps = asrResult.timestamps || [];
+        content = transcribedText;
+        
+        // Format transcription result as markdown
+        let transcriptMarkdown = `## 音频转写结果\n\n`;
+        transcriptMarkdown += `**来源:** ${source.name}\n\n`;
+        transcriptMarkdown += `**转写文本:**\n\n${transcribedText}\n`;
+        
+        // Add timestamps if available
+        if (timestamps.length > 0) {
+          transcriptMarkdown += `\n---\n\n<details>\n<summary>时间戳详情 (点击展开)</summary>\n\n`;
+          for (const ts of timestamps.slice(0, 50)) { // Limit to first 50 for display
+            const startSec = (ts.begin_time / 1000).toFixed(2);
+            const endSec = (ts.end_time / 1000).toFixed(2);
+            transcriptMarkdown += `- [${startSec}s - ${endSec}s] ${ts.text}\n`;
+          }
+          if (timestamps.length > 50) {
+            transcriptMarkdown += `\n... 和其他 ${timestamps.length - 50} 个时间戳\n`;
+          }
+          transcriptMarkdown += `\n</details>\n`;
+        }
+        
+        // Display ASR result in chat as markdown (can be saved as note)
+        addMessage({
+          id: `asr-${Date.now()}`,
+          role: 'assistant',
+          content: transcriptMarkdown,
+          type: 'analysis',
+          data: {
+            sourceId: selectedSourceId,
+            sourceName: source.name,
+            timestamps,
+            canSaveAsNote: true,
+          },
+        });
+
+        // Update view content if this source is being viewed
+        if (viewingSourceId === selectedSourceId) {
+          setSourceContent(transcribedText || '');
         }
       }
 
