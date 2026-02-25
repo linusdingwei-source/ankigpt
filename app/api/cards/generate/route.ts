@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/auth';
-import { getCredits } from '@/lib/credits';
+import { getCredits, consumeCredits } from '@/lib/credits';
 import { prisma } from '@/lib/prisma';
 import { getUserId, getBearerTokenFromRequest } from '@/lib/anonymous-user';
 import { successResponse, errorResponse, ErrorCodes } from '@/lib/api-response';
+import { extractKanaFromLLMResult, markdownToHtml } from '@/lib/llm-utils';
 
 const CARD_GENERATION_CREDITS_COST = 3; // 完整卡片生成消耗 3 credits (LLM 2 + TTS 1)
 
@@ -69,38 +70,74 @@ export async function POST(request: NextRequest) {
         );
       }
 
-      // 1. 调用 LLM 分析
-      const llmResponse = await fetch(`${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/api/llm/analyze`, {
+      // 直接调用 DashScope API 进行 LLM 分析
+      const systemContent = "你是一个有帮助的助手，擅长将日文翻译成中文，并能对日文句子进行详细的语言分析，包括单词的假名读音、罗马文读音、中文解释和语法点解释。";
+      const userContent = `请将以下日文句子翻译成中文。在翻译之后，请对句子中的主要单词和语法点进行详细解释。请按照以下格式输出：
+**中文翻译：**
+[翻译结果]
+**句子读法：**
+- [句子假名读音]
+- [句子罗马文读音]
+**单词解释：**
+- [日文单词]（[假名读音]）（[罗马文读音]）：[中文意思]
+... (列出句子中的主要单词及其假名读音和中文解释)
+**语法点解释：**
+- [日文语法点]（[假名读音]）（[罗马文读音]）：[解释]
+... (列出句子中的主要语法点及其解释)
+日文句子：
+${text}`;
+
+      const llmResponse = await fetch('https://dashscope.aliyuncs.com/api/v1/services/aigc/text-generation/generation', {
         method: 'POST',
-        headers,
-        body: JSON.stringify({ text }),
+        headers: {
+          'Authorization': `Bearer ${process.env.DASHSCOPE_API_KEY}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: 'qwen-plus',
+          input: {
+            messages: [
+              { role: 'system', content: systemContent },
+              { role: 'user', content: userContent }
+            ]
+          },
+          parameters: {
+            result_format: 'message'
+          }
+        }),
       });
 
       if (!llmResponse.ok) {
         const errorData = await llmResponse.json().catch(() => ({}));
+        console.error('DashScope API error:', errorData);
         return NextResponse.json(
-          errorResponse(
-            ErrorCodes.INTERNAL_ERROR,
-            'LLM analysis failed',
-            errorData
-          ),
+          errorResponse(ErrorCodes.INTERNAL_ERROR, 'LLM analysis failed', errorData),
           { status: llmResponse.status }
         );
       }
 
       const llmData = await llmResponse.json();
-      if (!llmData.success || !llmData.data?.analysis) {
+      const markdownContent = llmData.output?.choices?.[0]?.message?.content;
+      
+      if (!markdownContent) {
         return NextResponse.json(
-          errorResponse(
-            ErrorCodes.INTERNAL_ERROR,
-            'LLM analysis failed',
-            llmData
-          ),
+          errorResponse(ErrorCodes.INTERNAL_ERROR, 'Invalid response from LLM service'),
           { status: 500 }
         );
       }
 
-      analysis = llmData.data.analysis;
+      // 提取假名和转换HTML
+      const kanaText = extractKanaFromLLMResult(markdownContent);
+      const htmlContent = markdownToHtml(markdownContent);
+      
+      // 消耗 2 credits 用于 LLM 分析
+      await consumeCredits(userId, 2);
+
+      analysis = {
+        markdown: markdownContent,
+        html: htmlContent,
+        kanaText: kanaText || text,
+      };
     }
 
     // 2. 生成 TTS（如果需要）或使用提供的音频URL
