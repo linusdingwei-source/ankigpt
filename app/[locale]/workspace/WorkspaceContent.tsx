@@ -295,7 +295,8 @@ export function WorkspacePageContent() {
     try {
       const { getAnonymousHeaders } = await import('@/hooks/useAnonymousUser');
       const headers = getAnonymousHeaders();
-      const res = await fetch('/api/sources', { headers });
+      // 添加时间戳防止缓存
+      const res = await fetch(`/api/sources?_t=${Date.now()}`, { headers });
       const response = await res.json();
       const data = response.success ? response.data : response;
       if (data?.sources) {
@@ -1491,9 +1492,15 @@ export function WorkspacePageContent() {
 
       const response = await res.json();
       if (response.success) {
-        await fetchSources();
-        setSelectedSourceId(response.data.source.id);
+        const newSourceId = response.data.source.id;
         setChatInput(''); // 清空输入框
+        
+        // 先设置loading为false，然后获取最新数据
+        setSourcesLoading(false);
+        await fetchSources();
+        
+        // 选中新创建的资源
+        setSelectedSourceId(newSourceId);
         
         addMessage({
           id: Date.now().toString(),
@@ -1506,14 +1513,13 @@ export function WorkspacePageContent() {
       }
     } catch (err) {
       console.error('Save input as source error:', err);
+      setSourcesLoading(false);
       addMessage({
         id: Date.now().toString(),
         role: 'assistant',
         content: `保存失败: ${err instanceof Error ? err.message : '未知错误'}`,
         type: 'chat',
       });
-    } finally {
-      setSourcesLoading(false);
     }
   };
 
