@@ -1556,6 +1556,115 @@ export function WorkspacePageContent() {
     }
   };
 
+  // 从文本内容生成AI闪卡
+  const handleGenerateCardsFromText = async (text: string) => {
+    if (!text.trim()) {
+      addMessage({
+        id: Date.now().toString(),
+        role: 'assistant',
+        content: '请提供有效的文本内容',
+        type: 'chat',
+      });
+      return;
+    }
+
+    setCardLoading(true);
+    try {
+      const { getAnonymousHeaders } = await import('@/hooks/useAnonymousUser');
+      const headers = getAnonymousHeaders();
+
+      addMessage({
+        id: Date.now().toString(),
+        role: 'assistant',
+        content: '正在分析文本并生成AI闪卡...',
+        type: 'chat',
+      });
+
+      // 步骤1: 提取句子和关键词
+      const extractRes = await fetch('/api/llm/extract', {
+        method: 'POST',
+        headers: { ...headers, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text: text.trim() }),
+      });
+
+      const extractData = await extractRes.json();
+      if (!extractRes.ok || !extractData.success) {
+        throw new Error(extractData.error?.message || '提取失败');
+      }
+
+      const targetItems = extractData.data?.items || [];
+      if (targetItems.length === 0) {
+        addMessage({
+          id: Date.now().toString(),
+          role: 'assistant',
+          content: '未能从文本中提取到有效的句子或关键词。',
+          type: 'chat',
+        });
+        return;
+      }
+
+      // 步骤2: 为每个提取项生成卡片
+      let successCount = 0;
+      let failCount = 0;
+      const generatedCards: Array<{ id: string; frontContent: string }> = [];
+
+      for (const item of targetItems) {
+        try {
+          const cardRes = await fetch('/api/cards/generate', {
+            method: 'POST',
+            headers: { ...headers, 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              text: item.text,
+              cardType: item.type === 'WORD' ? '单词卡' : '句子卡',
+              deckName: currentWorkspaceDeck.trim() || 'default',
+              includePronunciation: true,
+            }),
+          });
+
+          const cardData = await cardRes.json();
+          if (cardRes.ok && cardData.success) {
+            successCount++;
+            generatedCards.push({
+              id: cardData.data.card.id,
+              frontContent: cardData.data.card.frontContent,
+            });
+          } else {
+            failCount++;
+          }
+        } catch {
+          failCount++;
+        }
+      }
+
+      await fetchCards();
+      await fetchCredits();
+
+      // 显示结果
+      addMessage({
+        id: Date.now().toString(),
+        role: 'assistant',
+        content: `✅ AI闪卡生成完成！成功: ${successCount}，失败: ${failCount}`,
+        type: 'flashcards',
+        data: {
+          successCount,
+          failCount,
+          cards: generatedCards,
+        },
+      });
+
+    } catch (err) {
+      console.error('Generate cards from text error:', err);
+      addMessage({
+        id: Date.now().toString(),
+        role: 'assistant',
+        content: `生成闪卡失败: ${err instanceof Error ? err.message : '未知错误'}`,
+        type: 'chat',
+      });
+    } finally {
+      setCardLoading(false);
+    }
+  };
+
   const handleSendMessage = async (text?: string) => {
     const content = text || chatInput;
     if (!content.trim() || chatLoading) return;
@@ -1722,6 +1831,7 @@ export function WorkspacePageContent() {
       handleInsertPastedText={handleInsertPastedText}
       handleChatFileDrop={handleChatFileDrop}
       handleChatPasteImage={handleChatPasteImage}
+      handleGenerateCardsFromText={handleGenerateCardsFromText}
       handleSaveNote={handleSaveNote}
       
       messages={messages}

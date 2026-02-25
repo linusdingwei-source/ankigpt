@@ -15,7 +15,8 @@ export function ChatPanel(props: WorkspaceViewProps) {
   const {
     workspaceT,
     messages, chatInput, setChatInput, chatLoading, handleSendMessage,
-    handleSaveNote, handleChatFileDrop, handleChatPasteImage
+    handleSaveNote, handleChatFileDrop, handleChatPasteImage, handleGenerateCardsFromText,
+    cardLoading
   } = props;
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -272,27 +273,40 @@ export function ChatPanel(props: WorkspaceViewProps) {
                 </div>
                 <div className="flex items-center gap-2 mt-1 px-1">
                   {message.role === 'assistant' && (message.type === 'analysis' || message.type === 'chat') && (
-                    <button
-                      onClick={() => {
-                        // If message has audio data (ASR result), pass it for interactive playback in note
-                        if (message.data?.audioUrl && message.data?.timestamps) {
-                          handleSaveNote(message.content, {
-                            name: message.data.sourceName,
-                            audioUrl: message.data.audioUrl,
-                            timestamps: message.data.timestamps,
-                          });
-                        } else {
-                          handleSaveNote(message.content);
-                        }
-                      }}
-                      className="text-[10px] text-indigo-500 hover:text-indigo-700 dark:text-indigo-400 dark:hover:text-indigo-300 flex items-center gap-0.5 transition-colors"
-                      title="保存到我的笔记"
-                    >
-                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
-                      </svg>
-                      保存笔记
-                    </button>
+                    <>
+                      <button
+                        onClick={() => {
+                          // If message has audio data (ASR result), pass it for interactive playback in note
+                          if (message.data?.audioUrl && message.data?.timestamps) {
+                            handleSaveNote(message.content, {
+                              name: message.data.sourceName,
+                              audioUrl: message.data.audioUrl,
+                              timestamps: message.data.timestamps,
+                            });
+                          } else {
+                            handleSaveNote(message.content);
+                          }
+                        }}
+                        className="text-[10px] text-indigo-500 hover:text-indigo-700 dark:text-indigo-400 dark:hover:text-indigo-300 flex items-center gap-0.5 transition-colors"
+                        title="保存到我的笔记"
+                      >
+                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
+                        </svg>
+                        保存笔记
+                      </button>
+                      <button
+                        onClick={() => handleGenerateCardsFromText(message.content)}
+                        disabled={cardLoading}
+                        className={`text-[10px] text-green-500 hover:text-green-700 dark:text-green-400 dark:hover:text-green-300 flex items-center gap-0.5 transition-colors ${cardLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
+                        title="生成AI闪卡"
+                      >
+                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                        </svg>
+                        {cardLoading ? '生成中...' : '生成闪卡'}
+                      </button>
+                    </>
                   )}
                   <span className="text-[10px] text-gray-400 dark:text-gray-500">
                     {new Date(message.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
