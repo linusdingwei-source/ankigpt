@@ -228,7 +228,18 @@ export function ChatPanel(props: WorkspaceViewProps) {
                 <div className="flex items-center gap-2 mt-1 px-1">
                   {message.role === 'assistant' && (message.type === 'analysis' || message.type === 'chat') && (
                     <button
-                      onClick={() => handleSaveNote(message.content)}
+                      onClick={() => {
+                        // If message has audio data (ASR result), pass it for interactive playback in note
+                        if (message.data?.audioUrl && message.data?.timestamps) {
+                          handleSaveNote(message.content, {
+                            name: message.data.sourceName,
+                            audioUrl: message.data.audioUrl,
+                            timestamps: message.data.timestamps,
+                          });
+                        } else {
+                          handleSaveNote(message.content);
+                        }
+                      }}
                       className="text-[10px] text-indigo-500 hover:text-indigo-700 dark:text-indigo-400 dark:hover:text-indigo-300 flex items-center gap-0.5 transition-colors"
                       title="保存到我的笔记"
                     >

@@ -103,10 +103,10 @@ export async function POST(request: NextRequest) {
       analysis = llmData.data.analysis;
     }
 
-    // 2. 生成 TTS（如果需要）
-    let audioUrl: string | null = null;
+    // 2. 生成 TTS（如果需要）或使用提供的音频URL
+    let audioUrl: string | null = providedAnalysis?.audioUrl || null;
     let audioFilename: string | null = null;
-    let timestamps: Array<{ text: string; begin_time: number; end_time: number }> | null = null;
+    let timestamps: Array<{ text: string; begin_time: number; end_time: number }> | null = providedAnalysis?.timestamps || null;
 
     if (includePronunciation) {
       const ttsResponse = await fetch(`${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/api/tts/generate-enhanced`, {

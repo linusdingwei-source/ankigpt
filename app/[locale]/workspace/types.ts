@@ -95,7 +95,7 @@ export interface WorkspaceViewProps {
   handleUploadAudioFolder: () => void;
   handlePasteImage: () => void;
   handleInsertPastedText: () => Promise<void>;
-  handleSaveNote: (content: string, name?: string) => Promise<void>;
+  handleSaveNote: (content: string, options?: { name?: string; audioUrl?: string; timestamps?: Array<{ begin_time: number; end_time: number; text: string }> }) => Promise<void>;
   
   // Chat
   messages: any[];

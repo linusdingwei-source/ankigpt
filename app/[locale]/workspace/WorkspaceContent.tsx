@@ -57,6 +57,7 @@ type ChatMessage = {
     // ASR-related properties
     sourceId?: string;
     sourceName?: string;
+    audioUrl?: string;
     timestamps?: Array<{ begin_time: number; end_time: number; text: string }>;
     canSaveAsNote?: boolean;
   };
@@ -748,6 +749,7 @@ export function WorkspacePageContent() {
           data: {
             sourceId: selectedSourceId,
             sourceName: source.name,
+            audioUrl, // 保存音频URL以便笔记中播放
             timestamps,
             canSaveAsNote: true,
           },
@@ -1276,10 +1278,12 @@ export function WorkspacePageContent() {
     }
   };
 
-  const handleSaveNote = async (content: string, name?: string) => {
+  const handleSaveNote = async (content: string, options?: { name?: string; audioUrl?: string; timestamps?: Array<{ begin_time: number; end_time: number; text: string }> }) => {
     try {
       const { getAnonymousHeaders } = await import('@/hooks/useAnonymousUser');
       const headers = getAnonymousHeaders();
+      
+      const { name, audioUrl, timestamps } = options || {};
       
       const res = await fetch('/api/cards/generate', {
         method: 'POST',
@@ -1293,7 +1297,10 @@ export function WorkspacePageContent() {
           sourceId: selectedSourceId,
           // 把笔记内容存放在 backContent 中
           analysis: {
-            html: content, // 这里直接存原始内容，渲染时由于 ChatPanel 已经支持 Markdown，可能需要调整
+            html: content,
+            // 保存音频URL和时间戳以便在笔记中播放
+            audioUrl: audioUrl,
+            timestamps: timestamps,
           }
         }),
       });

@@ -8,6 +8,7 @@ import { WorkspaceViewProps } from './types';
 import { SourcesPanel } from './components/SourcesPanel';
 import { ChatPanel } from './components/ChatPanel';
 import { StudioPanel } from './components/StudioPanel';
+import { InteractiveTranscript } from './components/InteractiveTranscript';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import remarkMath from 'remark-math';
@@ -384,17 +385,27 @@ export function WorkspaceView(props: WorkspaceViewProps) {
                       </div>
                     </div>
 
-                    {/* 音频 */}
+                    {/* 音频 - 如果是笔记且有时间戳则显示交互式转写 */}
                     {selectedCard.audioUrl && (
                       <div>
                         <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                          {cardT('pronunciationPreview')}
+                          {selectedCard.category === 'NOTE' && selectedCard.timestamps?.length > 0 
+                            ? '音频转写' 
+                            : cardT('pronunciationPreview')}
                         </h3>
                         <div className="p-3 bg-gray-50 dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600">
-                          <audio controls className="w-full">
-                            <source src={selectedCard.audioUrl} type="audio/mpeg" />
-                            {cardT('audioNotSupported')}
-                          </audio>
+                          {/* 如果是笔记且有时间戳，显示交互式转写播放器 */}
+                          {selectedCard.category === 'NOTE' && selectedCard.timestamps?.length > 0 ? (
+                            <InteractiveTranscript
+                              audioUrl={selectedCard.audioUrl}
+                              timestamps={selectedCard.timestamps}
+                            />
+                          ) : (
+                            <audio controls className="w-full">
+                              <source src={selectedCard.audioUrl} type="audio/mpeg" />
+                              {cardT('audioNotSupported')}
+                            </audio>
+                          )}
                         </div>
                       </div>
                     )}
