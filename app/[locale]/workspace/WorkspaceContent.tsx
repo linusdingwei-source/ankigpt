@@ -1374,11 +1374,13 @@ export function WorkspacePageContent() {
     }
   };
 
-  // 处理聊天输入框的图片粘贴 (Ctrl+V)
+  // 处理聊天输入框的粘贴 (Ctrl+V) - 支持图片和文本
   const handleChatPasteImage = async (e: React.ClipboardEvent) => {
     const items = e.clipboardData?.items;
+    const text = e.clipboardData?.getData('text/plain');
     if (!items) return;
 
+    // 检查是否有图片
     const imageItems: DataTransferItem[] = [];
     for (let i = 0; i < items.length; i++) {
       if (items[i].type.startsWith('image/')) {
@@ -1386,43 +1388,95 @@ export function WorkspacePageContent() {
       }
     }
 
-    if (imageItems.length === 0) return; // 没有图片，让默认文本粘贴处理
+    // 优先处理图片
+    if (imageItems.length > 0) {
+      e.preventDefault();
+      setSourcesLoading(true);
+      try {
+        const { getAnonymousHeaders } = await import('@/hooks/useAnonymousUser');
+        const headers = getAnonymousHeaders() as Record<string, string>;
+        if (headers['Content-Type']) {
+          delete headers['Content-Type'];
+        }
 
-    e.preventDefault(); // 有图片时阻止默认行为
+        for (const item of imageItems) {
+          const blob = item.getAsFile();
+          if (!blob) continue;
 
-    setSourcesLoading(true);
-    try {
-      const { getAnonymousHeaders } = await import('@/hooks/useAnonymousUser');
-      const headers = getAnonymousHeaders() as Record<string, string>;
-      if (headers['Content-Type']) {
-        delete headers['Content-Type'];
+          const file = new File([blob], `pasted_image_${Date.now()}.png`, { type: blob.type });
+          
+          addMessage({
+            id: Date.now().toString(),
+            role: 'assistant',
+            content: '正在上传粘贴的图片...',
+            type: 'chat',
+          });
+
+          const formData = new FormData();
+          formData.append('file', file);
+          
+          const res = await fetch('/api/sources', {
+            method: 'POST',
+            headers,
+            body: formData,
+          });
+
+          if (!res.ok) {
+            throw new Error('上传失败');
+          }
+
+          const response = await res.json();
+          if (response.success) {
+            await fetchSources();
+            setSelectedSourceId(response.data.source.id);
+            
+            addMessage({
+              id: Date.now().toString(),
+              role: 'assistant',
+              content: '✅ 图片上传成功，已添加到来源列表。',
+              type: 'chat',
+            });
+          }
+        }
+      } catch (err) {
+        console.error('Paste image error:', err);
+        addMessage({
+          id: Date.now().toString(),
+          role: 'assistant',
+          content: `粘贴图片失败: ${err instanceof Error ? err.message : '未知错误'}`,
+          type: 'chat',
+        });
+      } finally {
+        setSourcesLoading(false);
       }
+      return;
+    }
 
-      for (const item of imageItems) {
-        const blob = item.getAsFile();
-        if (!blob) continue;
-
-        const file = new File([blob], `pasted_image_${Date.now()}.png`, { type: blob.type });
+    // 如果没有图片，检查是否有文本（至少超过10个字符才保存为资源）
+    if (text && text.trim().length >= 10) {
+      e.preventDefault();
+      setSourcesLoading(true);
+      try {
+        const { getAnonymousHeaders } = await import('@/hooks/useAnonymousUser');
+        const headers = getAnonymousHeaders();
         
         addMessage({
           id: Date.now().toString(),
           role: 'assistant',
-          content: '正在上传粘贴的图片...',
+          content: '正在保存粘贴的文本...',
           type: 'chat',
         });
 
-        const formData = new FormData();
-        formData.append('file', file);
-        
+        const trimmedText = text.trim();
         const res = await fetch('/api/sources', {
           method: 'POST',
-          headers,
-          body: formData,
+          headers: { ...headers, 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            name: `粘贴的文字 ${new Date().toLocaleString('zh-CN', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })}`,
+            type: 'text',
+            content: trimmedText,
+          }),
         });
-
-        if (!res.ok) {
-          throw new Error('上传失败');
-        }
 
         const response = await res.json();
         if (response.success) {
@@ -1432,22 +1486,27 @@ export function WorkspacePageContent() {
           addMessage({
             id: Date.now().toString(),
             role: 'assistant',
-            content: '✅ 图片上传成功，已添加到来源列表。',
+            content: `✅ 文本保存成功 (${trimmedText.length}字)，已添加到来源列表。`,
             type: 'chat',
           });
+        } else {
+          throw new Error(response.error?.message || '保存失败');
         }
+      } catch (err) {
+        console.error('Paste text error:', err);
+        addMessage({
+          id: Date.now().toString(),
+          role: 'assistant',
+          content: `粘贴文本失败: ${err instanceof Error ? err.message : '未知错误'}`,
+          type: 'chat',
+        });
+      } finally {
+        setSourcesLoading(false);
       }
-    } catch (err) {
-      console.error('Paste image error:', err);
-      addMessage({
-        id: Date.now().toString(),
-        role: 'assistant',
-        content: `粘贴图片失败: ${err instanceof Error ? err.message : '未知错误'}`,
-        type: 'chat',
-      });
-    } finally {
-      setSourcesLoading(false);
+      return;
     }
+    
+    // 如果文本太短（<10字符），让默认行为处理（填充到输入框）
   };
 
   const handleSaveNote = async (content: string, options?: { name?: string; audioUrl?: string; timestamps?: Array<{ begin_time: number; end_time: number; text: string }> }) => {
