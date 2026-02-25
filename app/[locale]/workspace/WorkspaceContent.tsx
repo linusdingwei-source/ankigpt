@@ -1374,10 +1374,9 @@ export function WorkspacePageContent() {
     }
   };
 
-  // 处理聊天输入框的粘贴 (Ctrl+V) - 支持图片和文本
+  // 处理聊天输入框的粘贴 (Ctrl+V) - 支持图片
   const handleChatPasteImage = async (e: React.ClipboardEvent) => {
     const items = e.clipboardData?.items;
-    const text = e.clipboardData?.getData('text/plain');
     if (!items) return;
 
     // 检查是否有图片
@@ -1452,61 +1451,70 @@ export function WorkspacePageContent() {
       return;
     }
 
-    // 如果没有图片，检查是否有文本（至少超过10个字符才保存为资源）
-    if (text && text.trim().length >= 10) {
-      e.preventDefault();
-      setSourcesLoading(true);
-      try {
-        const { getAnonymousHeaders } = await import('@/hooks/useAnonymousUser');
-        const headers = getAnonymousHeaders();
+    // 如果没有图片，让文本正常填充到输入框，用户可以编辑后点击按钮保存
+  };
+
+  // 将输入框内容保存为资源
+  const handleSaveInputAsSource = async () => {
+    const text = chatInput.trim();
+    if (!text || text.length < 5) {
+      addMessage({
+        id: Date.now().toString(),
+        role: 'assistant',
+        content: '请输入至少5个字符的内容',
+        type: 'chat',
+      });
+      return;
+    }
+
+    setSourcesLoading(true);
+    try {
+      const { getAnonymousHeaders } = await import('@/hooks/useAnonymousUser');
+      const headers = getAnonymousHeaders();
+      
+      addMessage({
+        id: Date.now().toString(),
+        role: 'assistant',
+        content: '正在保存文本为资源...',
+        type: 'chat',
+      });
+
+      const res = await fetch('/api/sources', {
+        method: 'POST',
+        headers: { ...headers, 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: `粘贴的文字 ${new Date().toLocaleString('zh-CN', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })}`,
+          type: 'text',
+          content: text,
+        }),
+      });
+
+      const response = await res.json();
+      if (response.success) {
+        await fetchSources();
+        setSelectedSourceId(response.data.source.id);
+        setChatInput(''); // 清空输入框
         
         addMessage({
           id: Date.now().toString(),
           role: 'assistant',
-          content: '正在保存粘贴的文本...',
+          content: `✅ 文本保存成功 (${text.length}字)，已添加到来源列表。`,
           type: 'chat',
         });
-
-        const trimmedText = text.trim();
-        const res = await fetch('/api/sources', {
-          method: 'POST',
-          headers: { ...headers, 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            name: `粘贴的文字 ${new Date().toLocaleString('zh-CN', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })}`,
-            type: 'text',
-            content: trimmedText,
-          }),
-        });
-
-        const response = await res.json();
-        if (response.success) {
-          await fetchSources();
-          setSelectedSourceId(response.data.source.id);
-          
-          addMessage({
-            id: Date.now().toString(),
-            role: 'assistant',
-            content: `✅ 文本保存成功 (${trimmedText.length}字)，已添加到来源列表。`,
-            type: 'chat',
-          });
-        } else {
-          throw new Error(response.error?.message || '保存失败');
-        }
-      } catch (err) {
-        console.error('Paste text error:', err);
-        addMessage({
-          id: Date.now().toString(),
-          role: 'assistant',
-          content: `粘贴文本失败: ${err instanceof Error ? err.message : '未知错误'}`,
-          type: 'chat',
-        });
-      } finally {
-        setSourcesLoading(false);
+      } else {
+        throw new Error(response.error?.message || '保存失败');
       }
-      return;
+    } catch (err) {
+      console.error('Save input as source error:', err);
+      addMessage({
+        id: Date.now().toString(),
+        role: 'assistant',
+        content: `保存失败: ${err instanceof Error ? err.message : '未知错误'}`,
+        type: 'chat',
+      });
+    } finally {
+      setSourcesLoading(false);
     }
-    
-    // 如果文本太短（<10字符），让默认行为处理（填充到输入框）
   };
 
   const handleSaveNote = async (content: string, options?: { name?: string; audioUrl?: string; timestamps?: Array<{ begin_time: number; end_time: number; text: string }> }) => {
@@ -1831,6 +1839,7 @@ export function WorkspacePageContent() {
       handleInsertPastedText={handleInsertPastedText}
       handleChatFileDrop={handleChatFileDrop}
       handleChatPasteImage={handleChatPasteImage}
+      handleSaveInputAsSource={handleSaveInputAsSource}
       handleGenerateCardsFromText={handleGenerateCardsFromText}
       handleSaveNote={handleSaveNote}
       

@@ -16,6 +16,7 @@ export function ChatPanel(props: WorkspaceViewProps) {
     workspaceT,
     messages, chatInput, setChatInput, chatLoading, handleSendMessage,
     handleSaveNote, handleChatFileDrop, handleChatPasteImage, handleGenerateCardsFromText,
+    handleSaveInputAsSource, sourcesLoading,
     cardLoading
   } = props;
 
@@ -354,9 +355,9 @@ export function ChatPanel(props: WorkspaceViewProps) {
             onChange={(e) => setChatInput(e.target.value)}
             onKeyDown={onKeyDown}
             onPaste={handlePaste}
-            placeholder="输入日文句子或提问... (可拖放/粘贴图片、音频)"
+            placeholder="输入日文句子或提问... (可粘贴文本、拖放图片/音频)"
             rows={1}
-            className="w-full pl-4 pr-12 py-3 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-2xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none resize-none text-sm transition-all min-h-[48px] max-h-32"
+            className="w-full pl-4 pr-24 py-3 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-2xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none resize-none text-sm transition-all min-h-[48px] max-h-32"
             style={{ height: 'auto' }}
             onInput={(e) => {
               const target = e.target as HTMLTextAreaElement;
@@ -364,18 +365,43 @@ export function ChatPanel(props: WorkspaceViewProps) {
               target.style.height = `${target.scrollHeight}px`;
             }}
           />
-          <button
-            onClick={() => handleSendMessage()}
-            disabled={!chatInput.trim() || chatLoading}
-            className="absolute right-2 bottom-2 p-2 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-sm active:scale-95"
-          >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
-            </svg>
-          </button>
+          {/* 按钮组 */}
+          <div className="absolute right-2 bottom-2 flex items-center gap-1">
+            {/* 保存为资源按钮 - 当有较长文本时显示 */}
+            {chatInput.trim().length >= 5 && (
+              <button
+                onClick={handleSaveInputAsSource}
+                disabled={sourcesLoading}
+                className="p-2 bg-green-500 text-white rounded-xl hover:bg-green-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-sm active:scale-95"
+                title="保存为资源"
+              >
+                {sourcesLoading ? (
+                  <svg className="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                ) : (
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
+                  </svg>
+                )}
+              </button>
+            )}
+            {/* 发送按钮 */}
+            <button
+              onClick={() => handleSendMessage()}
+              disabled={!chatInput.trim() || chatLoading}
+              className="p-2 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-sm active:scale-95"
+              title="发送消息"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+              </svg>
+            </button>
+          </div>
         </div>
         <p className="text-[10px] text-center text-gray-400 dark:text-gray-500 mt-2">
-          由 Qwen 提供支持 · 可拖放图片/音频、Ctrl+V粘贴图片
+          由 Qwen 提供支持 · 粘贴文本后点击绿色按钮保存为资源
         </p>
       </div>
     </div>
