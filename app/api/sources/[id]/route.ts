@@ -101,7 +101,7 @@ export async function PATCH(
 
     const { id } = await params;
     const body = await request.json();
-    const { name } = body;
+    const { name, folderId } = body;
 
     // 验证来源是否存在且属于当前用户
     const existingSource = await prisma.source.findFirst({
@@ -119,7 +119,7 @@ export async function PATCH(
     }
 
     // 更新来源
-    const updateData: { name?: string } = {};
+    const updateData: { name?: string; folderId?: string | null } = {};
     if (name !== undefined) {
       if (typeof name !== 'string' || !name.trim()) {
         return NextResponse.json(
@@ -129,6 +129,23 @@ export async function PATCH(
       }
       updateData.name = name.trim();
     }
+    
+    // 支持移动到目录（folderId 为 null 表示移动到根目录）
+    if (folderId !== undefined) {
+      if (folderId !== null) {
+        // 验证目录是否存在且属于当前用户
+        const folder = await prisma.sourceFolder.findFirst({
+          where: { id: folderId, userId },
+        });
+        if (!folder) {
+          return NextResponse.json(
+            errorResponse(ErrorCodes.NOT_FOUND, 'Folder not found'),
+            { status: 404 }
+          );
+        }
+      }
+      updateData.folderId = folderId;
+    }
 
     const source = await prisma.source.update({
       where: { id },
@@ -137,6 +154,7 @@ export async function PATCH(
         id: true,
         name: true,
         type: true,
+        folderId: true,
         contentUrl: true,
         fileUrl: true,
         fileName: true,

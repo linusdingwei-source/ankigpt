@@ -30,6 +30,7 @@ model User {
   cards         Card[]
   decks         Deck[]
   sources       Source[]
+  sourceFolders SourceFolder[]
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
@@ -158,6 +159,10 @@ model Source {
   userId      String
   user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   
+  // 目录关联
+  folderId    String?  // 所属目录ID，null表示根目录
+  folder      SourceFolder? @relation(fields: [folderId], references: [id], onDelete: SetNull)
+  
   // 来源信息
   name        String   // 来源名称（用户可编辑）
   type        String   @default("text") // 来源类型: text, file, url, etc.
@@ -177,5 +182,26 @@ model Source {
   
   @@index([userId])
   @@index([type])
+  @@index([folderId])
   @@index([createdAt])
+}
+
+model SourceFolder {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  name        String   // 目录名称
+  parentId    String?  // 父目录ID，null表示根目录
+  parent      SourceFolder?  @relation("FolderHierarchy", fields: [parentId], references: [id], onDelete: Cascade)
+  children    SourceFolder[] @relation("FolderHierarchy")
+  
+  sources     Source[]
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  @@unique([userId, name, parentId]) // 同一目录下名称唯一
+  @@index([userId])
+  @@index([parentId])
 }

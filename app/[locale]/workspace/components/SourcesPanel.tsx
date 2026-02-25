@@ -1,7 +1,15 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect, useCallback } from 'react';
 import { WorkspaceViewProps } from '../types';
+
+interface Folder {
+  id: string;
+  name: string;
+  parentId: string | null;
+  sourceCount: number;
+  createdAt: string;
+}
 
 // Parse "filename (Part X of Y).pdf" pattern
 function parseSplitPart(name: string): { baseName: string; partNum: number; totalParts: number } | null {
@@ -37,13 +45,104 @@ export function SourcesPanel(props: WorkspaceViewProps) {
   // Track which folders are expanded
   const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set());
 
-  // Group sources: split PDFs and audio folders go into folders, others stay flat
-  const { groupedSources, ungroupedSources } = useMemo(() => {
+  // Folder management state
+  const [folders, setFolders] = useState<Folder[]>([]);
+  const [showCreateFolderModal, setShowCreateFolderModal] = useState(false);
+  const [newFolderName, setNewFolderName] = useState('');
+  const [_movingSourceId, setMovingSourceId] = useState<string | null>(null);
+
+  // Fetch folders
+  const fetchFolders = useCallback(async () => {
+    try {
+      const { getAnonymousHeaders } = await import('@/hooks/useAnonymousUser');
+      const headers = getAnonymousHeaders();
+      const res = await fetch('/api/folders', { headers });
+      const response = await res.json();
+      if (response.success) {
+        setFolders(response.data.folders);
+      }
+    } catch (error) {
+      console.error('Failed to fetch folders:', error);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchFolders();
+  }, [fetchFolders]);
+
+  // Create folder handler
+  const handleCreateFolder = async () => {
+    if (!newFolderName.trim()) return;
+    try {
+      const { getAnonymousHeaders } = await import('@/hooks/useAnonymousUser');
+      const headers = getAnonymousHeaders();
+      const res = await fetch('/api/folders', {
+        method: 'POST',
+        headers: { ...headers, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: newFolderName.trim() }),
+      });
+      if (res.ok) {
+        await fetchFolders();
+        setShowCreateFolderModal(false);
+        setNewFolderName('');
+      }
+    } catch (error) {
+      console.error('Failed to create folder:', error);
+    }
+  };
+
+  // Delete folder handler
+  const handleDeleteFolder = async (folderId: string) => {
+    if (!confirm('确定要删除这个目录吗？目录下的资源将移动到根目录。')) return;
+    try {
+      const { getAnonymousHeaders } = await import('@/hooks/useAnonymousUser');
+      const headers = getAnonymousHeaders();
+      const res = await fetch(`/api/folders/${folderId}`, {
+        method: 'DELETE',
+        headers,
+      });
+      if (res.ok) {
+        await fetchFolders();
+        await fetchSources();
+      }
+    } catch (error) {
+      console.error('Failed to delete folder:', error);
+    }
+  };
+
+  // Move source to folder handler
+  const handleMoveSource = async (sourceId: string, folderId: string | null) => {
+    try {
+      const { getAnonymousHeaders } = await import('@/hooks/useAnonymousUser');
+      const headers = getAnonymousHeaders();
+      const res = await fetch(`/api/sources/${sourceId}`, {
+        method: 'PATCH',
+        headers: { ...headers, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ folderId }),
+      });
+      if (res.ok) {
+        await fetchSources();
+        await fetchFolders();
+        setMovingSourceId(null);
+        setShowSourceMenuId(null);
+      }
+    } catch (error) {
+      console.error('Failed to move source:', error);
+    }
+  };
+
+  // Group sources: split PDFs, audio folders, and user-created folders
+  const { groupedSources, folderSources, rootSources } = useMemo(() => {
     const groups: Map<string, { sources: typeof sources; totalParts: number; isAudioFolder?: boolean }> = new Map();
     const ungrouped: typeof sources = [];
+    const byFolder: Map<string, typeof sources> = new Map(); // Sources by folder ID
+    const root: typeof sources = []; // Sources without folder
 
     for (const source of sources) {
-      // Check for split PDF pattern first
+      // First, separate by user-created folder
+      const srcWithFolder = source as typeof source & { folderId?: string | null };
+      
+      // Check for split PDF pattern
       const parsed = parseSplitPart(source.name);
       
       // Check for audio folder pattern (folder/filename.mp3)
@@ -71,12 +170,21 @@ export function SourcesPanel(props: WorkspaceViewProps) {
         } else {
           groups.set(folderPath, {
             sources: [{ ...source, _fileName: fileName }],
-            totalParts: 0, // Will be updated after grouping
+            totalParts: 0,
             isAudioFolder: true,
           });
         }
+      } else if (srcWithFolder.folderId) {
+        // Source belongs to a user-created folder
+        const existing = byFolder.get(srcWithFolder.folderId);
+        if (existing) {
+          existing.push(source);
+        } else {
+          byFolder.set(srcWithFolder.folderId, [source]);
+        }
       } else {
         ungrouped.push(source);
+        root.push(source);
       }
     }
 
@@ -84,13 +192,11 @@ export function SourcesPanel(props: WorkspaceViewProps) {
     const sortedGroups: Array<{ baseName: string; sources: typeof sources; totalParts: number; isAudioFolder?: boolean }> = [];
     groups.forEach((group, baseName) => {
       if (group.isAudioFolder) {
-        // Sort audio files by name naturally
         group.sources.sort((a: { _fileName?: string }, b: { _fileName?: string }) => 
           (a._fileName || '').localeCompare(b._fileName || '', undefined, { numeric: true })
         );
         group.totalParts = group.sources.length;
       } else {
-        // Sort PDF parts by part number
         group.sources.sort((a: { _partNum?: number }, b: { _partNum?: number }) => 
           (a._partNum || 0) - (b._partNum || 0)
         );
@@ -98,12 +204,19 @@ export function SourcesPanel(props: WorkspaceViewProps) {
       sortedGroups.push({ baseName, ...group });
     });
 
-    // Sort groups by creation date of first part
     sortedGroups.sort((a, b) => 
       new Date(b.sources[0]?.createdAt || 0).getTime() - new Date(a.sources[0]?.createdAt || 0).getTime()
     );
 
-    return { groupedSources: sortedGroups, ungroupedSources: ungrouped };
+    // Convert folder map to object
+    const folderSourcesObj: Record<string, typeof sources> = {};
+    byFolder.forEach((srcs, folderId) => {
+      folderSourcesObj[folderId] = srcs.sort((a, b) => 
+        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+      );
+    });
+
+    return { groupedSources: sortedGroups, folderSources: folderSourcesObj, rootSources: root };
   }, [sources]);
 
   const toggleFolder = (baseName: string) => {
@@ -395,8 +508,53 @@ export function SourcesPanel(props: WorkspaceViewProps) {
             </div>
             <span className="text-xs text-gray-700 dark:text-gray-300">复制的图片</span>
           </button>
+
+          <button 
+            onClick={() => setShowCreateFolderModal(true)}
+            className="flex flex-col items-center justify-center p-3 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors gap-2"
+          >
+            <div className="w-8 h-8 rounded-full bg-yellow-100 dark:bg-yellow-900/30 flex items-center justify-center text-yellow-600 dark:text-yellow-400">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 13h6m-3-3v6m-9 1V7a2 2 0 012-2h6l2 2h6a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z" />
+              </svg>
+            </div>
+            <span className="text-xs text-gray-700 dark:text-gray-300">创建目录</span>
+          </button>
         </div>
       </div>
+
+      {/* 创建目录弹窗 */}
+      {showCreateFolderModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <div className="bg-white dark:bg-gray-800 rounded-lg p-6 w-80 shadow-xl">
+            <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">创建新目录</h3>
+            <input
+              type="text"
+              value={newFolderName}
+              onChange={(e) => setNewFolderName(e.target.value)}
+              placeholder="目录名称"
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+              onKeyDown={(e) => e.key === 'Enter' && handleCreateFolder()}
+              autoFocus
+            />
+            <div className="flex gap-3 mt-4">
+              <button
+                onClick={() => { setShowCreateFolderModal(false); setNewFolderName(''); }}
+                className="flex-1 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600"
+              >
+                取消
+              </button>
+              <button
+                onClick={handleCreateFolder}
+                disabled={!newFolderName.trim()}
+                className="flex-1 px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                创建
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* 已保存的来源列表 */}
       <div className="flex-1 overflow-y-auto p-4 min-h-0">
@@ -659,6 +817,39 @@ export function SourcesPanel(props: WorkspaceViewProps) {
                               </svg>
                               重命名
                             </button>
+                            {/* Move to folder submenu */}
+                            <div className="relative group/move">
+                              <button
+                                className="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2 justify-between"
+                              >
+                                <span className="flex items-center gap-2">
+                                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
+                                  </svg>
+                                  移动到
+                                </span>
+                                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                                </svg>
+                              </button>
+                              <div className="absolute left-full top-0 ml-1 w-40 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg py-1 hidden group-hover/move:block">
+                                <button
+                                  onClick={() => handleMoveSource(source.id, null)}
+                                  className="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+                                >
+                                  根目录
+                                </button>
+                                {folders.map(folder => (
+                                  <button
+                                    key={folder.id}
+                                    onClick={() => handleMoveSource(source.id, folder.id)}
+                                    className="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 truncate"
+                                  >
+                                    {folder.name}
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
                             <button
                               onClick={async () => {
                                 if (confirm('确定要删除这个来源吗？')) {
@@ -699,8 +890,196 @@ export function SourcesPanel(props: WorkspaceViewProps) {
               </div>
             ))}
 
-            {/* Ungrouped (regular) sources */}
-            {ungroupedSources.map((source) => (
+            {/* User-created folders */}
+            {folders.map((folder) => (
+              <div key={folder.id} className="mb-2">
+                {/* Folder header */}
+                <div
+                  onClick={() => toggleFolder(`folder-${folder.id}`)}
+                  className="flex items-center gap-2 p-2 rounded-lg bg-indigo-50 dark:bg-indigo-900/20 hover:bg-indigo-100 dark:hover:bg-indigo-900/30 cursor-pointer transition-colors group"
+                >
+                  <svg 
+                    className={`w-4 h-4 text-indigo-500 transition-transform ${expandedFolders.has(`folder-${folder.id}`) ? 'rotate-90' : ''}`} 
+                    fill="currentColor" 
+                    viewBox="0 0 20 20"
+                  >
+                    <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
+                  </svg>
+                  <svg className="w-4 h-4 text-indigo-500" fill="currentColor" viewBox="0 0 20 20">
+                    <path d="M2 6a2 2 0 012-2h5l2 2h5a2 2 0 012 2v6a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" />
+                  </svg>
+                  <span 
+                    className="text-sm font-medium text-gray-900 dark:text-white truncate flex-1"
+                    title={folder.name}
+                  >
+                    {folder.name}
+                  </span>
+                  <span className="text-xs text-gray-500 dark:text-gray-400 flex-shrink-0">
+                    {folderSources[folder.id]?.length || 0} 个
+                  </span>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleDeleteFolder(folder.id);
+                    }}
+                    className="p-1 text-gray-400 hover:text-red-500 dark:hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity"
+                    title="删除目录"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    </svg>
+                  </button>
+                </div>
+
+                {/* Folder contents */}
+                {expandedFolders.has(`folder-${folder.id}`) && (
+                  <div className="ml-6 mt-1 space-y-1 border-l-2 border-indigo-200 dark:border-indigo-800 pl-2">
+                    {(folderSources[folder.id] || []).length === 0 ? (
+                      <p className="text-xs text-gray-400 dark:text-gray-500 py-2 italic">空目录</p>
+                    ) : (
+                      (folderSources[folder.id] || []).map((source) => (
+                        <div
+                          key={source.id}
+                          onClick={async () => {
+                            if (editingSourceId === source.id) return;
+                            try {
+                              const { getAnonymousHeaders } = await import('@/hooks/useAnonymousUser');
+                              const headers = getAnonymousHeaders();
+                              setSelectedSourceId(source.id);
+                              setViewingSourceId(source.id);
+                              setSourceContent('');
+                              const res = await fetch(`/api/sources/${source.id}`, { headers });
+                              const response = await res.json();
+                              if (res.ok && response.success) {
+                                setSourceContent(response.data.source.content || '');
+                              }
+                            } catch (error) {
+                              console.error('Failed to fetch source content:', error);
+                            }
+                          }}
+                          className={`group relative p-3 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-700 hover:border-indigo-300 dark:hover:border-indigo-600 hover:shadow-sm transition-all cursor-pointer ${viewingSourceId === source.id ? 'border-indigo-500 ring-1 ring-indigo-500' : ''}`}
+                        >
+                          <div className="flex items-start gap-3">
+                            <div className="mt-1 flex-shrink-0">
+                              <input
+                                type="checkbox"
+                                checked={selectedSourceId === source.id}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setSelectedSourceId(selectedSourceId === source.id ? null : source.id);
+                                }}
+                                onChange={() => {}}
+                                className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded cursor-pointer"
+                              />
+                            </div>
+                            <div className="flex items-start gap-2 flex-1 min-w-0">
+                              <svg className="w-4 h-4 text-gray-400 dark:text-gray-500 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                              </svg>
+                              <div className="flex-1 min-w-0">
+                                <p className="text-sm font-medium text-gray-900 dark:text-white truncate" title={source.name}>
+                                  {source.name}
+                                </p>
+                                <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                                  {new Date(source.createdAt).toLocaleDateString(locale, { month: 'short', day: 'numeric' })}
+                                </p>
+                              </div>
+                              <div className="relative source-menu-container">
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setShowSourceMenuId(showSourceMenuId === source.id ? null : source.id);
+                                  }}
+                                  className="p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 opacity-0 group-hover:opacity-100 transition-opacity"
+                                >
+                                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
+                                  </svg>
+                                </button>
+                                {showSourceMenuId === source.id && (
+                                  <div className="absolute right-0 top-8 z-10 w-40 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg py-1">
+                                    <button
+                                      onClick={() => {
+                                        setEditingSourceId(source.id);
+                                        setEditingSourceName(source.name);
+                                        setShowSourceMenuId(null);
+                                      }}
+                                      className="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2"
+                                    >
+                                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                      </svg>
+                                      重命名
+                                    </button>
+                                    <div className="relative group/move">
+                                      <button className="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2 justify-between">
+                                        <span className="flex items-center gap-2">
+                                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
+                                          </svg>
+                                          移动到
+                                        </span>
+                                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                                        </svg>
+                                      </button>
+                                      <div className="absolute left-full top-0 ml-1 w-40 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg py-1 hidden group-hover/move:block">
+                                        <button
+                                          onClick={() => handleMoveSource(source.id, null)}
+                                          className="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+                                        >
+                                          根目录
+                                        </button>
+                                        {folders.filter(f => f.id !== folder.id).map(f => (
+                                          <button
+                                            key={f.id}
+                                            onClick={() => handleMoveSource(source.id, f.id)}
+                                            className="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 truncate"
+                                          >
+                                            {f.name}
+                                          </button>
+                                        ))}
+                                      </div>
+                                    </div>
+                                    <button
+                                      onClick={async () => {
+                                        if (confirm('确定要删除这个来源吗？')) {
+                                          try {
+                                            const { getAnonymousHeaders } = await import('@/hooks/useAnonymousUser');
+                                            const headers = getAnonymousHeaders();
+                                            const res = await fetch(`/api/sources/${source.id}`, { method: 'DELETE', headers });
+                                            if (res.ok) {
+                                              await fetchSources();
+                                              await fetchFolders();
+                                              setShowSourceMenuId(null);
+                                            }
+                                          } catch (error) {
+                                            console.error('Failed to delete source:', error);
+                                          }
+                                        }
+                                      }}
+                                      className="w-full px-4 py-2 text-left text-sm text-red-600 dark:text-red-400 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2"
+                                    >
+                                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                      </svg>
+                                      删除
+                                    </button>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                )}
+              </div>
+            ))}
+
+            {/* Ungrouped (root) sources */}
+            {rootSources.map((source) => (
               <div
                 key={source.id}
                 onClick={async () => {
@@ -750,6 +1129,110 @@ export function SourcesPanel(props: WorkspaceViewProps) {
                       <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
                         {new Date(source.createdAt).toLocaleDateString(locale, { month: 'short', day: 'numeric' })}
                       </p>
+                    </div>
+                    <div className="relative source-menu-container">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setShowSourceMenuId(showSourceMenuId === source.id ? null : source.id);
+                        }}
+                        className="p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 opacity-0 group-hover:opacity-100 transition-opacity"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
+                        </svg>
+                      </button>
+                      {showSourceMenuId === source.id && (
+                        <div className="absolute right-0 top-8 z-10 w-40 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg py-1">
+                          <button
+                            onClick={async () => {
+                              try {
+                                const { getAnonymousHeaders } = await import('@/hooks/useAnonymousUser');
+                                const headers = getAnonymousHeaders();
+                                const res = await fetch(`/api/sources/${source.id}`, { headers });
+                                const response = await res.json();
+                                if (res.ok && response.success) {
+                                  setSourceContent(response.data.source.content || '');
+                                  setViewingSourceId(source.id);
+                                  setShowSourceMenuId(null);
+                                }
+                              } catch (error) {
+                                console.error('Failed to fetch source content:', error);
+                              }
+                            }}
+                            className="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2"
+                          >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                            </svg>
+                            查看
+                          </button>
+                          <button
+                            onClick={() => {
+                              setEditingSourceId(source.id);
+                              setEditingSourceName(source.name);
+                              setShowSourceMenuId(null);
+                            }}
+                            className="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2"
+                          >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                            </svg>
+                            重命名
+                          </button>
+                          <div className="relative group/move">
+                            <button className="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2 justify-between">
+                              <span className="flex items-center gap-2">
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
+                                </svg>
+                                移动到
+                              </span>
+                              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                              </svg>
+                            </button>
+                            <div className="absolute left-full top-0 ml-1 w-40 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg py-1 hidden group-hover/move:block">
+                              {folders.map(folder => (
+                                <button
+                                  key={folder.id}
+                                  onClick={() => handleMoveSource(source.id, folder.id)}
+                                  className="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 truncate"
+                                >
+                                  {folder.name}
+                                </button>
+                              ))}
+                              {folders.length === 0 && (
+                                <p className="px-4 py-2 text-xs text-gray-400 italic">暂无目录</p>
+                              )}
+                            </div>
+                          </div>
+                          <button
+                            onClick={async () => {
+                              if (confirm('确定要删除这个来源吗？')) {
+                                try {
+                                  const { getAnonymousHeaders } = await import('@/hooks/useAnonymousUser');
+                                  const headers = getAnonymousHeaders();
+                                  const res = await fetch(`/api/sources/${source.id}`, { method: 'DELETE', headers });
+                                  if (res.ok) {
+                                    await fetchSources();
+                                    setShowSourceMenuId(null);
+                                  }
+                                } catch (error) {
+                                  console.error('Failed to delete source:', error);
+                                }
+                              }
+                            }}
+                            className="w-full px-4 py-2 text-left text-sm text-red-600 dark:text-red-400 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2"
+                          >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                            </svg>
+                            删除
+                          </button>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>
