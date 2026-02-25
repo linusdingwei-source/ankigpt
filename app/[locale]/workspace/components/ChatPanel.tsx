@@ -296,13 +296,30 @@ export function ChatPanel(props: WorkspaceViewProps) {
                       保存笔记
                     </button>
                   )}
-                  {/* 生成闪卡按钮 - 只在用户消息上显示（包含日文内容） */}
+                  {/* 生成闪卡按钮 - 在用户消息上显示（需要LLM分析） */}
                   {message.role === 'user' && message.content.trim().length > 0 && (
                     <button
                       onClick={() => handleGenerateCardsFromText(message.content)}
                       disabled={cardLoading}
                       className={`text-[10px] text-green-500 hover:text-green-700 dark:text-green-400 dark:hover:text-green-300 flex items-center gap-0.5 transition-colors ${cardLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
-                      title="生成AI闪卡"
+                      title="生成AI闪卡（需要分析）"
+                    >
+                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                      </svg>
+                      {cardLoading ? '生成中...' : '生成闪卡'}
+                    </button>
+                  )}
+                  {/* 生成闪卡按钮 - 在分析结果上显示（跳过LLM分析，直接用已有分析） */}
+                  {message.role === 'assistant' && message.type === 'analysis' && message.data?.originalText && (
+                    <button
+                      onClick={() => handleGenerateCardsFromText(
+                        message.data.originalText,
+                        { markdown: message.data.markdown, html: message.data.html, kanaText: message.data.kanaText }
+                      )}
+                      disabled={cardLoading}
+                      className={`text-[10px] text-green-500 hover:text-green-700 dark:text-green-400 dark:hover:text-green-300 flex items-center gap-0.5 transition-colors ${cardLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
+                      title="生成AI闪卡（使用已有分析）"
                     >
                       <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />

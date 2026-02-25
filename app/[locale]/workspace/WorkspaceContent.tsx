@@ -1570,8 +1570,9 @@ export function WorkspacePageContent() {
     }
   };
 
-  // 从文本内容生成AI闪卡 (直接调用卡片生成接口，与选中来源后生成闪卡一致)
-  const handleGenerateCardsFromText = async (text: string) => {
+  // 从文本内容生成AI闪卡
+  // providedAnalysis: 如果提供，则跳过LLM分析步骤，直接用已有的分析结果
+  const handleGenerateCardsFromText = async (text: string, providedAnalysis?: { markdown: string; html: string; kanaText: string }) => {
     if (!text.trim()) {
       addMessage({
         id: Date.now().toString(),
@@ -1590,11 +1591,12 @@ export function WorkspacePageContent() {
       addMessage({
         id: Date.now().toString(),
         role: 'assistant',
-        content: '正在生成AI闪卡...',
+        content: providedAnalysis ? '正在生成闪卡...' : '正在分析并生成AI闪卡...',
         type: 'chat',
       });
 
-      // 直接调用卡片生成API（包含LLM分析 + TTS音频）
+      // 调用卡片生成API
+      // 如果提供了 providedAnalysis，则跳过LLM分析步骤
       const cardRes = await fetch('/api/cards/generate', {
         method: 'POST',
         headers: { ...headers, 'Content-Type': 'application/json' },
@@ -1603,6 +1605,7 @@ export function WorkspacePageContent() {
           cardType: '句子卡',
           deckName: currentWorkspaceDeck?.trim() || 'default',
           includePronunciation: true,
+          ...(providedAnalysis && { analysis: providedAnalysis }),
         }),
       });
 
@@ -1676,7 +1679,10 @@ export function WorkspacePageContent() {
           role: 'assistant',
           content: response.data.analysis.markdown,
           type: 'analysis',
-          data: response.data.analysis,
+          data: {
+            ...response.data.analysis,
+            originalText: content.trim(), // 保存原始文本以便生成闪卡时使用
+          },
         });
         await fetchCredits();
       } else {
