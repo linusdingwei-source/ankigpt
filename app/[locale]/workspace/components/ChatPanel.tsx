@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 'use client';
 
-import { useRef, useEffect } from 'react';
+import { useRef, useEffect, useState, useCallback } from 'react';
 import { WorkspaceViewProps } from '../types';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -15,7 +15,7 @@ export function ChatPanel(props: WorkspaceViewProps) {
   const {
     workspaceT,
     messages, chatInput, setChatInput, chatLoading, handleSendMessage,
-    handleSaveNote
+    handleSaveNote, handleChatFileDrop, handleChatPasteImage
   } = props;
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -60,6 +60,51 @@ export function ChatPanel(props: WorkspaceViewProps) {
       handleSendMessage();
     }
   };
+
+  // 拖放状态
+  const [isDragging, setIsDragging] = useState(false);
+  const dragCounter = useRef(0);
+
+  // 处理拖放事件
+  const handleDragEnter = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    dragCounter.current++;
+    if (e.dataTransfer.types.includes('Files')) {
+      setIsDragging(true);
+    }
+  }, []);
+
+  const handleDragLeave = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    dragCounter.current--;
+    if (dragCounter.current === 0) {
+      setIsDragging(false);
+    }
+  }, []);
+
+  const handleDragOver = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+  }, []);
+
+  const handleDrop = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+    dragCounter.current = 0;
+    
+    const files = Array.from(e.dataTransfer.files);
+    if (files.length > 0) {
+      handleChatFileDrop(files);
+    }
+  }, [handleChatFileDrop]);
+
+  // 处理粘贴事件
+  const handlePaste = useCallback((e: React.ClipboardEvent) => {
+    handleChatPasteImage(e);
+  }, [handleChatPasteImage]);
 
   const preprocessContent = (content: string) => {
     if (!content) return '';
@@ -270,13 +315,32 @@ export function ChatPanel(props: WorkspaceViewProps) {
       </div>
 
       {/* 聊天输入区域 */}
-      <div className="p-4 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
-        <div className="relative group">
+      <div 
+        className="p-4 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800"
+        onDragEnter={handleDragEnter}
+        onDragLeave={handleDragLeave}
+        onDragOver={handleDragOver}
+        onDrop={handleDrop}
+      >
+        <div className={`relative group transition-all duration-200 ${isDragging ? 'ring-2 ring-indigo-500 ring-offset-2 rounded-2xl' : ''}`}>
+          {/* 拖放提示遮罩 */}
+          {isDragging && (
+            <div className="absolute inset-0 bg-indigo-50 dark:bg-indigo-900/30 rounded-2xl border-2 border-dashed border-indigo-400 flex items-center justify-center z-10">
+              <div className="text-center">
+                <svg className="w-8 h-8 mx-auto text-indigo-500 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                </svg>
+                <p className="text-sm font-medium text-indigo-600 dark:text-indigo-400">拖放图片或音频文件</p>
+                <p className="text-xs text-indigo-500 dark:text-indigo-400 mt-1">支持 PNG, JPG, MP3, WAV 等格式</p>
+              </div>
+            </div>
+          )}
           <textarea
             value={chatInput}
             onChange={(e) => setChatInput(e.target.value)}
             onKeyDown={onKeyDown}
-            placeholder="输入日文句子或提问..."
+            onPaste={handlePaste}
+            placeholder="输入日文句子或提问... (可拖放/粘贴图片、音频)"
             rows={1}
             className="w-full pl-4 pr-12 py-3 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-2xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none resize-none text-sm transition-all min-h-[48px] max-h-32"
             style={{ height: 'auto' }}
@@ -297,7 +361,7 @@ export function ChatPanel(props: WorkspaceViewProps) {
           </button>
         </div>
         <p className="text-[10px] text-center text-gray-400 dark:text-gray-500 mt-2">
-          由 Qwen 提供支持 · 聊天记录将自动保存
+          由 Qwen 提供支持 · 可拖放图片/音频、Ctrl+V粘贴图片
         </p>
       </div>
     </div>

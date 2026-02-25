@@ -1278,6 +1278,178 @@ export function WorkspacePageContent() {
     }
   };
 
+  // 处理聊天输入框的文件拖放（图片/音频）
+  const handleChatFileDrop = async (files: File[]) => {
+    if (files.length === 0) return;
+    
+    setSourcesLoading(true);
+    try {
+      const { getAnonymousHeaders } = await import('@/hooks/useAnonymousUser');
+      const headers = getAnonymousHeaders() as Record<string, string>;
+      if (headers['Content-Type']) {
+        delete headers['Content-Type'];
+      }
+
+      let uploadedSourceId: string | null = null;
+      
+      for (const file of files) {
+        // 检查文件类型：只接受图片和音频
+        const isImage = file.type.startsWith('image/');
+        const isAudio = file.type.startsWith('audio/') || 
+          ['.mp3', '.wav', '.ogg', '.m4a', '.aac', '.flac', '.wma', '.aiff', '.opus']
+            .some(ext => file.name.toLowerCase().endsWith(ext));
+        
+        if (!isImage && !isAudio) {
+          addMessage({
+            id: Date.now().toString(),
+            role: 'assistant',
+            content: `不支持的文件类型: ${file.name}。请拖入图片或音频文件。`,
+            type: 'chat',
+          });
+          continue;
+        }
+
+        addMessage({
+          id: Date.now().toString(),
+          role: 'assistant',
+          content: `正在上传${isImage ? '图片' : '音频'}: ${file.name}...`,
+          type: 'chat',
+        });
+
+        const formData = new FormData();
+        formData.append('file', file);
+        
+        const res = await fetch('/api/sources', {
+          method: 'POST',
+          headers,
+          body: formData,
+        });
+
+        if (res.status === 413) {
+          throw new Error(`文件太大: ${file.name}。请上传小于50MB的文件。`);
+        }
+
+        if (!res.ok) {
+          const text = await res.text();
+          let errorMsg = '上传失败';
+          try {
+            const json = JSON.parse(text);
+            errorMsg = json.error?.message || errorMsg;
+          } catch {
+            errorMsg = text || `上传失败 (status ${res.status})`;
+          }
+          throw new Error(errorMsg);
+        }
+
+        const response = await res.json();
+        if (response.success) {
+          uploadedSourceId = response.data.source.id;
+          await fetchSources();
+          
+          addMessage({
+            id: Date.now().toString(),
+            role: 'assistant',
+            content: `✅ ${isImage ? '图片' : '音频'}上传成功: ${file.name}。已添加到来源列表。`,
+            type: 'chat',
+          });
+        } else {
+          throw new Error(response.error?.message || '上传失败');
+        }
+      }
+
+      // 自动选中最后上传的文件
+      if (uploadedSourceId) {
+        setSelectedSourceId(uploadedSourceId);
+      }
+    } catch (err) {
+      console.error('Chat file drop error:', err);
+      addMessage({
+        id: Date.now().toString(),
+        role: 'assistant',
+        content: `上传失败: ${err instanceof Error ? err.message : '未知错误'}`,
+        type: 'chat',
+      });
+    } finally {
+      setSourcesLoading(false);
+    }
+  };
+
+  // 处理聊天输入框的图片粘贴 (Ctrl+V)
+  const handleChatPasteImage = async (e: React.ClipboardEvent) => {
+    const items = e.clipboardData?.items;
+    if (!items) return;
+
+    const imageItems: DataTransferItem[] = [];
+    for (let i = 0; i < items.length; i++) {
+      if (items[i].type.startsWith('image/')) {
+        imageItems.push(items[i]);
+      }
+    }
+
+    if (imageItems.length === 0) return; // 没有图片，让默认文本粘贴处理
+
+    e.preventDefault(); // 有图片时阻止默认行为
+
+    setSourcesLoading(true);
+    try {
+      const { getAnonymousHeaders } = await import('@/hooks/useAnonymousUser');
+      const headers = getAnonymousHeaders() as Record<string, string>;
+      if (headers['Content-Type']) {
+        delete headers['Content-Type'];
+      }
+
+      for (const item of imageItems) {
+        const blob = item.getAsFile();
+        if (!blob) continue;
+
+        const file = new File([blob], `pasted_image_${Date.now()}.png`, { type: blob.type });
+        
+        addMessage({
+          id: Date.now().toString(),
+          role: 'assistant',
+          content: '正在上传粘贴的图片...',
+          type: 'chat',
+        });
+
+        const formData = new FormData();
+        formData.append('file', file);
+        
+        const res = await fetch('/api/sources', {
+          method: 'POST',
+          headers,
+          body: formData,
+        });
+
+        if (!res.ok) {
+          throw new Error('上传失败');
+        }
+
+        const response = await res.json();
+        if (response.success) {
+          await fetchSources();
+          setSelectedSourceId(response.data.source.id);
+          
+          addMessage({
+            id: Date.now().toString(),
+            role: 'assistant',
+            content: '✅ 图片上传成功，已添加到来源列表。',
+            type: 'chat',
+          });
+        }
+      }
+    } catch (err) {
+      console.error('Paste image error:', err);
+      addMessage({
+        id: Date.now().toString(),
+        role: 'assistant',
+        content: `粘贴图片失败: ${err instanceof Error ? err.message : '未知错误'}`,
+        type: 'chat',
+      });
+    } finally {
+      setSourcesLoading(false);
+    }
+  };
+
   const handleSaveNote = async (content: string, options?: { name?: string; audioUrl?: string; timestamps?: Array<{ begin_time: number; end_time: number; text: string }> }) => {
     try {
       const { getAnonymousHeaders } = await import('@/hooks/useAnonymousUser');
@@ -1489,6 +1661,8 @@ export function WorkspacePageContent() {
       handleUploadAudioFolder={handleUploadAudioFolder}
       handlePasteImage={handlePasteImage}
       handleInsertPastedText={handleInsertPastedText}
+      handleChatFileDrop={handleChatFileDrop}
+      handleChatPasteImage={handleChatPasteImage}
       handleSaveNote={handleSaveNote}
       
       messages={messages}
