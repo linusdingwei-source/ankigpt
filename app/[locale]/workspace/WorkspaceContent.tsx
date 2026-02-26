@@ -898,7 +898,7 @@ export function WorkspacePageContent() {
             
             const genRes = await fetch('/api/cards/generate', {
               method: 'POST',
-              headers: { ...headers, 'Content-Type': 'application/json' },
+              headers: { ...headers, 'Content-Type': 'application/json', 'Connection': 'keep-alive' },
               body: JSON.stringify({
                 text: item.text,
                 cardType: item.type === 'WORD' ? '单词' : '问答题（附翻转卡片）',
@@ -907,6 +907,7 @@ export function WorkspacePageContent() {
                 includePronunciation: true,
               }),
               signal: controller.signal,
+              keepalive: true,
             });
             
             clearTimeout(timeoutId);
@@ -934,6 +935,11 @@ export function WorkspacePageContent() {
 
       for (let i = 0; i < targetItems.length; i++) {
         const item = targetItems[i];
+        
+        // 请求节流：每个请求之间添加延迟，避免服务器过载
+        if (i > 0) {
+          await new Promise(resolve => setTimeout(resolve, 500)); // 500ms delay between requests
+        }
         
         // 更新进度显示
         updateProgress(i + 1, targetItems.length, item.text.substring(0, 30) + (item.text.length > 30 ? '...' : ''));
@@ -1730,6 +1736,11 @@ export function WorkspacePageContent() {
       for (let i = 0; i < failedItems.length; i++) {
         const item = failedItems[i];
         
+        // 请求节流：重试时增加延迟
+        if (i > 0) {
+          await new Promise(resolve => setTimeout(resolve, 1000)); // 1s delay for retries
+        }
+        
         // 更新进度
         setMessages(prev => {
           const newMessages = prev.filter(m => m.id !== statusMessageId);
@@ -1757,7 +1768,7 @@ export function WorkspacePageContent() {
             
             const genRes = await fetch('/api/cards/generate', {
               method: 'POST',
-              headers: { ...headers, 'Content-Type': 'application/json' },
+              headers: { ...headers, 'Content-Type': 'application/json', 'Connection': 'keep-alive' },
               body: JSON.stringify({
                 text: item.text,
                 cardType: item.type === 'WORD' ? '单词' : '问答题（附翻转卡片）',
@@ -1766,6 +1777,7 @@ export function WorkspacePageContent() {
                 includePronunciation: true,
               }),
               signal: controller.signal,
+              keepalive: true,
             });
             
             clearTimeout(timeoutId);

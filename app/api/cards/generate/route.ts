@@ -87,11 +87,16 @@ export async function POST(request: NextRequest) {
 日文句子：
 ${text}`;
 
+      // 添加超时控制
+      const llmController = new AbortController();
+      const llmTimeoutId = setTimeout(() => llmController.abort(), 45000); // 45s timeout for LLM
+
       const llmResponse = await fetch('https://dashscope.aliyuncs.com/api/v1/services/aigc/text-generation/generation', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${process.env.DASHSCOPE_API_KEY}`,
           'Content-Type': 'application/json',
+          'Connection': 'keep-alive',
         },
         body: JSON.stringify({
           model: 'qwen-plus',
@@ -105,7 +110,10 @@ ${text}`;
             result_format: 'message'
           }
         }),
+        signal: llmController.signal,
       });
+      
+      clearTimeout(llmTimeoutId);
 
       if (!llmResponse.ok) {
         const errorData = await llmResponse.json().catch(() => ({}));
