@@ -149,7 +149,7 @@ export function WorkspacePageContent() {
   // 面板收起/展开状态
   const [isSourcePanelCollapsed, setIsSourcePanelCollapsed] = useState(false);
   const [isStudioPanelCollapsed, setIsStudioPanelCollapsed] = useState(false);
-  const [activeStudioTab, setActiveStudioTab] = useState<'CARD' | 'NOTE'>('CARD');
+  const [activeStudioTab, setActiveStudioTab] = useState<'WORD' | 'SENTENCE' | 'NOTE'>('WORD');
 
   const [sourcePanelWidth, setSourcePanelWidth] = useState(320);
   const [studioPanelWidth, setStudioPanelWidth] = useState(360);

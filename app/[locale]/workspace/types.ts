@@ -17,8 +17,8 @@ export interface WorkspaceViewProps {
   setIsSourcePanelCollapsed: (v: boolean) => void;
   isStudioPanelCollapsed: boolean;
   setIsStudioPanelCollapsed: (v: boolean) => void;
-  activeStudioTab: 'CARD' | 'NOTE';
-  setActiveStudioTab: (v: 'CARD' | 'NOTE') => void;
+  activeStudioTab: 'WORD' | 'SENTENCE' | 'NOTE';
+  setActiveStudioTab: (v: 'WORD' | 'SENTENCE' | 'NOTE') => void;
   
   // Sources
   sources: any[];

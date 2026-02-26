@@ -21,7 +21,7 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const deckName = searchParams.get('deck');
     const sourceId = searchParams.get('sourceId');
-    const category = searchParams.get('category') || 'CARD';
+    const category = searchParams.get('category') || 'WORD'; // WORD, SENTENCE, or NOTE
     const searchQuery = searchParams.get('search'); // 搜索关键词
     const page = parseInt(searchParams.get('page') || '1');
     const limit = Math.min(parseInt(searchParams.get('limit') || '20'), 100);
@@ -32,14 +32,25 @@ export async function GET(request: NextRequest) {
       deckName?: string;
       sourceId?: string;
       category?: string;
+      cardType?: string | { not: string };
       OR?: Array<{
         frontContent?: { contains: string; mode: 'insensitive' };
         backContent?: { contains: string; mode: 'insensitive' };
       }>;
     } = {
       userId,
-      category,
     };
+
+    // Filter by category: WORD shows "单词" cardType, SENTENCE shows non-"单词", NOTE uses category field
+    if (category === 'NOTE') {
+      where.category = 'NOTE';
+    } else if (category === 'WORD') {
+      where.category = 'CARD';
+      where.cardType = '单词';
+    } else if (category === 'SENTENCE') {
+      where.category = 'CARD';
+      where.cardType = { not: '单词' };
+    }
 
     if (deckName) {
       where.deckName = deckName;
