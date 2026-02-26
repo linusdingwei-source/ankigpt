@@ -949,7 +949,7 @@ export function SourcesPanel(props: WorkspaceViewProps) {
                               </div>
                             </div>
                             <button
-                              onClick={() => handleDeleteSource(source.id)}
+                              onClick={(e) => { e.stopPropagation(); handleDeleteSource(source.id); }}
                               className="w-full px-4 py-2 text-left text-sm text-red-600 dark:text-red-400 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2"
                             >
                               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1123,7 +1123,7 @@ export function SourcesPanel(props: WorkspaceViewProps) {
                                       </div>
                                     </div>
                                     <button
-                                      onClick={() => handleDeleteSource(source.id)}
+                                      onClick={(e) => { e.stopPropagation(); handleDeleteSource(source.id); }}
                                       className="w-full px-4 py-2 text-left text-sm text-red-600 dark:text-red-400 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2"
                                     >
                                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1275,7 +1275,7 @@ export function SourcesPanel(props: WorkspaceViewProps) {
                             </div>
                           </div>
                           <button
-                            onClick={() => handleDeleteSource(source.id)}
+                            onClick={(e) => { e.stopPropagation(); handleDeleteSource(source.id); }}
                             className="w-full px-4 py-2 text-left text-sm text-red-600 dark:text-red-400 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2"
                           >
                             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
