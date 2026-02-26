@@ -829,7 +829,7 @@ export function WorkspacePageContent() {
             id: Date.now().toString(),
             role: 'assistant',
             content: `提炼结果：\n\n**核心单词：**\n${vocabulary.map((v: string) => `- ${v}`).join('\n')}\n\n**练习句子：**\n${sentences.map((s: string) => `- ${s}`).join('\n')}`,
-            type: 'chat',
+            type: 'analysis',
           });
         } else {
           console.warn('Refinement failed, falling back to direct split');
