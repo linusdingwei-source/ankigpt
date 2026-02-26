@@ -834,7 +834,7 @@ export function SourcesPanel(props: WorkspaceViewProps) {
                               </button>
                               <div className="absolute right-full top-0 mr-1 w-40 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg py-1 hidden group-hover/move:block">
                                 <button
-                                  onClick={() => handleMoveSource(source.id, null)}
+                                  onClick={(e) => { e.stopPropagation(); handleMoveSource(source.id, null); }}
                                   className="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
                                 >
                                   根目录
@@ -842,7 +842,7 @@ export function SourcesPanel(props: WorkspaceViewProps) {
                                 {folders.map(folder => (
                                   <button
                                     key={folder.id}
-                                    onClick={() => handleMoveSource(source.id, folder.id)}
+                                    onClick={(e) => { e.stopPropagation(); handleMoveSource(source.id, folder.id); }}
                                     className="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 truncate"
                                   >
                                     {folder.name}
@@ -1025,7 +1025,7 @@ export function SourcesPanel(props: WorkspaceViewProps) {
                                       </button>
                                       <div className="absolute right-full top-0 mr-1 w-40 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg py-1 hidden group-hover/move:block">
                                         <button
-                                          onClick={() => handleMoveSource(source.id, null)}
+                                          onClick={(e) => { e.stopPropagation(); handleMoveSource(source.id, null); }}
                                           className="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
                                         >
                                           根目录
@@ -1033,7 +1033,7 @@ export function SourcesPanel(props: WorkspaceViewProps) {
                                         {folders.filter(f => f.id !== folder.id).map(f => (
                                           <button
                                             key={f.id}
-                                            onClick={() => handleMoveSource(source.id, f.id)}
+                                            onClick={(e) => { e.stopPropagation(); handleMoveSource(source.id, f.id); }}
                                             className="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 truncate"
                                           >
                                             {f.name}
@@ -1197,7 +1197,7 @@ export function SourcesPanel(props: WorkspaceViewProps) {
                               {folders.map(folder => (
                                 <button
                                   key={folder.id}
-                                  onClick={() => handleMoveSource(source.id, folder.id)}
+                                  onClick={(e) => { e.stopPropagation(); handleMoveSource(source.id, folder.id); }}
                                   className="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 truncate"
                                 >
                                   {folder.name}
