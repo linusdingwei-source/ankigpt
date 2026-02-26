@@ -16,7 +16,7 @@ export function ChatPanel(props: WorkspaceViewProps) {
     workspaceT,
     messages, chatInput, setChatInput, chatLoading, handleSendMessage,
     handleSaveNote, handleChatFileDrop, handleChatPasteImage, handleGenerateCardsFromText,
-    handleSaveInputAsSource, sourcesLoading,
+    handleSaveInputAsSource, handleRetryFailedItems, sourcesLoading,
     cardLoading
   } = props;
 
@@ -208,9 +208,18 @@ export function ChatPanel(props: WorkspaceViewProps) {
                         {/* 失败的项目 */}
                         {message.data?.failedItems && message.data.failedItems.length > 0 && (
                           <div className="mt-2">
-                            <div className="text-[10px] font-medium text-red-600 dark:text-red-400 mb-1">失败详情:</div>
+                            <div className="flex items-center justify-between mb-1">
+                              <div className="text-[10px] font-medium text-red-600 dark:text-red-400">失败详情:</div>
+                              <button
+                                onClick={() => handleRetryFailedItems(message.data?.failedItems?.map((item: { text: string; type?: string }) => ({ text: item.text, type: item.type })) || [])}
+                                disabled={cardLoading}
+                                className={`text-[10px] px-2 py-0.5 bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400 rounded hover:bg-orange-200 dark:hover:bg-orange-900/50 transition-colors ${cardLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
+                              >
+                                重试失败项
+                              </button>
+                            </div>
                             <div className="max-h-32 overflow-y-auto space-y-1 pr-1 custom-scrollbar">
-                              {message.data.failedItems.map((item: { text: string; reason: string }, idx: number) => (
+                              {message.data.failedItems.map((item: { text: string; type?: string; reason: string }, idx: number) => (
                                 <div 
                                   key={idx}
                                   className="text-[10px] p-2 bg-red-50 dark:bg-red-900/20 rounded border border-red-200 dark:border-red-800"

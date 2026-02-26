@@ -54,7 +54,7 @@ type ChatMessage = {
     successCount?: number;
     failCount?: number;
     cards?: Array<{ id: string; frontContent: string }>;
-    failedItems?: Array<{ text: string; reason: string }>;
+    failedItems?: Array<{ text: string; type?: string; reason: string }>;
     // ASR-related properties
     sourceId?: string;
     sourceName?: string;
@@ -867,7 +867,7 @@ export function WorkspacePageContent() {
       let successCount = 0;
       let failCount = 0;
       const generatedCards: Card[] = [];
-      const failedItems: Array<{ text: string; reason: string }> = [];
+      const failedItems: Array<{ text: string; type?: string; reason: string }> = [];
 
       // 更新进度的函数
       const updateProgress = (current: number, total: number, currentItem: string) => {
@@ -884,42 +884,71 @@ export function WorkspacePageContent() {
         });
       };
 
+      // 带重试的单个卡片生成函数
+      const generateSingleCard = async (item: { text: string; type: string }, retries = 2): Promise<{ success: boolean; card?: Card; error?: string }> => {
+        for (let attempt = 0; attempt <= retries; attempt++) {
+          try {
+            if (attempt > 0) {
+              // 重试前等待，指数退避
+              await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
+            }
+            
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 60000); // 60s timeout
+            
+            const genRes = await fetch('/api/cards/generate', {
+              method: 'POST',
+              headers: { ...headers, 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                text: item.text,
+                cardType: item.type === 'WORD' ? '单词' : '问答题（附翻转卡片）',
+                deckName: currentWorkspaceDeck.trim() || 'default',
+                sourceId: selectedSourceId,
+                includePronunciation: true,
+              }),
+              signal: controller.signal,
+            });
+            
+            clearTimeout(timeoutId);
+
+            const genResponse = await genRes.json();
+            if (genRes.ok && genResponse.success) {
+              return { success: true, card: genResponse.data.card };
+            } else {
+              const errorMsg = genResponse.error?.message || genResponse.message || `HTTP ${genRes.status}`;
+              if (attempt === retries) {
+                return { success: false, error: errorMsg };
+              }
+              // 继续重试
+            }
+          } catch (err) {
+            const errorMsg = err instanceof Error ? err.message : '网络错误';
+            if (attempt === retries) {
+              return { success: false, error: errorMsg };
+            }
+            // 继续重试
+          }
+        }
+        return { success: false, error: '重试失败' };
+      };
+
       for (let i = 0; i < targetItems.length; i++) {
         const item = targetItems[i];
         
         // 更新进度显示
         updateProgress(i + 1, targetItems.length, item.text.substring(0, 30) + (item.text.length > 30 ? '...' : ''));
         
-        try {
-          const genRes = await fetch('/api/cards/generate', {
-            method: 'POST',
-            headers: { ...headers, 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              text: item.text,
-              cardType: item.type === 'WORD' ? '单词' : '问答题（附翻转卡片）',
-              deckName: currentWorkspaceDeck.trim() || 'default',
-              sourceId: selectedSourceId,
-              includePronunciation: true,
-            }),
-          });
-
-          const genResponse = await genRes.json();
-          if (genRes.ok && genResponse.success) {
-            successCount++;
-            generatedCards.push(genResponse.data.card);
-          } else {
-            failCount++;
-            failedItems.push({
-              text: item.text,
-              reason: genResponse.error?.message || genResponse.message || `HTTP ${genRes.status}`,
-            });
-          }
-        } catch (err) {
-          console.error(`第 ${i + 1} 个项目生成失败:`, err);
+        const result = await generateSingleCard(item);
+        if (result.success && result.card) {
+          successCount++;
+          generatedCards.push(result.card);
+        } else {
+          console.error(`第 ${i + 1} 个项目生成失败:`, result.error);
           failCount++;
           failedItems.push({
             text: item.text,
-            reason: err instanceof Error ? err.message : '网络错误',
+            type: item.type,
+            reason: result.error || '未知错误',
           });
         }
       }
@@ -1675,6 +1704,124 @@ export function WorkspacePageContent() {
     }
   };
 
+  // 重试失败的卡片生成
+  const handleRetryFailedItems = async (failedItems: Array<{ text: string; type?: string }>) => {
+    if (failedItems.length === 0) return;
+    
+    setCardLoading(true);
+    
+    try {
+      const { getAnonymousHeaders } = await import('@/hooks/useAnonymousUser');
+      const headers = getAnonymousHeaders();
+      
+      const statusMessageId = Date.now().toString();
+      addMessage({
+        id: statusMessageId,
+        role: 'assistant',
+        content: `正在重试 ${failedItems.length} 个失败项目...`,
+        type: 'chat',
+      });
+
+      let successCount = 0;
+      let failCount = 0;
+      const generatedCards: Card[] = [];
+      const stillFailedItems: Array<{ text: string; type?: string; reason: string }> = [];
+
+      for (let i = 0; i < failedItems.length; i++) {
+        const item = failedItems[i];
+        
+        // 更新进度
+        setMessages(prev => {
+          const newMessages = prev.filter(m => m.id !== statusMessageId);
+          const progressMsg: ChatMessage = {
+            id: statusMessageId,
+            role: 'assistant',
+            content: `正在重试 (${i + 1}/${failedItems.length})...\n\n当前: ${item.text.substring(0, 30)}${item.text.length > 30 ? '...' : ''}`,
+            type: 'chat',
+            timestamp: Date.now(),
+          };
+          return [...newMessages, progressMsg].slice(-50);
+        });
+
+        // 重试逻辑，带重试
+        let success = false;
+        let lastError = '';
+        for (let attempt = 0; attempt < 3; attempt++) {
+          try {
+            if (attempt > 0) {
+              await new Promise(resolve => setTimeout(resolve, 2000 * attempt));
+            }
+            
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 60000);
+            
+            const genRes = await fetch('/api/cards/generate', {
+              method: 'POST',
+              headers: { ...headers, 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                text: item.text,
+                cardType: item.type === 'WORD' ? '单词' : '问答题（附翻转卡片）',
+                deckName: currentWorkspaceDeck.trim() || 'default',
+                sourceId: selectedSourceId,
+                includePronunciation: true,
+              }),
+              signal: controller.signal,
+            });
+            
+            clearTimeout(timeoutId);
+
+            const genResponse = await genRes.json();
+            if (genRes.ok && genResponse.success) {
+              success = true;
+              successCount++;
+              generatedCards.push(genResponse.data.card);
+              break;
+            } else {
+              lastError = genResponse.error?.message || genResponse.message || `HTTP ${genRes.status}`;
+            }
+          } catch (err) {
+            lastError = err instanceof Error ? err.message : '网络错误';
+          }
+        }
+        
+        if (!success) {
+          failCount++;
+          stillFailedItems.push({
+            text: item.text,
+            type: item.type,
+            reason: lastError,
+          });
+        }
+      }
+
+      await fetchCards();
+      await fetchCredits();
+      
+      setMessages(prev => {
+        const newMessages = prev.filter(m => m.id !== statusMessageId);
+        const resultMsg: ChatMessage = {
+          id: Date.now().toString(),
+          role: 'assistant',
+          content: `重试完成！\n成功: ${successCount}\n仍失败: ${failCount}`,
+          type: 'flashcards',
+          data: { successCount, failCount, cards: generatedCards, failedItems: stillFailedItems },
+          timestamp: Date.now(),
+        };
+        return [...newMessages, resultMsg].slice(-50);
+      });
+    } catch (err) {
+      console.error('Retry error:', err);
+      addMessage({
+        id: Date.now().toString(),
+        role: 'assistant',
+        content: `重试失败: ${err instanceof Error ? err.message : '未知错误'}`,
+        type: 'chat',
+      });
+    } finally {
+      setCardLoading(false);
+    }
+  };
+
   const handleSendMessage = async (text?: string) => {
     const content = text || chatInput;
     if (!content.trim() || chatLoading) return;
@@ -1846,6 +1993,7 @@ export function WorkspacePageContent() {
       handleChatPasteImage={handleChatPasteImage}
       handleSaveInputAsSource={handleSaveInputAsSource}
       handleGenerateCardsFromText={handleGenerateCardsFromText}
+      handleRetryFailedItems={handleRetryFailedItems}
       handleSaveNote={handleSaveNote}
       
       messages={messages}
