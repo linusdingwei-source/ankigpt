@@ -867,8 +867,26 @@ export function WorkspacePageContent() {
       let failCount = 0;
       const generatedCards: Card[] = [];
 
+      // 更新进度的函数
+      const updateProgress = (current: number, total: number, currentItem: string) => {
+        setMessages(prev => {
+          const newMessages = prev.filter(m => m.id !== statusMessageId);
+          const progressMsg: ChatMessage = {
+            id: statusMessageId,
+            role: 'assistant',
+            content: `正在生成卡片 (${current}/${total})...\n\n当前: ${currentItem}`,
+            type: 'chat',
+            timestamp: Date.now(),
+          };
+          return [...newMessages, progressMsg].slice(-50);
+        });
+      };
+
       for (let i = 0; i < targetItems.length; i++) {
         const item = targetItems[i];
+        
+        // 更新进度显示
+        updateProgress(i + 1, targetItems.length, item.text.substring(0, 30) + (item.text.length > 30 ? '...' : ''));
         
         try {
           const genRes = await fetch('/api/cards/generate', {
