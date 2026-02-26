@@ -194,6 +194,9 @@ export async function DELETE(
     }
 
     const { id } = await params;
+    const url = new URL(request.url);
+    const deleteCards = url.searchParams.get('deleteCards') === 'true';
+    const checkOnly = url.searchParams.get('checkOnly') === 'true';
 
     // 验证来源是否存在且属于当前用户
     const existingSource = await prisma.source.findFirst({
@@ -210,13 +213,41 @@ export async function DELETE(
       );
     }
 
+    // 查询关联的卡片数量
+    const cardCount = await prisma.card.count({
+      where: {
+        sourceId: id,
+        userId,
+      },
+    });
+
+    // 如果只是检查，返回关联卡片数量
+    if (checkOnly) {
+      return NextResponse.json(
+        successResponse({ cardCount, sourceName: existingSource.name })
+      );
+    }
+
+    // 如果选择同时删除卡片
+    if (deleteCards && cardCount > 0) {
+      await prisma.card.deleteMany({
+        where: {
+          sourceId: id,
+          userId,
+        },
+      });
+    }
+
     // 删除来源
     await prisma.source.delete({
       where: { id },
     });
 
     return NextResponse.json(
-      successResponse({ message: 'Source deleted successfully' })
+      successResponse({ 
+        message: 'Source deleted successfully',
+        deletedCards: deleteCards ? cardCount : 0,
+      })
     );
   } catch (error) {
     console.error('Delete source error:', error);

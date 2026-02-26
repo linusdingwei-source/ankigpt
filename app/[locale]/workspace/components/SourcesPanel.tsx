@@ -51,6 +51,14 @@ export function SourcesPanel(props: WorkspaceViewProps) {
   const [newFolderName, setNewFolderName] = useState('');
   const [_movingSourceId, setMovingSourceId] = useState<string | null>(null);
 
+  // Delete source confirmation dialog state
+  const [deleteConfirmation, setDeleteConfirmation] = useState<{
+    show: boolean;
+    sourceId: string;
+    sourceName: string;
+    cardCount: number;
+  } | null>(null);
+
   // Fetch folders
   const fetchFolders = useCallback(async () => {
     try {
@@ -128,6 +136,61 @@ export function SourcesPanel(props: WorkspaceViewProps) {
       }
     } catch (error) {
       console.error('Failed to move source:', error);
+    }
+  };
+
+  // Delete source handler - check for associated cards first
+  const handleDeleteSource = async (sourceId: string) => {
+    try {
+      const { getAnonymousHeaders } = await import('@/hooks/useAnonymousUser');
+      const headers = getAnonymousHeaders();
+      
+      // First, check if there are associated cards
+      const checkRes = await fetch(`/api/sources/${sourceId}?checkOnly=true`, {
+        method: 'DELETE',
+        headers,
+      });
+      const checkData = await checkRes.json();
+      
+      if (checkRes.ok && checkData.success) {
+        const { cardCount, sourceName } = checkData.data;
+        
+        if (cardCount > 0) {
+          // Show confirmation dialog
+          setDeleteConfirmation({
+            show: true,
+            sourceId,
+            sourceName,
+            cardCount,
+          });
+        } else {
+          // No cards, delete directly
+          if (confirm('确定要删除这个来源吗？')) {
+            await performDeleteSource(sourceId, false);
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Failed to check source:', error);
+    }
+  };
+
+  // Perform the actual deletion
+  const performDeleteSource = async (sourceId: string, deleteCards: boolean) => {
+    try {
+      const { getAnonymousHeaders } = await import('@/hooks/useAnonymousUser');
+      const headers = getAnonymousHeaders();
+      const res = await fetch(`/api/sources/${sourceId}?deleteCards=${deleteCards}`, {
+        method: 'DELETE',
+        headers,
+      });
+      if (res.ok) {
+        await fetchSources();
+        setShowSourceMenuId(null);
+        setDeleteConfirmation(null);
+      }
+    } catch (error) {
+      console.error('Failed to delete source:', error);
     }
   };
 
@@ -556,6 +619,41 @@ export function SourcesPanel(props: WorkspaceViewProps) {
         </div>
       )}
 
+      {/* 删除来源确认弹窗 */}
+      {deleteConfirmation?.show && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <div className="bg-white dark:bg-gray-800 rounded-lg p-6 w-96 shadow-xl">
+            <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">删除确认</h3>
+            <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+              来源 <span className="font-medium text-gray-900 dark:text-white">&ldquo;{deleteConfirmation.sourceName}&rdquo;</span> 关联了 <span className="font-bold text-indigo-600">{deleteConfirmation.cardCount}</span> 张卡片。
+            </p>
+            <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">请选择删除方式：</p>
+            <div className="space-y-2 mb-4">
+              <button
+                onClick={() => performDeleteSource(deleteConfirmation.sourceId, false)}
+                className="w-full px-4 py-3 text-left text-sm bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors"
+              >
+                <div className="font-medium text-gray-900 dark:text-white">仅删除来源</div>
+                <div className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">保留卡片，卡片将不再关联此来源</div>
+              </button>
+              <button
+                onClick={() => performDeleteSource(deleteConfirmation.sourceId, true)}
+                className="w-full px-4 py-3 text-left text-sm bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors"
+              >
+                <div className="font-medium text-red-600 dark:text-red-400">删除来源和关联卡片</div>
+                <div className="text-xs text-red-500 dark:text-red-400 mt-0.5">同时删除 {deleteConfirmation.cardCount} 张卡片（不可恢复）</div>
+              </button>
+            </div>
+            <button
+              onClick={() => setDeleteConfirmation(null)}
+              className="w-full px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600"
+            >
+              取消
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* 已保存的来源列表 */}
       <div className="flex-1 overflow-y-auto p-4 min-h-0">
         {sourcesLoading ? (
@@ -851,24 +949,7 @@ export function SourcesPanel(props: WorkspaceViewProps) {
                               </div>
                             </div>
                             <button
-                              onClick={async () => {
-                                if (confirm('确定要删除这个来源吗？')) {
-                                  try {
-                                    const { getAnonymousHeaders } = await import('@/hooks/useAnonymousUser');
-                                    const headers = getAnonymousHeaders();
-                                    const res = await fetch(`/api/sources/${source.id}`, {
-                                      method: 'DELETE',
-                                      headers,
-                                    });
-                                    if (res.ok) {
-                                      await fetchSources();
-                                      setShowSourceMenuId(null);
-                                    }
-                                  } catch (error) {
-                                    console.error('Failed to delete source:', error);
-                                  }
-                                }
-                              }}
+                              onClick={() => handleDeleteSource(source.id)}
                               className="w-full px-4 py-2 text-left text-sm text-red-600 dark:text-red-400 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2"
                             >
                               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1042,22 +1123,7 @@ export function SourcesPanel(props: WorkspaceViewProps) {
                                       </div>
                                     </div>
                                     <button
-                                      onClick={async () => {
-                                        if (confirm('确定要删除这个来源吗？')) {
-                                          try {
-                                            const { getAnonymousHeaders } = await import('@/hooks/useAnonymousUser');
-                                            const headers = getAnonymousHeaders();
-                                            const res = await fetch(`/api/sources/${source.id}`, { method: 'DELETE', headers });
-                                            if (res.ok) {
-                                              await fetchSources();
-                                              await fetchFolders();
-                                              setShowSourceMenuId(null);
-                                            }
-                                          } catch (error) {
-                                            console.error('Failed to delete source:', error);
-                                          }
-                                        }
-                                      }}
+                                      onClick={() => handleDeleteSource(source.id)}
                                       className="w-full px-4 py-2 text-left text-sm text-red-600 dark:text-red-400 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2"
                                     >
                                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1209,21 +1275,7 @@ export function SourcesPanel(props: WorkspaceViewProps) {
                             </div>
                           </div>
                           <button
-                            onClick={async () => {
-                              if (confirm('确定要删除这个来源吗？')) {
-                                try {
-                                  const { getAnonymousHeaders } = await import('@/hooks/useAnonymousUser');
-                                  const headers = getAnonymousHeaders();
-                                  const res = await fetch(`/api/sources/${source.id}`, { method: 'DELETE', headers });
-                                  if (res.ok) {
-                                    await fetchSources();
-                                    setShowSourceMenuId(null);
-                                  }
-                                } catch (error) {
-                                  console.error('Failed to delete source:', error);
-                                }
-                              }
-                            }}
+                            onClick={() => handleDeleteSource(source.id)}
                             className="w-full px-4 py-2 text-left text-sm text-red-600 dark:text-red-400 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2"
                           >
                             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
