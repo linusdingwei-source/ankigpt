@@ -54,6 +54,7 @@ type ChatMessage = {
     successCount?: number;
     failCount?: number;
     cards?: Array<{ id: string; frontContent: string }>;
+    failedItems?: Array<{ text: string; reason: string }>;
     // ASR-related properties
     sourceId?: string;
     sourceName?: string;
@@ -866,6 +867,7 @@ export function WorkspacePageContent() {
       let successCount = 0;
       let failCount = 0;
       const generatedCards: Card[] = [];
+      const failedItems: Array<{ text: string; reason: string }> = [];
 
       // 更新进度的函数
       const updateProgress = (current: number, total: number, currentItem: string) => {
@@ -907,10 +909,18 @@ export function WorkspacePageContent() {
             generatedCards.push(genResponse.data.card);
           } else {
             failCount++;
+            failedItems.push({
+              text: item.text,
+              reason: genResponse.error?.message || genResponse.message || `HTTP ${genRes.status}`,
+            });
           }
         } catch (err) {
           console.error(`第 ${i + 1} 个项目生成失败:`, err);
           failCount++;
+          failedItems.push({
+            text: item.text,
+            reason: err instanceof Error ? err.message : '网络错误',
+          });
         }
       }
 
@@ -925,7 +935,7 @@ export function WorkspacePageContent() {
           role: 'assistant',
           content: `批量生成完成！\n成功: ${successCount}\n失败: ${failCount}`,
           type: 'flashcards',
-          data: { successCount, failCount, cards: generatedCards },
+          data: { successCount, failCount, cards: generatedCards, failedItems },
           timestamp: Date.now(),
         };
         return [...newMessages, resultMsg].slice(-50);

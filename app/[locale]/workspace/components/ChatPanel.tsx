@@ -192,16 +192,36 @@ export function ChatPanel(props: WorkspaceViewProps) {
                             <div className="text-[10px] text-red-700 dark:text-red-400">失败</div>
                           </div>
                         </div>
-                        <div className="max-h-48 overflow-y-auto space-y-1 pr-1 custom-scrollbar">
-                          {message.data?.cards?.map((card: { id: string; frontContent: string }) => (
-                            <div 
-                              key={card.id}
-                              className="text-[11px] p-2 bg-white dark:bg-gray-800 rounded border border-gray-200 dark:border-gray-600 truncate"
-                            >
-                              {card.frontContent}
+                        {/* 成功的卡片 */}
+                        {message.data?.cards && message.data.cards.length > 0 && (
+                          <div className="max-h-36 overflow-y-auto space-y-1 pr-1 custom-scrollbar">
+                            {message.data.cards.map((card: { id: string; frontContent: string }) => (
+                              <div 
+                                key={card.id}
+                                className="text-[11px] p-2 bg-white dark:bg-gray-800 rounded border border-gray-200 dark:border-gray-600 truncate"
+                              >
+                                {card.frontContent}
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                        {/* 失败的项目 */}
+                        {message.data?.failedItems && message.data.failedItems.length > 0 && (
+                          <div className="mt-2">
+                            <div className="text-[10px] font-medium text-red-600 dark:text-red-400 mb-1">失败详情:</div>
+                            <div className="max-h-32 overflow-y-auto space-y-1 pr-1 custom-scrollbar">
+                              {message.data.failedItems.map((item: { text: string; reason: string }, idx: number) => (
+                                <div 
+                                  key={idx}
+                                  className="text-[10px] p-2 bg-red-50 dark:bg-red-900/20 rounded border border-red-200 dark:border-red-800"
+                                >
+                                  <div className="font-medium text-gray-800 dark:text-gray-200 truncate">{item.text}</div>
+                                  <div className="text-red-500 dark:text-red-400 mt-0.5">原因: {item.reason}</div>
+                                </div>
+                              ))}
                             </div>
-                          ))}
-                        </div>
+                          </div>
+                        )}
                       </div>
                     ) : (
                       <div className="markdown-content prose dark:prose-invert prose-sm max-w-none overflow-x-auto">
