@@ -22,7 +22,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { text, cardType, deckName, includePronunciation, sourceId, category = 'CARD', analysis: providedAnalysis } = await request.json();
+    const { text, cardType, deckName, includePronunciation, sourceId, pageNumber, category = 'CARD', analysis: providedAnalysis } = await request.json();
 
     if (!text || typeof text !== 'string') {
       return NextResponse.json(
@@ -207,6 +207,7 @@ ${text}`;
         userId,
         deckId: deck.id,
         sourceId: sourceId || null,
+        pageNumber: pageNumber || null,  // PDF page number for page-level association
         category,
         frontContent: text,
         backContent: analysis.html,
@@ -233,6 +234,7 @@ ${text}`;
           timestamps: card.timestamps,
           kanaText: card.kanaText,
           deckName: card.deckName,
+          pageNumber: card.pageNumber,
           createdAt: card.createdAt,
         },
         credits: remainingCredits,

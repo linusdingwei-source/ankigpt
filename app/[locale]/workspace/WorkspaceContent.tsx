@@ -24,6 +24,7 @@ interface Card {
   createdAt: string;
   updatedAt: string;
   sourceId?: string | null;
+  pageNumber?: number | null; // PDF page number for page-level association
   category?: string;
 }
 
@@ -641,7 +642,148 @@ export function WorkspacePageContent() {
 
       const source = response.data.source;
       let content = source.content;
-      let targetItems: Array<{ text: string; type: 'SENTENCE' | 'WORD' }> = [];
+      let targetItems: Array<{ text: string; type: 'SENTENCE' | 'WORD'; pageNumber?: number }> = [];
+
+      // Step 0a: If PDF source, process page by page with vision model
+      const isPdfByType = source.type === 'pdf';
+      const isPdfByExtension = source.name?.toLowerCase().endsWith('.pdf');
+      const isPdfSource = isPdfByType || isPdfByExtension;
+
+      if (isPdfSource && (source.contentUrl || source.fileUrl)) {
+        const pdfUrl = source.contentUrl || source.fileUrl;
+        
+        addMessage({
+          id: Date.now().toString(),
+          role: 'assistant',
+          content: '检测到 PDF 来源，正在获取页面信息...',
+          type: 'chat',
+        });
+
+        // Import PDF utilities
+        const { getPdfInfo, renderPdfPageToImage, uploadImageBlob } = await import('@/lib/client/pdf-to-image');
+        const { containsJapaneseContent } = await import('@/lib/llm-utils');
+
+        // Get PDF info
+        const pdfInfo = await getPdfInfo(pdfUrl);
+        const totalPages = pdfInfo.pageCount;
+
+        addMessage({
+          id: Date.now().toString(),
+          role: 'assistant',
+          content: `PDF 共 ${totalPages} 页，开始逐页处理...`,
+          type: 'chat',
+        });
+
+        // Track progress
+        let processedPages = 0;
+        let skippedPages = 0;
+        const pdfStatusMessageId = `pdf-${Date.now()}`;
+
+        // Update PDF progress
+        const updatePdfProgress = (page: number, phase: string, skipped: number) => {
+          setMessages(prev => {
+            const newMessages = prev.filter(m => m.id !== pdfStatusMessageId);
+            const progressMsg: ChatMessage = {
+              id: pdfStatusMessageId,
+              role: 'assistant',
+              content: `正在处理 PDF (第 ${page}/${totalPages} 页)\n阶段: ${phase}\n已提取项目: ${targetItems.length}\n跳过页面: ${skipped} (无有效日语内容)`,
+              type: 'chat',
+              timestamp: Date.now(),
+            };
+            return [...newMessages, progressMsg].slice(-50);
+          });
+        };
+
+        // Process each page
+        for (let page = 1; page <= totalPages; page++) {
+          try {
+            updatePdfProgress(page, '渲染页面为图片', skippedPages);
+            
+            // Step 1: Render page to image
+            const { blob } = await renderPdfPageToImage(pdfUrl, page, 2.0);
+            
+            // Step 2: Upload image
+            updatePdfProgress(page, '上传图片', skippedPages);
+            const imageFilename = `${source.name}_page_${page}.png`;
+            const imageUrl = await uploadImageBlob(blob, imageFilename, headers as Record<string, string>);
+            
+            // Step 3: Parse image with Qwen-VL
+            updatePdfProgress(page, '解析图片内容', skippedPages);
+            const parseRes = await fetch('/api/llm/parse-image', {
+              method: 'POST',
+              headers: { ...headers, 'Content-Type': 'application/json' },
+              body: JSON.stringify({ imageUrl }),
+            });
+
+            const parseData = await parseRes.json();
+            if (!parseRes.ok || !parseData.success) {
+              console.warn(`Page ${page} parsing failed:`, parseData.error?.message);
+              skippedPages++;
+              continue;
+            }
+
+            const pageContent = parseData.data.content || '';
+            
+            // Step 4: Validate Japanese content
+            if (!containsJapaneseContent(pageContent)) {
+              console.log(`Page ${page} skipped: no valid Japanese content`);
+              skippedPages++;
+              continue;
+            }
+
+            // Step 5: Refine content to extract vocabulary and sentences
+            updatePdfProgress(page, '提取单词和句子', skippedPages);
+            const refineRes = await fetch('/api/llm/refine-content', {
+              method: 'POST',
+              headers: { ...headers, 'Content-Type': 'application/json' },
+              body: JSON.stringify({ markdown: pageContent }),
+            });
+
+            const refineData = await refineRes.json();
+            if (refineRes.ok && refineData.success) {
+              const { vocabulary = [], sentences = [] } = refineData.data;
+              
+              // Add items with page number
+              for (const v of vocabulary) {
+                targetItems.push({ text: v, type: 'WORD', pageNumber: page });
+              }
+              for (const s of sentences) {
+                targetItems.push({ text: s, type: 'SENTENCE', pageNumber: page });
+              }
+            }
+
+            processedPages++;
+            
+            // Add delay between pages to avoid rate limiting
+            if (page < totalPages) {
+              await new Promise(resolve => setTimeout(resolve, 500));
+            }
+          } catch (err) {
+            console.error(`Error processing page ${page}:`, err);
+            skippedPages++;
+          }
+        }
+
+        // Remove progress message
+        setMessages(prev => prev.filter(m => m.id !== pdfStatusMessageId));
+
+        // Show PDF processing summary
+        addMessage({
+          id: Date.now().toString(),
+          role: 'assistant',
+          content: `PDF 处理完成\n处理页数: ${processedPages}/${totalPages}\n跳过页数: ${skippedPages}\n提取项目: ${targetItems.filter(i => i.type === 'WORD').length} 个单词, ${targetItems.filter(i => i.type === 'SENTENCE').length} 个句子`,
+          type: 'analysis',
+        });
+
+        // Skip to card generation (don't process as image/audio)
+        if (targetItems.length > 0) {
+          // Continue to card generation below
+        } else {
+          alert('未能从 PDF 中识别出有效的日文内容');
+          setCardLoading(false);
+          return;
+        }
+      }
 
       // Step 0: If audio source, first convert to text using ASR
       const audioExtensions = ['.mp3', '.wav', '.ogg', '.m4a', '.aac', '.flac', '.wma', '.aiff', '.opus'];
@@ -885,7 +1027,7 @@ export function WorkspacePageContent() {
       };
 
       // 带重试的单个卡片生成函数
-      const generateSingleCard = async (item: { text: string; type: string }, retries = 2): Promise<{ success: boolean; card?: Card; error?: string }> => {
+      const generateSingleCard = async (item: { text: string; type: string; pageNumber?: number }, retries = 2): Promise<{ success: boolean; card?: Card; error?: string }> => {
         for (let attempt = 0; attempt <= retries; attempt++) {
           try {
             if (attempt > 0) {
@@ -904,6 +1046,7 @@ export function WorkspacePageContent() {
                 cardType: item.type === 'WORD' ? '单词' : '问答题（附翻转卡片）',
                 deckName: currentWorkspaceDeck.trim() || 'default',
                 sourceId: selectedSourceId,
+                pageNumber: item.pageNumber, // PDF page number for page-level association
                 includePronunciation: true,
               }),
               signal: controller.signal,

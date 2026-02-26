@@ -255,7 +255,14 @@ export function StudioPanel(props: WorkspaceViewProps) {
                           )}
                         </div>
                       </div>
-                      <div className="flex items-center justify-end mt-1">
+                      <div className="flex items-center justify-between mt-1">
+                        <div className="flex items-center gap-2">
+                          {card.pageNumber && (
+                            <span className="text-[10px] text-indigo-500 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/30 px-1.5 py-0.5 rounded">
+                              第 {card.pageNumber} 页
+                            </span>
+                          )}
+                        </div>
                         <span className="text-[10px] text-gray-400 dark:text-gray-500">
                           {new Date(card.createdAt).toLocaleDateString(locale)}
                         </span>

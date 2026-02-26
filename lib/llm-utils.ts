@@ -172,3 +172,31 @@ export function splitJapaneseSentences(text: string): string[] {
   }).filter(s => s.length > 0);
 }
 
+/**
+ * Check if text contains meaningful Japanese content
+ * Returns false for: empty, only punctuation, only numbers, 
+ * only English, title-like short text
+ * 
+ * Used to skip PDF pages without valid Japanese content
+ * (title pages, TOC, image-only pages, etc.)
+ */
+export function containsJapaneseContent(text: string): boolean {
+  if (!text || text.trim().length < 10) return false;
+  
+  // Check for Japanese characters (Hiragana, Katakana, Kanji)
+  const japaneseRegex = /[\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FAF]/g;
+  const japaneseChars = text.match(japaneseRegex) || [];
+  
+  // Require at least 5 Japanese characters
+  if (japaneseChars.length < 5) return false;
+  
+  // Check ratio of Japanese to total characters (excluding whitespace)
+  const totalChars = text.replace(/\s/g, '').length;
+  if (totalChars === 0) return false;
+  
+  const japaneseRatio = japaneseChars.length / totalChars;
+  
+  // At least 20% should be Japanese characters
+  return japaneseRatio >= 0.2;
+}
+

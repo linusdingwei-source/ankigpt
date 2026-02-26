@@ -147,6 +147,7 @@ model Card {
   
   sourceId      String?
   source        Source?  @relation(fields: [sourceId], references: [id], onDelete: SetNull)
+  pageNumber    Int?     // PDF page number (1-indexed) for page-level association
   
   @@index([userId])
   @@index([deckName])
