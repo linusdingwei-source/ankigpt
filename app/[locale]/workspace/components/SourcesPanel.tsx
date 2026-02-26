@@ -832,7 +832,7 @@ export function SourcesPanel(props: WorkspaceViewProps) {
                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                                 </svg>
                               </button>
-                              <div className="absolute right-full top-0 mr-1 w-40 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg py-1 hidden group-hover/move:block">
+                              <div className="absolute right-full top-0 w-44 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg py-1 hidden group-hover/move:block before:content-[''] before:absolute before:top-0 before:left-full before:w-4 before:h-full">
                                 <button
                                   onClick={(e) => { e.stopPropagation(); handleMoveSource(source.id, null); }}
                                   className="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
@@ -1023,7 +1023,7 @@ export function SourcesPanel(props: WorkspaceViewProps) {
                                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                                         </svg>
                                       </button>
-                                      <div className="absolute right-full top-0 mr-1 w-40 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg py-1 hidden group-hover/move:block">
+                                      <div className="absolute right-full top-0 w-44 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg py-1 hidden group-hover/move:block before:content-[''] before:absolute before:top-0 before:left-full before:w-4 before:h-full">
                                         <button
                                           onClick={(e) => { e.stopPropagation(); handleMoveSource(source.id, null); }}
                                           className="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
@@ -1193,7 +1193,7 @@ export function SourcesPanel(props: WorkspaceViewProps) {
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                               </svg>
                             </button>
-                            <div className="absolute right-full top-0 mr-1 w-40 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg py-1 hidden group-hover/move:block">
+                            <div className="absolute right-full top-0 w-44 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg py-1 hidden group-hover/move:block before:content-[''] before:absolute before:top-0 before:left-full before:w-4 before:h-full">
                               {folders.map(folder => (
                                 <button
                                   key={folder.id}
