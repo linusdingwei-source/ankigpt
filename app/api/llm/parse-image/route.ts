@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/auth';
-import { consumeCredits, getCredits } from '@/lib/credits';
 import { getUserId } from '@/lib/anonymous-user';
 import { successResponse, errorResponse, ErrorCodes } from '@/lib/api-response';
 import OpenAI from "openai";
 
-const LLM_CREDITS_COST = 5; // 图片解析消耗 5 credits
+// Note: This API does not charge credits because it's primarily used
+// as part of the PDF-to-card flow, where credits are charged at card generation.
 
 export async function POST(request: NextRequest) {
   try {
@@ -28,20 +28,6 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         errorResponse(ErrorCodes.BAD_REQUEST, 'Image URL or base64 data is required'),
         { status: 400 }
-      );
-    }
-
-    // 检查 credits
-    const currentCredits = await getCredits(userId);
-    
-    if (currentCredits < LLM_CREDITS_COST) {
-      return NextResponse.json(
-        errorResponse(
-          ErrorCodes.INSUFFICIENT_CREDITS,
-          'Insufficient credits. Please purchase a package.',
-          { credits: currentCredits, required: LLM_CREDITS_COST }
-        ),
-        { status: 402 }
       );
     }
 
@@ -96,15 +82,9 @@ export async function POST(request: NextRequest) {
     const content = response.choices[0].message.content;
 
     if (content) {
-      // 消耗 credits
-      await consumeCredits(userId, LLM_CREDITS_COST);
-      
-      const remainingCredits = await getCredits(userId);
-
       return NextResponse.json(
         successResponse({
           content: content,
-          credits: remainingCredits,
         })
       );
     } else {
