@@ -706,12 +706,57 @@ export function WorkspacePageContent() {
           const progressMsg: ChatMessage = {
             id: pdfStatusMessageId,
             role: 'assistant',
-            content: `PDF 共 ${totalPages} 页，开始逐页处理...`,
+            content: `PDF 共 ${totalPages} 页，检查已有页面图片...`,
             type: 'chat',
             timestamp: Date.now(),
           };
           return [...newMessages, progressMsg].slice(-50);
         });
+
+        // Check for existing page images (child sources)
+        const existingPageImages: Map<number, string> = new Map();
+        try {
+          const childSourcesRes = await fetch(`/api/sources/${selectedSourceId}/children`, { headers });
+          if (childSourcesRes.ok) {
+            const childData = await childSourcesRes.json();
+            if (childData.success && childData.data?.sources) {
+              for (const child of childData.data.sources) {
+                if (child.pageNumber && (child.fileUrl || child.contentUrl)) {
+                  existingPageImages.set(child.pageNumber, child.fileUrl || child.contentUrl);
+                }
+              }
+            }
+          }
+        } catch {
+          console.log('No existing page images found, will create new ones');
+        }
+
+        const hasExistingImages = existingPageImages.size > 0;
+        if (hasExistingImages) {
+          setMessages(prev => {
+            const newMessages = prev.filter(m => m.id !== pdfStatusMessageId);
+            const progressMsg: ChatMessage = {
+              id: pdfStatusMessageId,
+              role: 'assistant',
+              content: `PDF 共 ${totalPages} 页，已找到 ${existingPageImages.size} 个已处理页面图片，开始处理...`,
+              type: 'chat',
+              timestamp: Date.now(),
+            };
+            return [...newMessages, progressMsg].slice(-50);
+          });
+        } else {
+          setMessages(prev => {
+            const newMessages = prev.filter(m => m.id !== pdfStatusMessageId);
+            const progressMsg: ChatMessage = {
+              id: pdfStatusMessageId,
+              role: 'assistant',
+              content: `PDF 共 ${totalPages} 页，开始逐页处理...`,
+              type: 'chat',
+              timestamp: Date.now(),
+            };
+            return [...newMessages, progressMsg].slice(-50);
+          });
+        }
 
         // Reset cancellation flag and set generating state
         pdfGenerationCancelledRef.current = false;
@@ -752,18 +797,27 @@ export function WorkspacePageContent() {
           }
           
           try {
-            updatePdfProgress(page, '渲染页面为图片', skippedPages);
+            // Check if we already have this page's image
+            let imageUrl = existingPageImages.get(page);
             
-            // Step 1: Render page to image (use scale 1.5 and JPEG for smaller file size)
-            const { blob } = await renderPdfPageToImage(pdfUrl, page, 1.5);
-            
-            // Step 2: Upload image to storage (associated with PDF source)
-            updatePdfProgress(page, '上传页面图片', skippedPages);
-            const imageFilename = `${source.name}_page_${page}.jpg`;
-            const imageUrl = await uploadImageBlob(blob, imageFilename, headers as Record<string, string>, {
-              parentSourceId: selectedSourceId!, // Associate with parent PDF
-              pageNumber: page,
-            });
+            if (imageUrl) {
+              // Use existing image - skip render and upload
+              updatePdfProgress(page, '使用已有图片', skippedPages);
+            } else {
+              // Need to render and upload new image
+              updatePdfProgress(page, '渲染页面为图片', skippedPages);
+              
+              // Step 1: Render page to image (use scale 1.5 and JPEG for smaller file size)
+              const { blob } = await renderPdfPageToImage(pdfUrl, page, 1.5);
+              
+              // Step 2: Upload image to storage (associated with PDF source)
+              updatePdfProgress(page, '上传页面图片', skippedPages);
+              const imageFilename = `${source.name}_page_${page}.jpg`;
+              imageUrl = await uploadImageBlob(blob, imageFilename, headers as Record<string, string>, {
+                parentSourceId: selectedSourceId!, // Associate with parent PDF
+                pageNumber: page,
+              });
+            }
             
             // Step 3: Parse image with Qwen-VL (using URL)
             updatePdfProgress(page, '解析图片内容', skippedPages);
