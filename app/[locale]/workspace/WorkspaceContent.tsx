@@ -449,19 +449,55 @@ export function WorkspacePageContent() {
 
   // Fetch comparison source when comparison view is enabled
   useEffect(() => {
-    if (showComparisonView && selectedCard?.sourceId) {
-      const source = sources.find(s => s.id === selectedCard.sourceId);
-      if (source) {
-        // Add url property based on source type
-        const url = source.fileUrl || source.contentUrl || '';
-        setComparisonSource({ ...source, url });
-      } else {
+    const fetchComparisonSource = async () => {
+      if (!showComparisonView || !selectedCard?.sourceId) {
         setComparisonSource(null);
+        return;
       }
-    } else {
-      setComparisonSource(null);
-    }
-  }, [showComparisonView, selectedCard?.sourceId, sources]);
+
+      const source = sources.find(s => s.id === selectedCard.sourceId);
+      if (!source) {
+        setComparisonSource(null);
+        return;
+      }
+
+      // Check if this is a PDF page note (has pageNumber)
+      if (selectedCard.pageNumber && (source.type === 'pdf' || source.type === 'file' && source.mimeType?.includes('pdf'))) {
+        // Fetch the page image from child sources
+        try {
+          const { getAnonymousHeaders } = await import('@/hooks/useAnonymousUser');
+          const headers = getAnonymousHeaders();
+          const childRes = await fetch(`/api/sources/${selectedCard.sourceId}/children`, { headers });
+          if (childRes.ok) {
+            const childData = await childRes.json();
+            if (childData.success && childData.data?.sources) {
+              const pageImage = childData.data.sources.find(
+                (child: { pageNumber?: number }) => child.pageNumber === selectedCard.pageNumber
+              );
+              if (pageImage) {
+                const url = pageImage.fileUrl || pageImage.contentUrl || '';
+                setComparisonSource({
+                  ...pageImage,
+                  url,
+                  type: 'image', // Force image type for display
+                  name: `${source.name} - 第${selectedCard.pageNumber}页`,
+                });
+                return;
+              }
+            }
+          }
+        } catch (err) {
+          console.error('Failed to fetch page image:', err);
+        }
+      }
+
+      // Default: use the source directly
+      const url = source.fileUrl || source.contentUrl || '';
+      setComparisonSource({ ...source, url });
+    };
+
+    fetchComparisonSource();
+  }, [showComparisonView, selectedCard?.sourceId, selectedCard?.pageNumber, sources]);
 
   // Reset comparison view when card changes
   useEffect(() => {
