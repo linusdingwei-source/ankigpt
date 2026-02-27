@@ -20,7 +20,7 @@ model User {
   emailVerified DateTime?
   password      String?
   image         String?
-  credits       Int       @default(0)
+  credits       Float     @default(0) // 支持小数计费，100次调用=1credit
   isAnonymous   Boolean   @default(false) // 是否为临时匿名用户
   anonymousId   String?   @unique // 临时用户 ID（用于 localStorage/cookie 识别）
   role          String    @default("user") // 用户角色: user, admin

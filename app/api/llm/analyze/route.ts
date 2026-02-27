@@ -5,7 +5,7 @@ import { extractKanaFromLLMResult, markdownToHtml } from '@/lib/llm-utils';
 import { getUserId } from '@/lib/anonymous-user';
 import { successResponse, errorResponse, ErrorCodes } from '@/lib/api-response';
 
-const LLM_CREDITS_COST = 2; // LLM 分析消耗 2 credits
+const LLM_CREDITS_COST = 0.02; // LLM 分析消耗 0.02 credits (100次调用=2credits)
 
 export async function POST(request: NextRequest) {
   try {
@@ -140,6 +140,13 @@ ${text}`;
             kanaText: kanaText || text, // 如果没有提取到假名，使用原文
           },
           credits: remainingCredits,
+          // LLM interaction details for transparency
+          llmInteraction: {
+            model: 'qwen-plus',
+            systemPrompt: systemContent,
+            userPrompt: userContent,
+            response: markdownContent,
+          },
         })
       );
     } else {

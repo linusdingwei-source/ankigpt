@@ -7,6 +7,8 @@ import OpenAI from "openai";
 // Note: This API does not charge credits because it's primarily used
 // as part of the PDF-to-card flow, where credits are charged at card generation.
 
+const PARSE_IMAGE_PROMPT = "qwenvl markdown";
+
 export async function POST(request: NextRequest) {
   try {
     const session = await auth();
@@ -52,9 +54,10 @@ export async function POST(request: NextRequest) {
       : imageUrl;
 
     // Log base64 size for debugging
+    let imageSizeKB = 0;
     if (imageBase64) {
-      const sizeKB = Math.round(imageBase64.length * 0.75 / 1024); // base64 is ~33% larger
-      console.log(`Parsing image: base64 size ~${sizeKB}KB`);
+      imageSizeKB = Math.round(imageBase64.length * 0.75 / 1024); // base64 is ~33% larger
+      console.log(`Parsing image: base64 size ~${imageSizeKB}KB`);
     }
 
     // 调用 qwen3-vl-plus 进行文档解析
@@ -72,7 +75,7 @@ export async function POST(request: NextRequest) {
             },
             {
               type: "text",
-              text: "qwenvl markdown"
+              text: PARSE_IMAGE_PROMPT
             }
           ]
         }
@@ -85,6 +88,14 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         successResponse({
           content: content,
+          // LLM interaction details for transparency
+          llmInteraction: {
+            model: "qwen3-vl-plus",
+            prompt: PARSE_IMAGE_PROMPT,
+            imageUrl: imageUrl || null,
+            imageSizeKB: imageSizeKB || null,
+            response: content,
+          }
         })
       );
     } else {

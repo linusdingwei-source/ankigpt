@@ -872,6 +872,17 @@ export function WorkspacePageContent() {
 
             const pageContent = parseData.data.content || '';
             
+            // Display LLM interaction for image parsing
+            if (parseData.data.llmInteraction) {
+              const interaction = parseData.data.llmInteraction;
+              addMessage({
+                id: `llm-parse-${page}-${Date.now()}`,
+                role: 'assistant',
+                content: `**📷 图片解析 (Page ${page})**\n\n**输入图片:** ${imageUrl ? `[${source.name}_page_${page}]` : 'base64'}\n\n**提示词:** \`${interaction.prompt}\`\n\n**模型:** ${interaction.model}\n\n**输出:**\n${pageContent.substring(0, 500)}${pageContent.length > 500 ? '...' : ''}`,
+                type: 'chat',
+              });
+            }
+            
             // Step 4: Validate Japanese content
             if (!containsJapaneseContent(pageContent)) {
               console.log(`Page ${page} skipped: no valid Japanese content`);
@@ -1127,6 +1138,17 @@ export function WorkspacePageContent() {
         if (parseRes.ok && parseData.success) {
           content = parseData.data.content;
           
+          // Display LLM interaction for image parsing
+          if (parseData.data.llmInteraction) {
+            const interaction = parseData.data.llmInteraction;
+            addMessage({
+              id: `llm-img-${Date.now()}`,
+              role: 'assistant',
+              content: `**📷 图片解析**\n\n**输入图片:** [${source.name}](${imageUrl})\n\n**提示词:** \`${interaction.prompt}\`\n\n**模型:** ${interaction.model}\n\n**输出预览:**\n${(content || '').substring(0, 300)}${(content || '').length > 300 ? '...' : ''}`,
+              type: 'chat',
+            });
+          }
+          
           // 在对话框中展示解析出的 Markdown 内容
           addMessage({
             id: Date.now().toString(),
@@ -1262,6 +1284,26 @@ export function WorkspacePageContent() {
 
             const genResponse = await genRes.json();
             if (genRes.ok && genResponse.success) {
+              // Display LLM interaction for card generation
+              if (genResponse.data.llmInteraction) {
+                const llm = genResponse.data.llmInteraction;
+                addMessage({
+                  id: `llm-card-${Date.now()}`,
+                  role: 'assistant',
+                  content: `**🧠 卡片LLM分析**\n\n**输入:** ${item.text.substring(0, 100)}${item.text.length > 100 ? '...' : ''}\n\n**模型:** ${llm.model}\n\n**System Prompt:** ${llm.systemPrompt.substring(0, 100)}...\n\n**User Prompt:** ${llm.userPrompt.substring(0, 200)}...\n\n**输出:**\n${llm.response.substring(0, 500)}${llm.response.length > 500 ? '...' : ''}`,
+                  type: 'chat',
+                });
+              }
+              // Display TTS interaction
+              if (genResponse.data.ttsInteraction) {
+                const tts = genResponse.data.ttsInteraction;
+                addMessage({
+                  id: `tts-card-${Date.now()}`,
+                  role: 'assistant',
+                  content: `**🔊 TTS音频生成**\n\n**输入文本:** ${tts.input.substring(0, 100)}${tts.input.length > 100 ? '...' : ''}\n\n**假名文本:** ${tts.kanaText?.substring(0, 100) || 'N/A'}\n\n**音频URL:** ${tts.audioUrl ? '✅ 已生成' : '❌ 未生成'}`,
+                  type: 'chat',
+                });
+              }
               return { success: true, card: genResponse.data.card };
             } else {
               const errorMsg = genResponse.error?.message || genResponse.message || `HTTP ${genRes.status}`;
@@ -2223,6 +2265,17 @@ export function WorkspacePageContent() {
 
       const response = await res.json();
       if (response.success) {
+        // Display LLM interaction for chat analysis
+        if (response.data.llmInteraction) {
+          const llm = response.data.llmInteraction;
+          addMessage({
+            id: `llm-chat-${Date.now()}`,
+            role: 'assistant',
+            content: `**🧠 LLM分析过程**\n\n**输入:** ${content.trim().substring(0, 100)}${content.trim().length > 100 ? '...' : ''}\n\n**模型:** ${llm.model}\n\n**System Prompt:** ${llm.systemPrompt.substring(0, 100)}...\n\n**User Prompt:** ${llm.userPrompt.substring(0, 200)}...`,
+            type: 'chat',
+          });
+        }
+        
         addMessage({
           id: (Date.now() + 1).toString(),
           role: 'assistant',

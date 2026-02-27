@@ -49,6 +49,12 @@ export async function POST(request: NextRequest) {
     }
 
     let analysis = providedAnalysis;
+    let llmInteraction: {
+      model: string;
+      systemPrompt: string;
+      userPrompt: string;
+      response: string;
+    } | null = null;
 
     // 准备请求头（支持 Bearer Token）
     const headers: HeadersInit = {
@@ -137,6 +143,14 @@ ${text}`;
       // 提取假名和转换HTML
       const kanaText = extractKanaFromLLMResult(markdownContent);
       const htmlContent = markdownToHtml(markdownContent);
+      
+      // 捕获 LLM 交互详情
+      llmInteraction = {
+        model: 'qwen-plus',
+        systemPrompt: systemContent,
+        userPrompt: userContent,
+        response: markdownContent,
+      };
       
       // 消耗 2 credits 用于 LLM 分析
       await consumeCredits(userId, 2);
@@ -238,6 +252,13 @@ ${text}`;
           createdAt: card.createdAt,
         },
         credits: remainingCredits,
+        // LLM interaction details for transparency
+        llmInteraction: llmInteraction,
+        ttsInteraction: includePronunciation ? {
+          input: text,
+          kanaText: analysis.kanaText,
+          audioUrl: audioUrl,
+        } : null,
       })
     );
   } catch (error) {

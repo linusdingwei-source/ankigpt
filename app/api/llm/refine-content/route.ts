@@ -4,7 +4,7 @@ import { consumeCredits, getCredits } from '@/lib/credits';
 import { getUserId } from '@/lib/anonymous-user';
 import { successResponse, errorResponse, ErrorCodes } from '@/lib/api-response';
 
-const LLM_CREDITS_COST = 2; // 文本提炼消耗 2 credits
+const LLM_CREDITS_COST = 0.02; // 文本提炼消耗 0.02 credits (100次调用=2credits)
 
 export async function POST(request: NextRequest) {
   try {

@@ -4,7 +4,7 @@ import { getCredits, consumeCredits } from '@/lib/credits';
 import { getUserId } from '@/lib/anonymous-user';
 import { successResponse, errorResponse, ErrorCodes } from '@/lib/api-response';
 
-const ASR_CREDITS_COST = 1;
+const ASR_CREDITS_COST = 0.01; // 100次调用=1credit
 const DASHSCOPE_ASR_MODEL = 'paraformer-v2';
 const DEFAULT_LANGUAGE_HINTS = ['ja']; // Japanese by default
 

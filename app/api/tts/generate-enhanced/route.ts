@@ -4,7 +4,7 @@ import { consumeCredits, getCredits } from '@/lib/credits';
 import { getUserId } from '@/lib/anonymous-user';
 import { successResponse, errorResponse, ErrorCodes } from '@/lib/api-response';
 
-const TTS_CREDITS_COST = 1; // TTS 生成消耗 1 credit
+const TTS_CREDITS_COST = 0.01; // TTS 生成消耗 0.01 credit (100次调用=1credit)
 
 export async function POST(request: NextRequest) {
   try {

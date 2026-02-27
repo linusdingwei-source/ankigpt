@@ -4,7 +4,7 @@ import { consumeCredits, getCredits } from '@/lib/credits';
 import { getUserId } from '@/lib/anonymous-user';
 import { successResponse, errorResponse, ErrorCodes } from '@/lib/api-response';
 
-const LLM_CREDITS_COST = 1; // 提取消耗 1 credit
+const LLM_CREDITS_COST = 0.01; // 提取消耗 0.01 credit (100次调用=1credit)
 
 interface ExtractedItem {
   text: string;
