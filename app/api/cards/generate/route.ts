@@ -31,6 +31,93 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // 查询是否已存在相同内容的卡片（去重复优化）
+    // 只查询 CARD 类型，不包括 NOTE
+    const existingCard = await prisma.card.findFirst({
+      where: {
+        userId,
+        frontContent: text.trim(),
+        category: 'CARD',
+      },
+      select: {
+        backContent: true,
+        kanaText: true,
+        audioUrl: true,
+        audioFilename: true,
+        timestamps: true,
+      },
+    });
+
+    // 如果找到现有卡片，复用其分析和音频数据
+    let cachedFromExisting = false;
+    if (existingCard && existingCard.backContent) {
+      console.log(`Found existing card for text: ${text.substring(0, 30)}... - reusing cached data`);
+      cachedFromExisting = true;
+      
+      // 确保牌组存在
+      const finalDeckName = deckName?.trim() || 'default';
+      let deck = await prisma.deck.findUnique({
+        where: {
+          userId_name: {
+            userId,
+            name: finalDeckName,
+          },
+        },
+      });
+
+      if (!deck) {
+        deck = await prisma.deck.create({
+          data: {
+            userId,
+            name: finalDeckName,
+          },
+        });
+      }
+
+      // 创建新卡片，复用现有数据
+      const card = await prisma.card.create({
+        data: {
+          userId,
+          deckId: deck.id,
+          sourceId: sourceId || null,
+          pageNumber: pageNumber || null,
+          category,
+          frontContent: text,
+          backContent: existingCard.backContent,
+          cardType: cardType || '问答题（附翻转卡片）',
+          audioUrl: existingCard.audioUrl,
+          audioFilename: existingCard.audioFilename,
+          timestamps: existingCard.timestamps ? JSON.parse(JSON.stringify(existingCard.timestamps)) : null,
+          kanaText: existingCard.kanaText,
+          deckName: finalDeckName,
+          tags: [],
+        },
+      });
+
+      const remainingCredits = await getCredits(userId);
+
+      return NextResponse.json(
+        successResponse({
+          card: {
+            id: card.id,
+            frontContent: card.frontContent,
+            backContent: card.backContent,
+            cardType: card.cardType,
+            audioUrl: card.audioUrl,
+            timestamps: card.timestamps,
+            kanaText: card.kanaText,
+            deckName: card.deckName,
+            pageNumber: card.pageNumber,
+            createdAt: card.createdAt,
+          },
+          credits: remainingCredits,
+          cachedFromExisting: true, // 标记为复用现有数据
+          llmInteraction: null,
+          ttsInteraction: null,
+        })
+      );
+    }
+
     // 检查 credits
     const currentCredits = await getCredits(userId);
     

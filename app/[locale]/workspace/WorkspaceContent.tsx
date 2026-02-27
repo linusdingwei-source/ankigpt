@@ -1284,25 +1284,35 @@ export function WorkspacePageContent() {
 
             const genResponse = await genRes.json();
             if (genRes.ok && genResponse.success) {
-              // Display LLM interaction for card generation
-              if (genResponse.data.llmInteraction) {
-                const llm = genResponse.data.llmInteraction;
+              // Check if this was from cache (no LLM/TTS calls needed)
+              if (genResponse.data.cachedFromExisting) {
                 addMessage({
-                  id: `llm-card-${Date.now()}`,
+                  id: `cache-hit-${Date.now()}`,
                   role: 'assistant',
-                  content: `**🧠 卡片LLM分析**\n\n**输入:** ${item.text.substring(0, 100)}${item.text.length > 100 ? '...' : ''}\n\n**模型:** ${llm.model}\n\n**System Prompt:** ${llm.systemPrompt.substring(0, 100)}...\n\n**User Prompt:** ${llm.userPrompt.substring(0, 200)}...\n\n**输出:**\n${llm.response.substring(0, 500)}${llm.response.length > 500 ? '...' : ''}`,
+                  content: `**♻️ 复用现有卡片数据**\n\n**文本:** ${item.text.substring(0, 50)}${item.text.length > 50 ? '...' : ''}\n\n✅ 已存在相同内容的卡片，跳过LLM分析和TTS生成，直接复用已有数据。`,
                   type: 'chat',
                 });
-              }
-              // Display TTS interaction
-              if (genResponse.data.ttsInteraction) {
-                const tts = genResponse.data.ttsInteraction;
-                addMessage({
-                  id: `tts-card-${Date.now()}`,
-                  role: 'assistant',
-                  content: `**🔊 TTS音频生成**\n\n**输入文本:** ${tts.input.substring(0, 100)}${tts.input.length > 100 ? '...' : ''}\n\n**假名文本:** ${tts.kanaText?.substring(0, 100) || 'N/A'}\n\n**音频URL:** ${tts.audioUrl ? '✅ 已生成' : '❌ 未生成'}`,
-                  type: 'chat',
-                });
+              } else {
+                // Display LLM interaction for card generation
+                if (genResponse.data.llmInteraction) {
+                  const llm = genResponse.data.llmInteraction;
+                  addMessage({
+                    id: `llm-card-${Date.now()}`,
+                    role: 'assistant',
+                    content: `**🧠 卡片LLM分析**\n\n**输入:** ${item.text.substring(0, 100)}${item.text.length > 100 ? '...' : ''}\n\n**模型:** ${llm.model}\n\n**System Prompt:** ${llm.systemPrompt.substring(0, 100)}...\n\n**User Prompt:** ${llm.userPrompt.substring(0, 200)}...\n\n**输出:**\n${llm.response.substring(0, 500)}${llm.response.length > 500 ? '...' : ''}`,
+                    type: 'chat',
+                  });
+                }
+                // Display TTS interaction
+                if (genResponse.data.ttsInteraction) {
+                  const tts = genResponse.data.ttsInteraction;
+                  addMessage({
+                    id: `tts-card-${Date.now()}`,
+                    role: 'assistant',
+                    content: `**🔊 TTS音频生成**\n\n**输入文本:** ${tts.input.substring(0, 100)}${tts.input.length > 100 ? '...' : ''}\n\n**假名文本:** ${tts.kanaText?.substring(0, 100) || 'N/A'}\n\n**音频URL:** ${tts.audioUrl ? '✅ 已生成' : '❌ 未生成'}`,
+                    type: 'chat',
+                  });
+                }
               }
               return { success: true, card: genResponse.data.card };
             } else {
