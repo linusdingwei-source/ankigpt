@@ -658,7 +658,7 @@ export function WorkspacePageContent() {
           const progressMsg: ChatMessage = {
             id: pdfStatusMessageId,
             role: 'assistant',
-            content: `检测到 PDF 来源: ${source.name}\n正在加载 PDF 文件...`,
+            content: `检测到 PDF 来源: ${source.name}\n正在加载 PDF 文件...（如果文件较大可能需要稍等）`,
             type: 'chat',
             timestamp: Date.now(),
           };

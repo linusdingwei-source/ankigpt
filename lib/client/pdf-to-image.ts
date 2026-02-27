@@ -33,6 +33,9 @@ export interface PageImageResult {
 /**
  * Load PDF document with retry logic
  * Caches the document for subsequent page renders
+ * 
+ * @param pdfUrl - URL of the PDF file
+ * @param retries - Number of retry attempts (default 3)
  */
 export async function loadPdfDocument(pdfUrl: string, retries = 3): Promise<PDFDocumentProxy> {
   // Check cache first
@@ -46,9 +49,10 @@ export async function loadPdfDocument(pdfUrl: string, retries = 3): Promise<PDFD
   for (let attempt = 0; attempt < retries; attempt++) {
     try {
       if (attempt > 0) {
-        // Wait before retry with exponential backoff
-        await new Promise(resolve => setTimeout(resolve, 1000 * Math.pow(2, attempt)));
-        console.log(`PDF load retry attempt ${attempt + 1}/${retries}`);
+        // Wait before retry with exponential backoff (2s, 4s, 8s for slow networks)
+        const waitTime = 2000 * Math.pow(2, attempt);
+        console.log(`PDF load retry attempt ${attempt + 1}/${retries}, waiting ${waitTime/1000}s...`);
+        await new Promise(resolve => setTimeout(resolve, waitTime));
       }
       
       const loadingTask = pdfjs.getDocument({
@@ -57,7 +61,17 @@ export async function loadPdfDocument(pdfUrl: string, retries = 3): Promise<PDFD
         disableRange: true,
         // Disable streaming to ensure complete download
         disableStream: true,
+        // Disable auto-fetch for better control over loading
+        disableAutoFetch: true,
       });
+      
+      // Add progress tracking for long loads
+      loadingTask.onProgress = (progress: { loaded: number; total: number }) => {
+        if (progress.total > 0) {
+          const percent = Math.round((progress.loaded / progress.total) * 100);
+          console.log(`PDF loading: ${percent}% (${Math.round(progress.loaded/1024)}KB / ${Math.round(progress.total/1024)}KB)`);
+        }
+      };
       
       const pdf = await loadingTask.promise;
       
@@ -71,7 +85,7 @@ export async function loadPdfDocument(pdfUrl: string, retries = 3): Promise<PDFD
     }
   }
   
-  throw new Error(`Failed to load PDF after ${retries} attempts: ${lastError?.message || 'Unknown error'}`);
+  throw new Error(`PDF 加载失败（已重试 ${retries} 次）: ${lastError?.message || '网络错误'}\n如果网络较慢，请稍后再试。`);
 }
 
 /**
