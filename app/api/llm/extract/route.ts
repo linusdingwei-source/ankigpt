@@ -88,7 +88,7 @@ ${text}
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'qwen-plus',
+        model: 'qwen3.5-plus',
         input: {
           messages: [
             {

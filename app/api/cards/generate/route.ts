@@ -190,7 +190,7 @@ ${text}`;
           'Connection': 'keep-alive',
         },
         body: JSON.stringify({
-          model: 'qwen-plus',
+          model: 'qwen3.5-plus',
           input: {
             messages: [
               { role: 'system', content: systemContent },
@@ -231,7 +231,7 @@ ${text}`;
       
       // 捕获 LLM 交互详情
       llmInteraction = {
-        model: 'qwen-plus',
+        model: 'qwen3.5-plus',
         systemPrompt: systemContent,
         userPrompt: userContent,
         response: markdownContent,

@@ -84,7 +84,7 @@ ${text}`;
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'qwen-plus',
+        model: 'qwen3.5-plus',
         input: {
           messages: [
             {
@@ -142,7 +142,7 @@ ${text}`;
           credits: remainingCredits,
           // LLM interaction details for transparency
           llmInteraction: {
-            model: 'qwen-plus',
+            model: 'qwen3.5-plus',
             systemPrompt: systemContent,
             userPrompt: userContent,
             response: markdownContent,
