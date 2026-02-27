@@ -7,7 +7,7 @@ import OpenAI from "openai";
 // Note: This API does not charge credits because it's primarily used
 // as part of the PDF-to-card flow, where credits are charged at card generation.
 
-const PARSE_IMAGE_PROMPT = "qwenvl markdown";
+const PARSE_IMAGE_PROMPT = "提取图片内容整理成markdown";
 
 export async function POST(request: NextRequest) {
   try {
@@ -60,9 +60,9 @@ export async function POST(request: NextRequest) {
       console.log(`Parsing image: base64 size ~${imageSizeKB}KB`);
     }
 
-    // 调用 qwen3-vl-plus 进行文档解析
+    // 调用 qwen3.5-plus 进行文档解析
     const response = await openai.chat.completions.create({
-      model: "qwen3-vl-plus",
+      model: "qwen3.5-plus",
       messages: [
         {
           role: "user",
@@ -90,7 +90,7 @@ export async function POST(request: NextRequest) {
           content: content,
           // LLM interaction details for transparency
           llmInteraction: {
-            model: "qwen3-vl-plus",
+            model: "qwen3.5-plus",
             prompt: PARSE_IMAGE_PROMPT,
             imageUrl: imageUrl || null,
             imageSizeKB: imageSizeKB || null,
