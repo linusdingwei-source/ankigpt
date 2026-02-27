@@ -98,7 +98,8 @@ ${markdown}`;
           ]
         },
         parameters: {
-          result_format: 'message'
+          result_format: 'message',
+          max_tokens: 4096 // 确保完整输出
         }
       }),
     });

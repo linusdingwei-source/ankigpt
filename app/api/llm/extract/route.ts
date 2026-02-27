@@ -102,7 +102,8 @@ ${text}
           ]
         },
         parameters: {
-          result_format: 'message'
+          result_format: 'message',
+          max_tokens: 4096
         }
       }),
     });
