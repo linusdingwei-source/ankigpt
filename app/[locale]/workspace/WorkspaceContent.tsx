@@ -2207,6 +2207,34 @@ export function WorkspacePageContent() {
 
             const genResponse = await genRes.json();
             if (genRes.ok && genResponse.success) {
+              // Display LLM interaction for retry
+              if (genResponse.data.cachedFromExisting) {
+                addMessage({
+                  id: `cache-hit-retry-${Date.now()}`,
+                  role: 'assistant',
+                  content: `**♻️ 复用现有卡片数据**\n\n**文本:** ${item.text.substring(0, 50)}${item.text.length > 50 ? '...' : ''}\n\n✅ 已存在相同内容的卡片，跳过LLM分析和TTS生成，直接复用已有数据。`,
+                  type: 'chat',
+                });
+              } else {
+                if (genResponse.data.llmInteraction) {
+                  const llm = genResponse.data.llmInteraction;
+                  addMessage({
+                    id: `llm-retry-${Date.now()}`,
+                    role: 'assistant',
+                    content: `**🧠 重试LLM分析**\n\n**输入:** ${item.text.substring(0, 100)}${item.text.length > 100 ? '...' : ''}\n\n**模型:** ${llm.model}\n\n**输出:**\n${llm.response.substring(0, 500)}${llm.response.length > 500 ? '...' : ''}`,
+                    type: 'chat',
+                  });
+                }
+                if (genResponse.data.ttsInteraction) {
+                  const tts = genResponse.data.ttsInteraction;
+                  addMessage({
+                    id: `tts-retry-${Date.now()}`,
+                    role: 'assistant',
+                    content: `**🔊 TTS音频生成**\n\n**输入文本:** ${tts.input.substring(0, 100)}${tts.input.length > 100 ? '...' : ''}\n\n**音频URL:** ${tts.audioUrl ? '✅ 已生成' : '❌ 未生成'}`,
+                    type: 'chat',
+                  });
+                }
+              }
               success = true;
               successCount++;
               generatedCards.push(genResponse.data.card);
