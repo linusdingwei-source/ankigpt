@@ -49,10 +49,8 @@ export async function POST(request: NextRequest) {
     });
 
     // 如果找到现有卡片，复用其分析和音频数据
-    let cachedFromExisting = false;
     if (existingCard && existingCard.backContent) {
       console.log(`Found existing card for text: ${text.substring(0, 30)}... - reusing cached data`);
-      cachedFromExisting = true;
       
       // 确保牌组存在
       const finalDeckName = deckName?.trim() || 'default';
