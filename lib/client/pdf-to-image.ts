@@ -204,15 +204,29 @@ export async function renderPdfPageToImage(
 /**
  * Upload an image blob to storage and return the URL
  * Uses the existing /api/sources endpoint
+ * 
+ * @param blob - Image blob to upload
+ * @param filename - Filename for the uploaded image
+ * @param headers - Request headers (for auth)
+ * @param options - Optional parentSourceId and pageNumber for PDF association
  */
 export async function uploadImageBlob(
   blob: Blob,
   filename: string,
-  headers: HeadersInit
+  headers: HeadersInit,
+  options?: { parentSourceId?: string; pageNumber?: number }
 ): Promise<string> {
   const formData = new FormData();
   formData.append('file', blob, filename);
   formData.append('fileName', filename);
+  
+  // Add parent source association if provided
+  if (options?.parentSourceId) {
+    formData.append('parentSourceId', options.parentSourceId);
+  }
+  if (options?.pageNumber !== undefined) {
+    formData.append('pageNumber', options.pageNumber.toString());
+  }
   
   const response = await fetch('/api/sources', {
     method: 'POST',

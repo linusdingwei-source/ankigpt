@@ -666,7 +666,7 @@ export function WorkspacePageContent() {
         });
 
         // Import PDF utilities
-        const { getPdfInfo, renderPdfPageToImage, blobToBase64, clearPdfCache } = await import('@/lib/client/pdf-to-image');
+        const { getPdfInfo, renderPdfPageToImage, uploadImageBlob, clearPdfCache } = await import('@/lib/client/pdf-to-image');
         const { containsJapaneseContent } = await import('@/lib/llm-utils');
 
         let totalPages = 0;
@@ -729,19 +729,23 @@ export function WorkspacePageContent() {
           try {
             updatePdfProgress(page, '渲染页面为图片', skippedPages);
             
-            // Step 1: Render page to image (use scale 1.5 for smaller file size)
+            // Step 1: Render page to image (use scale 1.5 and JPEG for smaller file size)
             const { blob } = await renderPdfPageToImage(pdfUrl, page, 1.5);
             
-            // Step 2: Convert to base64 (no need to upload, send directly to API)
-            updatePdfProgress(page, '准备图片数据', skippedPages);
-            const imageBase64 = await blobToBase64(blob);
+            // Step 2: Upload image to storage (associated with PDF source)
+            updatePdfProgress(page, '上传页面图片', skippedPages);
+            const imageFilename = `${source.name}_page_${page}.jpg`;
+            const imageUrl = await uploadImageBlob(blob, imageFilename, headers as Record<string, string>, {
+              parentSourceId: selectedSourceId!, // Associate with parent PDF
+              pageNumber: page,
+            });
             
-            // Step 3: Parse image with Qwen-VL (send base64 directly)
+            // Step 3: Parse image with Qwen-VL (using URL)
             updatePdfProgress(page, '解析图片内容', skippedPages);
             const parseRes = await fetch('/api/llm/parse-image', {
               method: 'POST',
               headers: { ...headers, 'Content-Type': 'application/json' },
-              body: JSON.stringify({ imageBase64 }),
+              body: JSON.stringify({ imageUrl }),
             });
 
             const parseData = await parseRes.json();

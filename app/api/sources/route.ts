@@ -21,7 +21,10 @@ export async function GET(request: NextRequest) {
     }
 
     const sources = await prisma.source.findMany({
-      where: { userId },
+      where: { 
+        userId,
+        parentSourceId: null, // Only show root sources, not page images
+      },
       orderBy: { createdAt: 'desc' },
       select: {
         id: true,
@@ -68,6 +71,9 @@ export async function POST(request: NextRequest) {
     if (contentType.includes('multipart/form-data')) {
       const formData = await request.formData();
       const file = formData.get('file') as File;
+      const parentSourceId = formData.get('parentSourceId') as string | null;
+      const pageNumberStr = formData.get('pageNumber') as string | null;
+      const pageNumber = pageNumberStr ? parseInt(pageNumberStr, 10) : null;
       
       if (!file) {
         return NextResponse.json(
@@ -80,7 +86,7 @@ export async function POST(request: NextRequest) {
       const timestamp = Date.now();
       const safeName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_');
       const filename = `sources/${timestamp}-${safeName}`;
-      console.log(`[POST /api/sources] Uploading file: ${filename}, type: ${file.type}`);
+      console.log(`[POST /api/sources] Uploading file: ${filename}, type: ${file.type}, parentSourceId: ${parentSourceId}, pageNumber: ${pageNumber}`);
 
       let contentUrl: string | null = null;
       try {
@@ -110,6 +116,8 @@ export async function POST(request: NextRequest) {
           mimeType: file.type,
           fileUrl: contentUrl, // 同时保存到 fileUrl
           fileName: file.name,
+          parentSourceId: parentSourceId || null, // 关联父资源
+          pageNumber: pageNumber || null, // PDF页码
         },
         select: {
           id: true,
@@ -120,6 +128,8 @@ export async function POST(request: NextRequest) {
           fileName: true,
           mimeType: true,
           size: true,
+          parentSourceId: true,
+          pageNumber: true,
           createdAt: true,
           updatedAt: true,
         },

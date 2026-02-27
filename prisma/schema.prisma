@@ -164,6 +164,11 @@ model Source {
   folderId    String?  // 所属目录ID，null表示根目录
   folder      SourceFolder? @relation(fields: [folderId], references: [id], onDelete: SetNull)
   
+  // 父资源关联（用于PDF页面图片与原始PDF的关联）
+  parentSourceId String?  // 父资源ID
+  parentSource   Source?  @relation("SourceHierarchy", fields: [parentSourceId], references: [id], onDelete: Cascade)
+  childSources   Source[] @relation("SourceHierarchy")
+  
   // 来源信息
   name        String   // 来源名称（用户可编辑）
   type        String   @default("text") // 来源类型: text, file, url, etc.
@@ -171,6 +176,7 @@ model Source {
   contentUrl  String?  // 内容存储 URL（存储在 Vercel Blob 或其他云存储）
   fileUrl     String?  // 文件 URL（如果是文件类型）
   fileName    String?  // 文件名
+  pageNumber  Int?     // PDF页码（用于页面图片）
   
   cards       Card[]
   
@@ -184,6 +190,7 @@ model Source {
   @@index([userId])
   @@index([type])
   @@index([folderId])
+  @@index([parentSourceId])
   @@index([createdAt])
 }
 
