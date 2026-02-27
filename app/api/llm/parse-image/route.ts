@@ -21,11 +21,12 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { imageUrl } = await request.json();
+    const { imageUrl, imageBase64 } = await request.json();
 
-    if (!imageUrl) {
+    // Accept either imageUrl or imageBase64
+    if (!imageUrl && !imageBase64) {
       return NextResponse.json(
-        errorResponse(ErrorCodes.BAD_REQUEST, 'Image URL is required'),
+        errorResponse(ErrorCodes.BAD_REQUEST, 'Image URL or base64 data is required'),
         { status: 400 }
       );
     }
@@ -58,6 +59,11 @@ export async function POST(request: NextRequest) {
       baseURL: "https://dashscope.aliyuncs.com/compatible-mode/v1"
     });
 
+    // Prepare image content - prefer base64 if provided (avoids needing to upload)
+    const imageContent = imageBase64 
+      ? `data:image/png;base64,${imageBase64}`
+      : imageUrl;
+
     // 调用 qwen3-vl-plus 进行文档解析
     const response = await openai.chat.completions.create({
       model: "qwen3-vl-plus",
@@ -68,7 +74,7 @@ export async function POST(request: NextRequest) {
             {
               type: "image_url",
               image_url: {
-                "url": imageUrl
+                "url": imageContent
               }
             },
             {

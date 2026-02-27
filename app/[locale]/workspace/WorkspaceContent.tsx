@@ -666,7 +666,7 @@ export function WorkspacePageContent() {
         });
 
         // Import PDF utilities
-        const { getPdfInfo, renderPdfPageToImage, uploadImageBlob, clearPdfCache } = await import('@/lib/client/pdf-to-image');
+        const { getPdfInfo, renderPdfPageToImage, blobToBase64, clearPdfCache } = await import('@/lib/client/pdf-to-image');
         const { containsJapaneseContent } = await import('@/lib/llm-utils');
 
         let totalPages = 0;
@@ -732,17 +732,16 @@ export function WorkspacePageContent() {
             // Step 1: Render page to image
             const { blob } = await renderPdfPageToImage(pdfUrl, page, 2.0);
             
-            // Step 2: Upload image
-            updatePdfProgress(page, '上传图片', skippedPages);
-            const imageFilename = `${source.name}_page_${page}.png`;
-            const imageUrl = await uploadImageBlob(blob, imageFilename, headers as Record<string, string>);
+            // Step 2: Convert to base64 (no need to upload, send directly to API)
+            updatePdfProgress(page, '准备图片数据', skippedPages);
+            const imageBase64 = await blobToBase64(blob);
             
-            // Step 3: Parse image with Qwen-VL
+            // Step 3: Parse image with Qwen-VL (send base64 directly)
             updatePdfProgress(page, '解析图片内容', skippedPages);
             const parseRes = await fetch('/api/llm/parse-image', {
               method: 'POST',
               headers: { ...headers, 'Content-Type': 'application/json' },
-              body: JSON.stringify({ imageUrl }),
+              body: JSON.stringify({ imageBase64 }),
             });
 
             const parseData = await parseRes.json();

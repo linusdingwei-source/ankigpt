@@ -31,6 +31,23 @@ export interface PageImageResult {
 }
 
 /**
+ * Convert a Blob to base64 string
+ */
+export function blobToBase64(blob: Blob): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      const base64 = reader.result as string;
+      // Remove data URL prefix (e.g., "data:image/png;base64,")
+      const base64Data = base64.split(',')[1];
+      resolve(base64Data);
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(blob);
+  });
+}
+
+/**
  * Load PDF document with retry logic
  * Caches the document for subsequent page renders
  * 
