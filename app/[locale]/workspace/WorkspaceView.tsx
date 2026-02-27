@@ -331,18 +331,26 @@ export function WorkspaceView(props: WorkspaceViewProps) {
                           components={{
                             code({ node: _node, inline, className, children, ...props }: any) {
                               const match = /language-(\w+)/.exec(className || '');
-                              return !inline && match ? (
-                                <SyntaxHighlighter
-                                  style={vscDarkPlus as any}
-                                  language={match[1]}
-                                  PreTag="div"
-                                  className="rounded-md my-2"
+                              // Only use syntax highlighter for code blocks with explicit language
+                              if (!inline && match) {
+                                return (
+                                  <SyntaxHighlighter
+                                    style={vscDarkPlus as any}
+                                    language={match[1]}
+                                    PreTag="div"
+                                    className="rounded-md my-2"
+                                    {...props}
+                                  >
+                                    {String(children).replace(/\n$/, '')}
+                                  </SyntaxHighlighter>
+                                );
+                              }
+                              // For code blocks without language or inline code, use light styling
+                              return (
+                                <code 
+                                  className={`${className || ''} ${inline ? 'bg-gray-200 dark:bg-gray-600 px-1 rounded' : 'block bg-gray-100 dark:bg-gray-800 p-3 rounded-md my-2 overflow-x-auto whitespace-pre-wrap text-gray-800 dark:text-gray-200'}`} 
                                   {...props}
                                 >
-                                  {String(children).replace(/\n$/, '')}
-                                </SyntaxHighlighter>
-                              ) : (
-                                <code className={`${className} bg-gray-200 dark:bg-gray-600 px-1 rounded`} {...props}>
                                   {children}
                                 </code>
                               );
