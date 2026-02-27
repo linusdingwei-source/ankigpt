@@ -716,6 +716,7 @@ export function WorkspacePageContent() {
         // Track progress
         let processedPages = 0;
         let skippedPages = 0;
+        let savedNotes = 0;
 
         // Update PDF progress
         const updatePdfProgress = (page: number, phase: string, skipped: number) => {
@@ -724,7 +725,7 @@ export function WorkspacePageContent() {
             const progressMsg: ChatMessage = {
               id: pdfStatusMessageId,
               role: 'assistant',
-              content: `正在处理 PDF (第 ${page}/${totalPages} 页)\n阶段: ${phase}\n已提取项目: ${targetItems.length}\n跳过页面: ${skipped} (无有效日语内容)`,
+              content: `正在处理 PDF (第 ${page}/${totalPages} 页)\n阶段: ${phase}\n已保存笔记: ${savedNotes}\n已提取项目: ${targetItems.length}\n跳过页面: ${skipped} (无有效日语内容)`,
               type: 'chat',
               timestamp: Date.now(),
             };
@@ -740,7 +741,7 @@ export function WorkspacePageContent() {
             addMessage({
               id: Date.now().toString(),
               role: 'assistant',
-              content: `PDF 处理已取消\n已处理页数: ${processedPages}/${totalPages}\n已提取项目: ${targetItems.filter(i => i.type === 'WORD').length} 个单词, ${targetItems.filter(i => i.type === 'SENTENCE').length} 个句子`,
+              content: `PDF 处理已取消\n已处理页数: ${processedPages}/${totalPages}\n已保存笔记: ${savedNotes}\n已提取项目: ${targetItems.filter(i => i.type === 'WORD').length} 个单词, ${targetItems.filter(i => i.type === 'SENTENCE').length} 个句子`,
               type: 'chat',
             });
             break;
@@ -792,9 +793,13 @@ export function WorkspacePageContent() {
               body: JSON.stringify({ markdown: pageContent }),
             });
 
+            let vocabulary: string[] = [];
+            let sentences: string[] = [];
+            
             const refineData = await refineRes.json();
             if (refineRes.ok && refineData.success) {
-              const { vocabulary = [], sentences = [] } = refineData.data;
+              vocabulary = refineData.data.vocabulary || [];
+              sentences = refineData.data.sentences || [];
               
               // Add items with page number
               for (const v of vocabulary) {
@@ -803,6 +808,40 @@ export function WorkspacePageContent() {
               for (const s of sentences) {
                 targetItems.push({ text: s, type: 'SENTENCE', pageNumber: page });
               }
+            }
+
+            // Step 6: Save page content as NOTE (auto-save with markdown, vocabulary, sentences)
+            updatePdfProgress(page, '保存页面笔记', skippedPages);
+            const noteContent = [
+              pageContent,
+              '',
+              vocabulary.length > 0 ? `---\n**提取的单词 (${vocabulary.length})**\n${vocabulary.map(v => `- ${v}`).join('\n')}` : '',
+              sentences.length > 0 ? `\n**提取的句子 (${sentences.length})**\n${sentences.map(s => `- ${s}`).join('\n')}` : '',
+            ].filter(Boolean).join('\n');
+            
+            try {
+              const noteRes = await fetch('/api/cards/generate', {
+                method: 'POST',
+                headers: { ...headers, 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  text: `${source.name} - 第${page}页`,
+                  category: 'NOTE',
+                  cardType: '笔记',
+                  deckName: currentWorkspaceDeck.trim() || 'default',
+                  includePronunciation: false,
+                  sourceId: selectedSourceId,
+                  pageNumber: page,
+                  analysis: {
+                    html: noteContent,
+                  }
+                }),
+              });
+              if (noteRes.ok) {
+                savedNotes++;
+              }
+            } catch (noteErr) {
+              console.warn(`Page ${page} note save failed:`, noteErr);
+              // Continue even if note save fails
             }
 
             processedPages++;
@@ -838,7 +877,7 @@ export function WorkspacePageContent() {
           addMessage({
             id: Date.now().toString(),
             role: 'assistant',
-            content: `PDF 处理完成\n处理页数: ${processedPages}/${totalPages}\n跳过页数: ${skippedPages}\n提取项目: ${targetItems.filter(i => i.type === 'WORD').length} 个单词, ${targetItems.filter(i => i.type === 'SENTENCE').length} 个句子`,
+            content: `PDF 处理完成\n处理页数: ${processedPages}/${totalPages}\n跳过页数: ${skippedPages}\n保存笔记: ${savedNotes}\n提取项目: ${targetItems.filter(i => i.type === 'WORD').length} 个单词, ${targetItems.filter(i => i.type === 'SENTENCE').length} 个句子`,
             type: 'analysis',
           });
         }
