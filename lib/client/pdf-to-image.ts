@@ -228,12 +228,18 @@ export async function uploadImageBlob(
     formData.append('pageNumber', options.pageNumber.toString());
   }
   
+  // Filter out Content-Type from headers - let browser set it for FormData
+  const filteredHeaders: Record<string, string> = {};
+  const headersRecord = headers as Record<string, string>;
+  for (const key of Object.keys(headersRecord)) {
+    if (key.toLowerCase() !== 'content-type') {
+      filteredHeaders[key] = headersRecord[key];
+    }
+  }
+  
   const response = await fetch('/api/sources', {
     method: 'POST',
-    headers: {
-      // Don't set Content-Type, let browser set it for FormData
-      ...(headers as Record<string, string>),
-    },
+    headers: filteredHeaders,
     body: formData,
   });
   
