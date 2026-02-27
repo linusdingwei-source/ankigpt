@@ -929,8 +929,10 @@ export function WorkspacePageContent() {
             const noteContent = [
               pageContent,
               '',
-              vocabulary.length > 0 ? `---\n**提取的单词 (${vocabulary.length})**\n${vocabulary.map(v => `- ${v}`).join('\n')}` : '',
-              sentences.length > 0 ? `\n**提取的句子 (${sentences.length})**\n${sentences.map(s => `- ${s}`).join('\n')}` : '',
+              '',  // Extra blank line to ensure markdown parsing
+              vocabulary.length > 0 ? `---\n\n**提取的单词 (${vocabulary.length})**\n\n${vocabulary.map(v => `- ${v}`).join('\n')}` : '',
+              '',
+              sentences.length > 0 ? `---\n\n**提取的句子 (${sentences.length})**\n\n${sentences.map(s => `- ${s}`).join('\n')}` : '',
             ].filter(Boolean).join('\n');
             
             try {
