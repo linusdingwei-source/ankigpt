@@ -152,6 +152,13 @@ ${markdown}`;
           vocabulary,
           sentences,
           credits: remainingCredits,
+          // LLM interaction details for transparency
+          llmInteraction: {
+            model: 'qwen3.5-plus',
+            systemPrompt: systemContent,
+            userPrompt: userContent.substring(0, 500) + (userContent.length > 500 ? '...' : ''),
+            response: resultText,
+          }
         })
       );
     } else {

@@ -912,6 +912,17 @@ export function WorkspacePageContent() {
             
             const refineData = await refineRes.json();
             if (refineRes.ok && refineData.success) {
+              // Display LLM interaction for PDF page refinement
+              if (refineData.data.llmInteraction) {
+                const llm = refineData.data.llmInteraction;
+                addMessage({
+                  id: `pdf-refine-${page}-${Date.now()}`,
+                  role: 'assistant',
+                  content: `**🧠 第${page}页 单词/句子提炼**\n\n**模型:** ${llm.model}\n\n**LLM输出:**\n${llm.response?.substring(0, 500) || ''}${(llm.response?.length || 0) > 500 ? '...' : ''}`,
+                  type: 'chat',
+                });
+              }
+              
               vocabulary = refineData.data.vocabulary || [];
               sentences = refineData.data.sentences || [];
               
@@ -1194,7 +1205,17 @@ export function WorkspacePageContent() {
 
         const refineData = await refineRes.json();
         if (refineRes.ok && refineData.success) {
-          const { vocabulary = [], sentences = [] } = refineData.data;
+          const { vocabulary = [], sentences = [], llmInteraction } = refineData.data;
+          
+          // Display LLM interaction for transparency
+          if (llmInteraction) {
+            addMessage({
+              id: `refine-llm-${Date.now()}`,
+              role: 'assistant',
+              content: `**🧠 单词/句子提炼 LLM交互**\n\n**模型:** ${llmInteraction.model}\n\n**提示词:**\n${llmInteraction.systemPrompt?.substring(0, 300) || ''}...\n\n**LLM输出:**\n${llmInteraction.response?.substring(0, 800) || ''}${(llmInteraction.response?.length || 0) > 800 ? '...' : ''}`,
+              type: 'chat',
+            });
+          }
           
           targetItems = [
             ...vocabulary.map((v: string) => ({ text: v, type: 'WORD' as const })),
