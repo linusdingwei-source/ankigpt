@@ -280,6 +280,10 @@ export function WorkspacePageContent() {
   const audioInputRef = useRef<HTMLInputElement>(null);
   const audioFolderInputRef = useRef<HTMLInputElement>(null);
   const workspaceLayoutRef = useRef<HTMLDivElement>(null);
+  
+    // PDF generation cancellation
+    const pdfGenerationCancelledRef = useRef(false);
+    const [isPdfGenerating, setIsPdfGenerating] = useState(false);
 
   // 防抖搜索
   useEffect(() => {
@@ -705,6 +709,10 @@ export function WorkspacePageContent() {
           return [...newMessages, progressMsg].slice(-50);
         });
 
+        // Reset cancellation flag and set generating state
+        pdfGenerationCancelledRef.current = false;
+        setIsPdfGenerating(true);
+
         // Track progress
         let processedPages = 0;
         let skippedPages = 0;
@@ -726,6 +734,18 @@ export function WorkspacePageContent() {
 
         // Process each page
         for (let page = 1; page <= totalPages; page++) {
+          // Check if cancelled
+          if (pdfGenerationCancelledRef.current) {
+            setMessages(prev => prev.filter(m => m.id !== pdfStatusMessageId));
+            addMessage({
+              id: Date.now().toString(),
+              role: 'assistant',
+              content: `PDF 处理已取消\n已处理页数: ${processedPages}/${totalPages}\n已提取项目: ${targetItems.filter(i => i.type === 'WORD').length} 个单词, ${targetItems.filter(i => i.type === 'SENTENCE').length} 个句子`,
+              type: 'chat',
+            });
+            break;
+          }
+          
           try {
             updatePdfProgress(page, '渲染页面为图片', skippedPages);
             
@@ -803,13 +823,25 @@ export function WorkspacePageContent() {
         // Clear PDF cache to free memory
         clearPdfCache(pdfUrl);
 
-        // Show PDF processing summary
-        addMessage({
-          id: Date.now().toString(),
-          role: 'assistant',
-          content: `PDF 处理完成\n处理页数: ${processedPages}/${totalPages}\n跳过页数: ${skippedPages}\n提取项目: ${targetItems.filter(i => i.type === 'WORD').length} 个单词, ${targetItems.filter(i => i.type === 'SENTENCE').length} 个句子`,
-          type: 'analysis',
-        });
+        // Reset generating state
+        setIsPdfGenerating(false);
+
+        // If cancelled, check if we should continue with partial results
+        if (pdfGenerationCancelledRef.current) {
+          if (targetItems.length === 0) {
+            setCardLoading(false);
+            return;
+          }
+          // Continue with partial results
+        } else {
+          // Show PDF processing summary (only if not cancelled)
+          addMessage({
+            id: Date.now().toString(),
+            role: 'assistant',
+            content: `PDF 处理完成\n处理页数: ${processedPages}/${totalPages}\n跳过页数: ${skippedPages}\n提取项目: ${targetItems.filter(i => i.type === 'WORD').length} 个单词, ${targetItems.filter(i => i.type === 'SENTENCE').length} 个句子`,
+            type: 'analysis',
+          });
+        }
 
         // Skip to card generation (don't process as image/audio)
         if (targetItems.length > 0) {
@@ -2148,6 +2180,11 @@ export function WorkspacePageContent() {
       cardError={cardError}
       includePronunciation={includePronunciation}
       setIncludePronunciation={setIncludePronunciation}
+      
+      isPdfGenerating={isPdfGenerating}
+      onCancelPdfGeneration={() => {
+        pdfGenerationCancelledRef.current = true;
+      }}
       
       cards={cards}
       cardsLoading={cardsLoading}

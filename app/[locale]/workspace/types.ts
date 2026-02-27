@@ -60,6 +60,10 @@ export interface WorkspaceViewProps {
   includePronunciation: boolean;
   setIncludePronunciation: (v: boolean) => void;
   
+  // PDF Generation
+  isPdfGenerating: boolean;
+  onCancelPdfGeneration: () => void;
+  
   // Cards
   cards: any[];
   cardsLoading: boolean;
