@@ -9,11 +9,15 @@
  */
 
 import * as pdfjs from 'pdfjs-dist';
+import type { PDFDocumentProxy } from 'pdfjs-dist';
 import type { TextItem } from 'pdfjs-dist/types/src/display/api';
 
 // Set worker source path - use unpkg CDN for version matching
 // Must match the installed pdfjs-dist version (5.4.624)
 pdfjs.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@5.4.624/build/pdf.worker.min.mjs`;
+
+// Cache for loaded PDF documents to avoid re-fetching
+const pdfCache = new Map<string, PDFDocumentProxy>();
 
 export interface PdfInfo {
   pageCount: number;
@@ -27,11 +31,70 @@ export interface PageImageResult {
 }
 
 /**
+ * Load PDF document with retry logic
+ * Caches the document for subsequent page renders
+ */
+export async function loadPdfDocument(pdfUrl: string, retries = 3): Promise<PDFDocumentProxy> {
+  // Check cache first
+  const cached = pdfCache.get(pdfUrl);
+  if (cached) {
+    return cached;
+  }
+
+  let lastError: Error | null = null;
+  
+  for (let attempt = 0; attempt < retries; attempt++) {
+    try {
+      if (attempt > 0) {
+        // Wait before retry with exponential backoff
+        await new Promise(resolve => setTimeout(resolve, 1000 * Math.pow(2, attempt)));
+        console.log(`PDF load retry attempt ${attempt + 1}/${retries}`);
+      }
+      
+      const loadingTask = pdfjs.getDocument({
+        url: pdfUrl,
+        // Disable range requests to avoid connection issues with some servers
+        disableRange: true,
+        // Disable streaming to ensure complete download
+        disableStream: true,
+      });
+      
+      const pdf = await loadingTask.promise;
+      
+      // Cache the loaded document
+      pdfCache.set(pdfUrl, pdf);
+      
+      return pdf;
+    } catch (err) {
+      lastError = err instanceof Error ? err : new Error(String(err));
+      console.warn(`PDF load attempt ${attempt + 1} failed:`, lastError.message);
+    }
+  }
+  
+  throw new Error(`Failed to load PDF after ${retries} attempts: ${lastError?.message || 'Unknown error'}`);
+}
+
+/**
+ * Clear PDF cache for a specific URL or all URLs
+ */
+export function clearPdfCache(pdfUrl?: string): void {
+  if (pdfUrl) {
+    const pdf = pdfCache.get(pdfUrl);
+    if (pdf) {
+      pdf.destroy();
+      pdfCache.delete(pdfUrl);
+    }
+  } else {
+    pdfCache.forEach(pdf => pdf.destroy());
+    pdfCache.clear();
+  }
+}
+
+/**
  * Get PDF document info (page count, etc.)
  */
 export async function getPdfInfo(pdfUrl: string): Promise<PdfInfo> {
-  const loadingTask = pdfjs.getDocument(pdfUrl);
-  const pdf = await loadingTask.promise;
+  const pdf = await loadPdfDocument(pdfUrl);
   
   const metadata = await pdf.getMetadata().catch(() => null);
   const info = metadata?.info as Record<string, unknown> | undefined;
@@ -44,6 +107,7 @@ export async function getPdfInfo(pdfUrl: string): Promise<PdfInfo> {
 
 /**
  * Render a single PDF page to an image blob
+ * Uses cached PDF document for efficiency
  * 
  * @param pdfUrl - URL of the PDF file
  * @param pageNumber - 1-indexed page number
@@ -55,9 +119,8 @@ export async function renderPdfPageToImage(
   pageNumber: number,
   scale: number = 2.0
 ): Promise<PageImageResult> {
-  // Load PDF document
-  const loadingTask = pdfjs.getDocument(pdfUrl);
-  const pdf = await loadingTask.promise;
+  // Load PDF document (uses cache)
+  const pdf = await loadPdfDocument(pdfUrl);
   
   if (pageNumber < 1 || pageNumber > pdf.numPages) {
     throw new Error(`Invalid page number: ${pageNumber}. PDF has ${pdf.numPages} pages.`);
@@ -152,8 +215,7 @@ export async function uploadImageBlob(
  * @returns true if PDF appears to be scanned/image-based
  */
 export async function isPdfLikelyScanned(pdfUrl: string): Promise<boolean> {
-  const loadingTask = pdfjs.getDocument(pdfUrl);
-  const pdf = await loadingTask.promise;
+  const pdf = await loadPdfDocument(pdfUrl);
   
   // Get first page
   const page = await pdf.getPage(1);
@@ -181,8 +243,7 @@ export async function extractTextFromPdfPage(
   pdfUrl: string,
   pageNumber: number
 ): Promise<string> {
-  const loadingTask = pdfjs.getDocument(pdfUrl);
-  const pdf = await loadingTask.promise;
+  const pdf = await loadPdfDocument(pdfUrl);
   
   if (pageNumber < 1 || pageNumber > pdf.numPages) {
     throw new Error(`Invalid page number: ${pageNumber}. PDF has ${pdf.numPages} pages.`);

@@ -651,33 +651,63 @@ export function WorkspacePageContent() {
 
       if (isPdfSource && (source.contentUrl || source.fileUrl)) {
         const pdfUrl = source.contentUrl || source.fileUrl;
+        const pdfStatusMessageId = `pdf-${Date.now()}`;
         
-        addMessage({
-          id: Date.now().toString(),
-          role: 'assistant',
-          content: '检测到 PDF 来源，正在获取页面信息...',
-          type: 'chat',
+        // Show initial progress immediately
+        setMessages(prev => {
+          const progressMsg: ChatMessage = {
+            id: pdfStatusMessageId,
+            role: 'assistant',
+            content: `检测到 PDF 来源: ${source.name}\n正在加载 PDF 文件...`,
+            type: 'chat',
+            timestamp: Date.now(),
+          };
+          return [...prev, progressMsg].slice(-50);
         });
 
         // Import PDF utilities
-        const { getPdfInfo, renderPdfPageToImage, uploadImageBlob } = await import('@/lib/client/pdf-to-image');
+        const { getPdfInfo, renderPdfPageToImage, uploadImageBlob, clearPdfCache } = await import('@/lib/client/pdf-to-image');
         const { containsJapaneseContent } = await import('@/lib/llm-utils');
 
-        // Get PDF info
-        const pdfInfo = await getPdfInfo(pdfUrl);
-        const totalPages = pdfInfo.pageCount;
+        let totalPages = 0;
+        
+        try {
+          // Get PDF info (with retry logic built-in)
+          const pdfInfo = await getPdfInfo(pdfUrl);
+          totalPages = pdfInfo.pageCount;
+        } catch (pdfError) {
+          // Update progress message with error
+          setMessages(prev => {
+            const newMessages = prev.filter(m => m.id !== pdfStatusMessageId);
+            const errorMsg: ChatMessage = {
+              id: pdfStatusMessageId,
+              role: 'assistant',
+              content: `PDF 加载失败: ${pdfError instanceof Error ? pdfError.message : '网络错误'}\n\n请检查网络连接并重试。如果问题持续，请尝试重新上传 PDF 文件。`,
+              type: 'chat',
+              timestamp: Date.now(),
+            };
+            return [...newMessages, errorMsg].slice(-50);
+          });
+          setCardLoading(false);
+          return;
+        }
 
-        addMessage({
-          id: Date.now().toString(),
-          role: 'assistant',
-          content: `PDF 共 ${totalPages} 页，开始逐页处理...`,
-          type: 'chat',
+        // Update progress with page count
+        setMessages(prev => {
+          const newMessages = prev.filter(m => m.id !== pdfStatusMessageId);
+          const progressMsg: ChatMessage = {
+            id: pdfStatusMessageId,
+            role: 'assistant',
+            content: `PDF 共 ${totalPages} 页，开始逐页处理...`,
+            type: 'chat',
+            timestamp: Date.now(),
+          };
+          return [...newMessages, progressMsg].slice(-50);
         });
 
         // Track progress
         let processedPages = 0;
         let skippedPages = 0;
-        const pdfStatusMessageId = `pdf-${Date.now()}`;
 
         // Update PDF progress
         const updatePdfProgress = (page: number, phase: string, skipped: number) => {
@@ -766,6 +796,9 @@ export function WorkspacePageContent() {
 
         // Remove progress message
         setMessages(prev => prev.filter(m => m.id !== pdfStatusMessageId));
+
+        // Clear PDF cache to free memory
+        clearPdfCache(pdfUrl);
 
         // Show PDF processing summary
         addMessage({
