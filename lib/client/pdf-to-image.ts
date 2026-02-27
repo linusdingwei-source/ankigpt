@@ -11,9 +11,9 @@
 import * as pdfjs from 'pdfjs-dist';
 import type { TextItem } from 'pdfjs-dist/types/src/display/api';
 
-// Set worker source path - use CDN for reliability
-const PDFJS_VERSION = '4.9.155';
-pdfjs.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${PDFJS_VERSION}/pdf.worker.min.mjs`;
+// Set worker source path - use unpkg CDN for version matching
+// Must match the installed pdfjs-dist version (5.4.624)
+pdfjs.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@5.4.624/build/pdf.worker.min.mjs`;
 
 export interface PdfInfo {
   pageCount: number;
