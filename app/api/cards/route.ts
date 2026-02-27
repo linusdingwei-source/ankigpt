@@ -98,6 +98,7 @@ export async function GET(request: NextRequest) {
           createdAt: true,
           updatedAt: true,
           sourceId: true,
+          pageNumber: true, // PDF page number for page-level association
           category: true,
         },
       }),

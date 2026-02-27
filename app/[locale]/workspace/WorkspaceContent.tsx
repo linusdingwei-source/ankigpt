@@ -462,18 +462,25 @@ export function WorkspacePageContent() {
       }
 
       // Check if this is a PDF page note (has pageNumber)
-      if (selectedCard.pageNumber && (source.type === 'pdf' || source.type === 'file' && source.mimeType?.includes('pdf'))) {
+      const isPdfSource = source.type === 'pdf' || 
+        (source.type === 'file' && source.mimeType?.includes('pdf')) ||
+        source.name?.toLowerCase().endsWith('.pdf');
+      
+      if (selectedCard.pageNumber && isPdfSource) {
         // Fetch the page image from child sources
         try {
           const { getAnonymousHeaders } = await import('@/hooks/useAnonymousUser');
           const headers = getAnonymousHeaders();
+          console.log(`Fetching children for source ${selectedCard.sourceId}, looking for page ${selectedCard.pageNumber}`);
           const childRes = await fetch(`/api/sources/${selectedCard.sourceId}/children`, { headers });
           if (childRes.ok) {
             const childData = await childRes.json();
+            console.log(`Children response:`, childData);
             if (childData.success && childData.data?.sources) {
               const pageImage = childData.data.sources.find(
                 (child: { pageNumber?: number }) => child.pageNumber === selectedCard.pageNumber
               );
+              console.log(`Found page image:`, pageImage);
               if (pageImage) {
                 const url = pageImage.fileUrl || pageImage.contentUrl || '';
                 setComparisonSource({
@@ -485,6 +492,8 @@ export function WorkspacePageContent() {
                 return;
               }
             }
+          } else {
+            console.error('Failed to fetch children:', await childRes.text());
           }
         } catch (err) {
           console.error('Failed to fetch page image:', err);
