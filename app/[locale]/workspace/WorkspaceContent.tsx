@@ -284,6 +284,10 @@ export function WorkspacePageContent() {
     // PDF generation cancellation
     const pdfGenerationCancelledRef = useRef(false);
     const [isPdfGenerating, setIsPdfGenerating] = useState(false);
+    
+    // Card generation cancellation
+    const cardGenerationCancelledRef = useRef(false);
+    const [isCardGenerating, setIsCardGenerating] = useState(false);
 
   // 防抖搜索
   useEffect(() => {
@@ -1118,6 +1122,10 @@ export function WorkspacePageContent() {
       const generatedCards: Card[] = [];
       const failedItems: Array<{ text: string; type?: string; reason: string }> = [];
 
+      // Reset cancellation flag and set generating state
+      cardGenerationCancelledRef.current = false;
+      setIsCardGenerating(true);
+
       // 更新进度的函数
       const updateProgress = (current: number, total: number, currentItem: string) => {
         setMessages(prev => {
@@ -1184,6 +1192,19 @@ export function WorkspacePageContent() {
       };
 
       for (let i = 0; i < targetItems.length; i++) {
+        // Check if cancelled
+        if (cardGenerationCancelledRef.current) {
+          setMessages(prev => prev.filter(m => m.id !== statusMessageId));
+          addMessage({
+            id: Date.now().toString(),
+            role: 'assistant',
+            content: `卡片生成已取消\n已生成: ${successCount}\n失败: ${failCount}\n未处理: ${targetItems.length - i}`,
+            type: 'flashcards',
+            data: { successCount, failCount, cards: generatedCards, failedItems },
+          });
+          break;
+        }
+        
         const item = targetItems[i];
         
         // 请求节流：每个请求之间添加延迟，避免服务器过载
@@ -1237,6 +1258,7 @@ export function WorkspacePageContent() {
       });
     } finally {
       setCardLoading(false);
+      setIsCardGenerating(false);
     }
   };
 
@@ -2223,6 +2245,11 @@ export function WorkspacePageContent() {
       isPdfGenerating={isPdfGenerating}
       onCancelPdfGeneration={() => {
         pdfGenerationCancelledRef.current = true;
+      }}
+      
+      isCardGenerating={isCardGenerating}
+      onCancelCardGeneration={() => {
+        cardGenerationCancelledRef.current = true;
       }}
       
       cards={cards}

@@ -17,7 +17,8 @@ export function ChatPanel(props: WorkspaceViewProps) {
     messages, chatInput, setChatInput, chatLoading, handleSendMessage,
     handleSaveNote, handleChatFileDrop, handleChatPasteImage, handleGenerateCardsFromText,
     handleSaveInputAsSource, handleRetryFailedItems, sourcesLoading,
-    cardLoading, isPdfGenerating, onCancelPdfGeneration
+    cardLoading, isPdfGenerating, onCancelPdfGeneration,
+    isCardGenerating, onCancelCardGeneration
   } = props;
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -372,6 +373,7 @@ export function ChatPanel(props: WorkspaceViewProps) {
                 <div className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce [animation-delay:0.2s]" />
                 <div className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce [animation-delay:0.4s]" />
               </div>
+              {/* Cancel button for PDF processing */}
               {isPdfGenerating && (
                 <button
                   onClick={onCancelPdfGeneration}
@@ -381,7 +383,20 @@ export function ChatPanel(props: WorkspaceViewProps) {
                   <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                   </svg>
-                  取消
+                  取消PDF处理
+                </button>
+              )}
+              {/* Cancel button for card generation */}
+              {isCardGenerating && !isPdfGenerating && (
+                <button
+                  onClick={onCancelCardGeneration}
+                  className="text-xs px-3 py-1 bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 rounded-full hover:bg-red-200 dark:hover:bg-red-900/50 transition-colors flex items-center gap-1"
+                  title="取消卡片生成"
+                >
+                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                  取消卡片生成
                 </button>
               )}
             </div>

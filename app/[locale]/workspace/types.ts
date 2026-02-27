@@ -64,6 +64,10 @@ export interface WorkspaceViewProps {
   isPdfGenerating: boolean;
   onCancelPdfGeneration: () => void;
   
+  // Card Generation
+  isCardGenerating: boolean;
+  onCancelCardGeneration: () => void;
+  
   // Cards
   cards: any[];
   cardsLoading: boolean;
