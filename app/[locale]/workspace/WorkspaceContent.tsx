@@ -729,8 +729,8 @@ export function WorkspacePageContent() {
           try {
             updatePdfProgress(page, '渲染页面为图片', skippedPages);
             
-            // Step 1: Render page to image
-            const { blob } = await renderPdfPageToImage(pdfUrl, page, 2.0);
+            // Step 1: Render page to image (use scale 1.5 for smaller file size)
+            const { blob } = await renderPdfPageToImage(pdfUrl, page, 1.5);
             
             // Step 2: Convert to base64 (no need to upload, send directly to API)
             updatePdfProgress(page, '准备图片数据', skippedPages);

@@ -142,13 +142,13 @@ export async function getPdfInfo(pdfUrl: string): Promise<PdfInfo> {
  * 
  * @param pdfUrl - URL of the PDF file
  * @param pageNumber - 1-indexed page number
- * @param scale - Render scale (default 2.0 for good quality)
+ * @param scale - Render scale (default 1.5 for balance of quality and size)
  * @returns Image blob and dimensions
  */
 export async function renderPdfPageToImage(
   pdfUrl: string,
   pageNumber: number,
-  scale: number = 2.0
+  scale: number = 1.5
 ): Promise<PageImageResult> {
   // Load PDF document (uses cache)
   const pdf = await loadPdfDocument(pdfUrl);
@@ -181,7 +181,7 @@ export async function renderPdfPageToImage(
     canvas,
   }).promise;
   
-  // Convert canvas to blob
+  // Convert canvas to blob - use JPEG for smaller file size
   return new Promise((resolve, reject) => {
     canvas.toBlob(
       (blob) => {
@@ -195,8 +195,8 @@ export async function renderPdfPageToImage(
           reject(new Error('Failed to convert canvas to blob'));
         }
       },
-      'image/png',
-      1.0
+      'image/jpeg',  // JPEG is much smaller than PNG
+      0.85  // 85% quality - good balance of size and quality
     );
   });
 }

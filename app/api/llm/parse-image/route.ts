@@ -60,9 +60,16 @@ export async function POST(request: NextRequest) {
     });
 
     // Prepare image content - prefer base64 if provided (avoids needing to upload)
+    // Use jpeg format for smaller payload size
     const imageContent = imageBase64 
-      ? `data:image/png;base64,${imageBase64}`
+      ? `data:image/jpeg;base64,${imageBase64}`
       : imageUrl;
+
+    // Log base64 size for debugging
+    if (imageBase64) {
+      const sizeKB = Math.round(imageBase64.length * 0.75 / 1024); // base64 is ~33% larger
+      console.log(`Parsing image: base64 size ~${sizeKB}KB`);
+    }
 
     // 调用 qwen3-vl-plus 进行文档解析
     const response = await openai.chat.completions.create({
@@ -108,8 +115,15 @@ export async function POST(request: NextRequest) {
     }
   } catch (error) {
     console.error('Qwen-VL parsing error:', error);
+    
+    // Extract more detailed error info
+    let errorMessage = 'Failed to parse image with Qwen-VL';
+    if (error instanceof Error) {
+      errorMessage = `Qwen-VL error: ${error.message}`;
+    }
+    
     return NextResponse.json(
-      errorResponse(ErrorCodes.INTERNAL_ERROR, 'Failed to parse image with Qwen-VL'),
+      errorResponse(ErrorCodes.INTERNAL_ERROR, errorMessage),
       { status: 500 }
     );
   }
