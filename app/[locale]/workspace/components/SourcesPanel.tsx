@@ -508,7 +508,7 @@ export function SourcesPanel(props: WorkspaceViewProps) {
 
       {/* 来源操作按钮 */}
       <div className="p-4 border-b border-gray-200 dark:border-gray-700">
-        <div className="grid grid-cols-2 gap-2">
+        <div className="grid grid-cols-3 gap-2">
           <button 
             onClick={() => {
               setShowAddSourceModal(false);
