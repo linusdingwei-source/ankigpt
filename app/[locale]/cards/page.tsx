@@ -33,6 +33,10 @@ export default function CardsPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCardId, setSelectedCardId] = useState<string | null>(null);
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('');
+  
+  // 重命名牌组状态
+  const [editingDeckId, setEditingDeckId] = useState<string | null>(null);
+  const [editingDeckName, setEditingDeckName] = useState('');
 
   // 防抖搜索
   useEffect(() => {
@@ -98,6 +102,43 @@ export default function CardsPage() {
       setLoading(false);
     }
   }, [selectedDeck, page, debouncedSearchQuery, selectedCardId, t]);
+
+  // 重命名牌组
+  const handleRenameDeck = async (deckId: string, newName: string) => {
+    if (!newName.trim()) return;
+    
+    try {
+      const { getAnonymousHeaders } = await import('@/hooks/useAnonymousUser');
+      const headers = getAnonymousHeaders();
+      const res = await fetch('/api/decks', {
+        method: 'PATCH',
+        headers: {
+          ...headers,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ id: deckId, newName: newName.trim() }),
+      });
+      
+      if (res.ok) {
+        const oldDeck = decks.find(d => d.id === deckId);
+        // 如果当前选中的牌组是被重命名的牌组，更新选中值
+        if (oldDeck && selectedDeck === oldDeck.name) {
+          setSelectedDeck(newName.trim());
+        }
+        await fetchDecks();
+        await fetchCards();
+      } else {
+        const data = await res.json();
+        setError(data.message || '重命名失败');
+      }
+    } catch (err) {
+      console.error('Failed to rename deck:', err);
+      setError('重命名失败');
+    } finally {
+      setEditingDeckId(null);
+      setEditingDeckName('');
+    }
+  };
 
   useEffect(() => {
     // 无论是否登录都获取数据
@@ -211,21 +252,41 @@ export default function CardsPage() {
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   {t('filterByDeck')}
                 </label>
-                <select
-                  value={selectedDeck}
-                  onChange={(e) => {
-                    setSelectedDeck(e.target.value);
-                    setPage(1);
-                  }}
-                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                >
-                  <option value="">{t('allDecks')}</option>
-                  {decks.map((deck) => (
-                    <option key={deck.id} value={deck.name}>
-                      {deck.name}
-                    </option>
-                  ))}
-                </select>
+                <div className="flex gap-2">
+                  <select
+                    value={selectedDeck}
+                    onChange={(e) => {
+                      setSelectedDeck(e.target.value);
+                      setPage(1);
+                    }}
+                    className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                  >
+                    <option value="">{t('allDecks')}</option>
+                    {decks.map((deck) => (
+                      <option key={deck.id} value={deck.name}>
+                        {deck.name}
+                      </option>
+                    ))}
+                  </select>
+                  {/* 重命名按钮 - 仅当选中牌组时显示 */}
+                  {selectedDeck && (
+                    <button
+                      onClick={() => {
+                        const deck = decks.find(d => d.name === selectedDeck);
+                        if (deck) {
+                          setEditingDeckId(deck.id);
+                          setEditingDeckName(deck.name);
+                        }
+                      }}
+                      className="px-3 py-2 text-gray-500 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 rounded-lg transition-colors"
+                      title="重命名牌组"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                      </svg>
+                    </button>
+                  )}
+                </div>
               </div>
 
               {/* 统计信息 */}
@@ -411,6 +472,51 @@ export default function CardsPage() {
           </div>
         </div>
       </div>
+      
+      {/* 重命名牌组模态框 */}
+      {editingDeckId && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full p-6">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+              重命名牌组
+            </h3>
+            <input
+              type="text"
+              value={editingDeckName}
+              onChange={(e) => setEditingDeckName(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  handleRenameDeck(editingDeckId, editingDeckName);
+                } else if (e.key === 'Escape') {
+                  setEditingDeckId(null);
+                  setEditingDeckName('');
+                }
+              }}
+              className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent mb-4"
+              placeholder="输入新的牌组名称..."
+              autoFocus
+            />
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={() => {
+                  setEditingDeckId(null);
+                  setEditingDeckName('');
+                }}
+                className="px-4 py-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+              >
+                取消
+              </button>
+              <button
+                onClick={() => handleRenameDeck(editingDeckId, editingDeckName)}
+                disabled={!editingDeckName.trim()}
+                className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                确认
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
