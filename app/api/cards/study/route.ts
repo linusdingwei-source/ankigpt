@@ -31,7 +31,7 @@ export async function GET(request: NextRequest) {
     const where: any = {
       userId,
       category: 'CARD', // 只学习卡片，不学习笔记
-      backContent: { not: '' }, // 必须有背面内容
+      backContent: { not: null }, // 必须有背面内容
       OR: [
         { nextReviewAt: null }, // 新卡片（从未学习过）
         { nextReviewAt: { lte: now } }, // 到期复习的卡片
@@ -77,16 +77,20 @@ export async function GET(request: NextRequest) {
     });
 
     // 统计待学习卡片数量
+    // 基础查询条件（不包括 OR 子句）
+    const baseWhere = { ...where };
+    delete baseWhere.OR;
+    
     const [newCount, reviewCount] = await Promise.all([
       prisma.card.count({
         where: {
-          ...where,
+          ...baseWhere,
           nextReviewAt: null,
         },
       }),
       prisma.card.count({
         where: {
-          ...where,
+          ...baseWhere,
           nextReviewAt: { lte: now },
         },
       }),
