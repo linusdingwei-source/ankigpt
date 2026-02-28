@@ -32,13 +32,15 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 查询是否已存在相同内容的卡片（去重复优化）
+    // 查询是否已存在相同内容的卡片（在同一牌组内去重复优化）
     // 只查询 CARD 类型，不包括 NOTE
+    const finalDeckName = deckName?.trim() || 'default';
     const existingCard = await prisma.card.findFirst({
       where: {
         userId,
         frontContent: text.trim(),
         category: 'CARD',
+        deckName: finalDeckName, // 在同一牌组内复用
       },
       select: {
         backContent: true,
@@ -54,7 +56,6 @@ export async function POST(request: NextRequest) {
       console.log(`Found existing card for text: ${text.substring(0, 30)}... - reusing cached data`);
       
       // 确保牌组存在
-      const finalDeckName = deckName?.trim() || 'default';
       let deck = await prisma.deck.findUnique({
         where: {
           userId_name: {
@@ -259,7 +260,6 @@ ${text}`;
     }
 
     // 3. 确保牌组存在
-    const finalDeckName = deckName?.trim() || 'default';
     let deck = await prisma.deck.findUnique({
       where: {
         userId_name: {
