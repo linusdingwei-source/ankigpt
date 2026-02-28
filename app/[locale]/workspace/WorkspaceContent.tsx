@@ -158,12 +158,40 @@ export function WorkspacePageContent() {
   const [isResizingStudio, setIsResizingStudio] = useState(false);
 
   // Chat 相关状态
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const CHAT_STORAGE_KEY = 'ankigpt_chat_history';
+  const MAX_STORED_MESSAGES = 100;
+  
+  // 从 localStorage 加载历史消息
+  const [messages, setMessages] = useState<ChatMessage[]>(() => {
+    if (typeof window === 'undefined') return [];
+    try {
+      const stored = localStorage.getItem(CHAT_STORAGE_KEY);
+      if (stored) {
+        const parsed = JSON.parse(stored) as ChatMessage[];
+        return parsed.slice(-MAX_STORED_MESSAGES);
+      }
+    } catch (e) {
+      console.error('Failed to load chat history:', e);
+    }
+    return [];
+  });
   const [chatInput, setChatInput] = useState('');
   const [chatLoading, setChatLoading] = useState(false);
+  
+  // 保存消息到 localStorage
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    try {
+      // 只保存最近的消息
+      const toStore = messages.slice(-MAX_STORED_MESSAGES);
+      localStorage.setItem(CHAT_STORAGE_KEY, JSON.stringify(toStore));
+    } catch (e) {
+      console.error('Failed to save chat history:', e);
+    }
+  }, [messages]);
 
   const addMessage = useCallback((msg: Omit<ChatMessage, 'timestamp'>) => {
-    setMessages(prev => [...prev, { ...msg, timestamp: Date.now() }].slice(-50));
+    setMessages(prev => [...prev, { ...msg, timestamp: Date.now() }].slice(-MAX_STORED_MESSAGES));
   }, []);
 
   // Resize Handlers
@@ -2508,6 +2536,12 @@ export function WorkspacePageContent() {
       setChatInput={setChatInput}
       chatLoading={chatLoading}
       handleSendMessage={handleSendMessage}
+      handleClearChatHistory={() => {
+        setMessages([]);
+        if (typeof window !== 'undefined') {
+          localStorage.removeItem(CHAT_STORAGE_KEY);
+        }
+      }}
       
       sourcePanelWidth={sourcePanelWidth}
       studioPanelWidth={studioPanelWidth}

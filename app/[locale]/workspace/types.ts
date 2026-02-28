@@ -116,6 +116,7 @@ export interface WorkspaceViewProps {
   setChatInput: (v: string) => void;
   chatLoading: boolean;
   handleSendMessage: (text?: string) => Promise<void>;
+  handleClearChatHistory: () => void;
   
   sourcePanelWidth: number;
   studioPanelWidth: number;
