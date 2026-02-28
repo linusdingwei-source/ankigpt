@@ -35,14 +35,21 @@ export async function POST(request: NextRequest) {
     // 查询是否已存在相同内容的卡片（在同一牌组内去重复优化）
     // 只查询 CARD 类型，不包括 NOTE
     const finalDeckName = deckName?.trim() || 'default';
-    const existingCard = await prisma.card.findFirst({
+    
+    // 规范化文本用于比较：去除末尾标点符号以支持模糊匹配
+    const normalizeText = (t: string) => t.trim().replace(/[。！？、，.!?,]+$/g, '').trim();
+    const normalizedInput = normalizeText(text);
+    
+    // 先尝试精确匹配
+    let existingCard = await prisma.card.findFirst({
       where: {
         userId,
         frontContent: text.trim(),
         category: 'CARD',
-        deckName: finalDeckName, // 在同一牌组内复用
+        deckName: finalDeckName,
       },
       select: {
+        frontContent: true,
         backContent: true,
         kanaText: true,
         audioUrl: true,
@@ -50,6 +57,33 @@ export async function POST(request: NextRequest) {
         timestamps: true,
       },
     });
+    
+    // 如果精确匹配失败，尝试模糊匹配（忽略末尾标点）
+    if (!existingCard) {
+      // 查找所有可能的匹配卡片
+      const candidates = await prisma.card.findMany({
+        where: {
+          userId,
+          category: 'CARD',
+          deckName: finalDeckName,
+          frontContent: {
+            startsWith: normalizedInput.substring(0, Math.min(10, normalizedInput.length)),
+          },
+        },
+        select: {
+          frontContent: true,
+          backContent: true,
+          kanaText: true,
+          audioUrl: true,
+          audioFilename: true,
+          timestamps: true,
+        },
+        take: 20, // 限制候选数量
+      });
+      
+      // 查找规范化后匹配的卡片
+      existingCard = candidates.find(c => normalizeText(c.frontContent) === normalizedInput) || null;
+    }
 
     // 如果找到现有卡片，复用其分析和音频数据
     if (existingCard && existingCard.backContent) {
