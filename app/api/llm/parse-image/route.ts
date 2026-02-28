@@ -4,6 +4,9 @@ import { getUserId } from '@/lib/anonymous-user';
 import { successResponse, errorResponse, ErrorCodes } from '@/lib/api-response';
 import OpenAI from "openai";
 
+// Vercel 函数配置：延长超时时间以支持图像解析
+export const maxDuration = 60; // 60 秒
+
 // Note: This API does not charge credits because it's primarily used
 // as part of the PDF-to-card flow, where credits are charged at card generation.
 
@@ -53,9 +56,11 @@ export async function POST(request: NextRequest) {
     }
 
     // 初始化 OpenAI 客户端 (兼容百炼)
+    // 图像解析需要更长的超时时间
     const openai = new OpenAI({
       apiKey: process.env.DASHSCOPE_API_KEY,
-      baseURL: "https://dashscope.aliyuncs.com/compatible-mode/v1"
+      baseURL: "https://dashscope.aliyuncs.com/compatible-mode/v1",
+      timeout: 120000, // 120 秒超时，图像解析需要更多时间
     });
 
     // Prepare image content - prefer base64 if provided (avoids needing to upload)
