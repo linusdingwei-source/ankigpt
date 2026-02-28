@@ -28,26 +28,31 @@ export async function GET(request: NextRequest) {
 
     // 构建查询条件
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const where: any = {
+    const baseConditions: any = {
       userId,
       category: 'CARD', // 只学习卡片，不学习笔记
-      backContent: { not: null }, // 必须有背面内容
+      NOT: { backContent: null }, // 必须有背面内容
+    };
+
+    if (deckName) {
+      baseConditions.deckName = deckName;
+    }
+
+    // 根据类型筛选
+    if (cardType === 'word') {
+      baseConditions.cardType = '单词';
+    } else if (cardType === 'sentence') {
+      baseConditions.NOT = { ...baseConditions.NOT, cardType: '单词' };
+    }
+    
+    // 查询待学习的卡片（新卡片或到期复习的卡片）
+    const where = {
+      ...baseConditions,
       OR: [
         { nextReviewAt: null }, // 新卡片（从未学习过）
         { nextReviewAt: { lte: now } }, // 到期复习的卡片
       ],
     };
-
-    if (deckName) {
-      where.deckName = deckName;
-    }
-
-    // 根据类型筛选
-    if (cardType === 'word') {
-      where.cardType = '单词';
-    } else if (cardType === 'sentence') {
-      where.cardType = { not: '单词' };
-    }
 
     // 查询待学习的卡片
     // 优先级：新卡片优先，然后是过期时间最早的
@@ -77,20 +82,16 @@ export async function GET(request: NextRequest) {
     });
 
     // 统计待学习卡片数量
-    // 基础查询条件（不包括 OR 子句）
-    const baseWhere = { ...where };
-    delete baseWhere.OR;
-    
     const [newCount, reviewCount] = await Promise.all([
       prisma.card.count({
         where: {
-          ...baseWhere,
+          ...baseConditions,
           nextReviewAt: null,
         },
       }),
       prisma.card.count({
         where: {
-          ...baseWhere,
+          ...baseConditions,
           nextReviewAt: { lte: now },
         },
       }),
