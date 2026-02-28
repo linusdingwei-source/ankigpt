@@ -4,6 +4,7 @@ import { consumeCredits, getCredits } from '@/lib/credits';
 import { extractKanaFromLLMResult, markdownToHtml } from '@/lib/llm-utils';
 import { getUserId } from '@/lib/anonymous-user';
 import { successResponse, errorResponse, ErrorCodes } from '@/lib/api-response';
+import OpenAI from 'openai';
 
 const LLM_CREDITS_COST = 0.02; // LLM 分析消耗 0.02 credits (100次调用=2credits)
 
@@ -76,30 +77,22 @@ export async function POST(request: NextRequest) {
 日文句子：
 ${text}`;
 
-    // 使用 DashScope v2 文本端点调用 qwen3.5-plus
-    const response = await fetch('https://dashscope.aliyuncs.com/api/v2/apps/protocols/compatible-mode/v1/responses', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${process.env.DASHSCOPE_API_KEY}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'qwen3.5-plus',
-        input: `${systemContent}\n\n${userContent}`,
-      }),
+    // 使用 OpenAI 兼容 Chat Completions API 调用 qwen3.5-plus
+    const openai = new OpenAI({
+      apiKey: process.env.DASHSCOPE_API_KEY,
+      baseURL: 'https://dashscope.aliyuncs.com/compatible-mode/v1'
     });
 
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      console.error('DashScope API error:', errorData);
-      return NextResponse.json(
-        errorResponse(ErrorCodes.INTERNAL_ERROR, 'LLM analysis failed', errorData),
-        { status: response.status }
-      );
-    }
+    const completion = await openai.chat.completions.create({
+      model: 'qwen3.5-plus',
+      max_tokens: 4096,
+      messages: [
+        { role: 'system', content: systemContent },
+        { role: 'user', content: userContent }
+      ]
+    });
 
-    const data = await response.json();
-    const markdownContent = data.output?.text || data.choices?.[0]?.message?.content;
+    const markdownContent = completion.choices[0]?.message?.content;
     
     if (markdownContent) {
       
