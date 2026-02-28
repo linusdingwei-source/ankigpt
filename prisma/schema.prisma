@@ -138,6 +138,13 @@ model Card {
   timestamps    Json?    // 时间戳数据（字符级对齐）
   kanaText      String?  // 用于 TTS 的假名文本
   
+  // 间隔重复学习字段 (SM-2 算法)
+  nextReviewAt  DateTime? // 下次复习时间
+  interval      Int       @default(0) // 当前间隔（天数）
+  easeFactor    Float     @default(2.5) // 难度因子
+  reviewCount   Int       @default(0) // 复习次数
+  lastReviewedAt DateTime? // 上次复习时间
+  
   // 元数据
   deckName      String   @default("default") // 牌组名称（冗余字段，用于快速查询）
   tags          String[] // 标签数组
@@ -153,6 +160,7 @@ model Card {
   @@index([deckName])
   @@index([deckId])
   @@index([createdAt])
+  @@index([nextReviewAt]) // 索引用于查询待复习卡片
 }
 
 model Source {
