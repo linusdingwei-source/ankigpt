@@ -84,7 +84,7 @@ ${text}`;
     });
 
     const completion = await openai.chat.completions.create({
-      model: 'qwen3.5-plus',
+      model: 'qwen-plus',
       max_tokens: 4096,
       messages: [
         { role: 'system', content: systemContent },
@@ -117,7 +117,7 @@ ${text}`;
           credits: remainingCredits,
           // LLM interaction details for transparency
           llmInteraction: {
-            model: 'qwen3.5-plus',
+            model: 'qwen-plus',
             systemPrompt: systemContent,
             userPrompt: userContent,
             response: markdownContent,

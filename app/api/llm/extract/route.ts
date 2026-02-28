@@ -88,7 +88,7 @@ ${text}
     });
 
     const completion = await openai.chat.completions.create({
-      model: 'qwen3.5-plus',
+      model: 'qwen-plus',
       max_tokens: 4096,
       messages: [
         { role: 'system', content: systemContent },

@@ -186,7 +186,7 @@ ${text}`;
       });
 
       const completion = await openai.chat.completions.create({
-        model: 'qwen3.5-plus',
+        model: 'qwen-plus',
         max_tokens: 4096,
         messages: [
           { role: 'system', content: systemContent },
@@ -209,7 +209,7 @@ ${text}`;
       
       // 捕获 LLM 交互详情
       llmInteraction = {
-        model: 'qwen3.5-plus',
+        model: 'qwen-plus',
         systemPrompt: systemContent,
         userPrompt: userContent,
         response: markdownContent,
