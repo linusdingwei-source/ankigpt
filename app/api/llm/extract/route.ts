@@ -3,7 +3,6 @@ import { auth } from '@/auth';
 import { consumeCredits, getCredits } from '@/lib/credits';
 import { getUserId } from '@/lib/anonymous-user';
 import { successResponse, errorResponse, ErrorCodes } from '@/lib/api-response';
-import OpenAI from 'openai';
 
 const LLM_CREDITS_COST = 0.01; // 提取消耗 0.01 credit (100次调用=1credit)
 
@@ -81,22 +80,30 @@ ${text}
 
 请按格式输出提取结果，每行一个，不需要其他解释：`;
 
-    // 使用 OpenAI 兼容端点调用 qwen3.5-plus
-    const openai = new OpenAI({
-      apiKey: process.env.DASHSCOPE_API_KEY,
-      baseURL: 'https://dashscope.aliyuncs.com/compatible-mode/v1'
+    // 使用 DashScope v2 文本端点调用 qwen3.5-plus
+    const response = await fetch('https://dashscope.aliyuncs.com/api/v2/apps/protocols/compatible-mode/v1/responses', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${process.env.DASHSCOPE_API_KEY}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'qwen3.5-plus',
+        input: `${systemContent}\n\n${userContent}`,
+      }),
     });
 
-    const completion = await openai.chat.completions.create({
-      model: 'qwen-plus',
-      max_tokens: 4096,
-      messages: [
-        { role: 'system', content: systemContent },
-        { role: 'user', content: userContent }
-      ]
-    });
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      console.error('DashScope API error:', errorData);
+      return NextResponse.json(
+        errorResponse(ErrorCodes.INTERNAL_ERROR, 'LLM extraction failed', errorData),
+        { status: response.status }
+      );
+    }
 
-    const llmOutput = completion.choices[0]?.message?.content;
+    const data = await response.json();
+    const llmOutput = data.output?.text || data.choices?.[0]?.message?.content;
     
     if (llmOutput) {
       

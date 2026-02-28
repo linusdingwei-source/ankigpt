@@ -5,7 +5,6 @@ import { prisma } from '@/lib/prisma';
 import { getUserId, getBearerTokenFromRequest } from '@/lib/anonymous-user';
 import { successResponse, errorResponse, ErrorCodes } from '@/lib/api-response';
 import { extractKanaFromLLMResult, markdownToHtml } from '@/lib/llm-utils';
-import OpenAI from 'openai';
 
 const CARD_GENERATION_CREDITS_COST = 3; // 完整卡片生成消耗 3 credits (LLM 2 + TTS 1)
 
@@ -179,22 +178,30 @@ export async function POST(request: NextRequest) {
 日文句子：
 ${text}`;
 
-      // 使用 OpenAI 兼容端点调用 qwen3.5-plus
-      const openai = new OpenAI({
-        apiKey: process.env.DASHSCOPE_API_KEY,
-        baseURL: 'https://dashscope.aliyuncs.com/compatible-mode/v1'
+      // 使用 DashScope v2 文本端点调用 qwen3.5-plus
+      const llmResponse = await fetch('https://dashscope.aliyuncs.com/api/v2/apps/protocols/compatible-mode/v1/responses', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${process.env.DASHSCOPE_API_KEY}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: 'qwen3.5-plus',
+          input: `${systemContent}\n\n${userContent}`,
+        }),
       });
 
-      const completion = await openai.chat.completions.create({
-        model: 'qwen-plus',
-        max_tokens: 4096,
-        messages: [
-          { role: 'system', content: systemContent },
-          { role: 'user', content: userContent }
-        ]
-      });
+      if (!llmResponse.ok) {
+        const errorData = await llmResponse.json().catch(() => ({}));
+        console.error('DashScope API error:', errorData);
+        return NextResponse.json(
+          errorResponse(ErrorCodes.INTERNAL_ERROR, 'LLM analysis failed', errorData),
+          { status: llmResponse.status }
+        );
+      }
 
-      const markdownContent = completion.choices[0]?.message?.content;
+      const llmData = await llmResponse.json();
+      const markdownContent = llmData.output?.text || llmData.choices?.[0]?.message?.content;
       
       if (!markdownContent) {
         return NextResponse.json(
@@ -209,7 +216,7 @@ ${text}`;
       
       // 捕获 LLM 交互详情
       llmInteraction = {
-        model: 'qwen-plus',
+        model: 'qwen3.5-plus',
         systemPrompt: systemContent,
         userPrompt: userContent,
         response: markdownContent,
