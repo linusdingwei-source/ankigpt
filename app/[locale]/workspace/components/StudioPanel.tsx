@@ -84,8 +84,17 @@ export function StudioPanel(props: WorkspaceViewProps) {
   const [dictationInput, setDictationInput] = useState('');
   const [dictationResult, setDictationResult] = useState<'correct' | 'incorrect' | null>(null);
   const [dictationStats, setDictationStats] = useState({ correct: 0, incorrect: 0, total: 0 });
+  const [showHint, setShowHint] = useState(false); // 显示提示（完形填空）
+  const [showDictationAnswer, setShowDictationAnswer] = useState(false); // 显示原句
   const dictationAudioRef = useRef<HTMLAudioElement | null>(null);
   const dictationInputRef = useRef<HTMLInputElement | null>(null);
+  
+  // 生成完形填空文本（保留标点，替换文字为下划线）
+  const generateClozeText = (text: string) => {
+    // 保留的字符：标点符号和空格
+    const punctuationRegex = /[\u3000-\u303f\uff00-\uffef.,!?。、，．？！\s]/;
+    return text.split('').map(char => punctuationRegex.test(char) ? char : '＿').join('');
+  };
 
   // 获取待学习的卡片
   const fetchStudyCards = useCallback(async () => {
@@ -288,6 +297,8 @@ export function StudioPanel(props: WorkspaceViewProps) {
       setCurrentDictationIndex(prev => prev + 1);
       setDictationInput('');
       setDictationResult(null);
+      setShowHint(false);
+      setShowDictationAnswer(false);
     } else {
       setDictationCompleted(true);
     }
@@ -736,7 +747,7 @@ export function StudioPanel(props: WorkspaceViewProps) {
       {/* 听写模态框 */}
       {showDictationModal && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full max-w-2xl flex flex-col">
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full h-[85vh] flex flex-col">
             {/* Header */}
             <div className="flex items-center justify-between px-6 py-3 border-b border-gray-200 dark:border-gray-700 flex-shrink-0">
               <div className="flex items-center gap-4">
@@ -776,55 +787,99 @@ export function StudioPanel(props: WorkspaceViewProps) {
             </div>
             
             {/* Content */}
-            <div className="flex-1 p-6">
+            <div className="flex-1 overflow-hidden flex flex-col p-6">
               {dictationLoading ? (
                 <div className="flex items-center justify-center h-64">
                   <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-600"></div>
                 </div>
               ) : dictationCompleted ? (
-                <div className="flex flex-col items-center justify-center h-64 text-center">
-                  <div className="w-16 h-16 bg-orange-100 dark:bg-orange-900/30 rounded-full flex items-center justify-center mb-4">
-                    <svg className="w-8 h-8 text-orange-600 dark:text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div className="flex flex-col items-center justify-center flex-1 text-center">
+                  <div className="w-20 h-20 bg-orange-100 dark:bg-orange-900/30 rounded-full flex items-center justify-center mb-4">
+                    <svg className="w-10 h-10 text-orange-600 dark:text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                     </svg>
                   </div>
-                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+                  <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
                     {dictationCards.length === 0 ? '没有可听写的卡片' : '听写完成！'}
                   </h3>
                   <p className="text-gray-500 dark:text-gray-400 mb-2">
                     {dictationCards.length === 0 ? '请先创建一些带音频的卡片' : `正确: ${dictationStats.correct} / 错误: ${dictationStats.incorrect}`}
                   </p>
                   {dictationStats.total > 0 && (
-                    <p className="text-lg font-bold text-orange-600 dark:text-orange-400">
+                    <p className="text-2xl font-bold text-orange-600 dark:text-orange-400">
                       正确率: {Math.round((dictationStats.correct / dictationStats.total) * 100)}%
                     </p>
                   )}
                 </div>
               ) : currentDictationCard ? (
-                <div className="space-y-6">
+                <div className="flex-1 flex flex-col min-h-0">
                   {/* 进度 */}
-                  <div className="flex items-center justify-between text-sm text-gray-500">
+                  <div className="flex items-center justify-between text-sm text-gray-500 mb-4 flex-shrink-0">
                     <span>{currentDictationIndex + 1} / {dictationCards.length}</span>
                     <span className="px-2 py-0.5 bg-gray-100 dark:bg-gray-700 rounded text-xs">
                       {currentDictationCard.cardType}
                     </span>
                   </div>
                   
-                  {/* 播放按钮 */}
-                  <div className="flex justify-center">
+                  {/* 播放按钮和提示按钮 */}
+                  <div className="flex items-center justify-center gap-4 mb-6 flex-shrink-0">
                     <button
                       onClick={playDictationAudio}
-                      className="inline-flex items-center gap-3 px-6 py-4 bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300 rounded-xl hover:bg-orange-200 dark:hover:bg-orange-900/50 transition-colors"
+                      className="inline-flex items-center gap-3 px-8 py-4 bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300 rounded-xl hover:bg-orange-200 dark:hover:bg-orange-900/50 transition-colors"
                     >
                       <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
                       </svg>
-                      <span className="text-lg font-medium">再次播放</span>
+                      <span className="text-lg font-medium">播放</span>
                     </button>
+                    
+                    {/* 提示按钮 */}
+                    {!dictationResult && (
+                      <>
+                        <button
+                          onClick={() => setShowHint(!showHint)}
+                          className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                            showHint 
+                              ? 'bg-yellow-200 dark:bg-yellow-900/50 text-yellow-800 dark:text-yellow-200' 
+                              : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                          }`}
+                        >
+                          {showHint ? '隐藏提示' : '显示提示'}
+                        </button>
+                        <button
+                          onClick={() => setShowDictationAnswer(!showDictationAnswer)}
+                          className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                            showDictationAnswer 
+                              ? 'bg-blue-200 dark:bg-blue-900/50 text-blue-800 dark:text-blue-200' 
+                              : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                          }`}
+                        >
+                          {showDictationAnswer ? '隐藏原句' : '显示原句'}
+                        </button>
+                      </>
+                    )}
                   </div>
                   
-                  {/* 输入框 */}
-                  <div className="space-y-3">
+                  {/* 提示区域（完形填空） */}
+                  {showHint && !dictationResult && (
+                    <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-xl p-4 mb-4 flex-shrink-0">
+                      <p className="text-center text-2xl tracking-widest text-yellow-800 dark:text-yellow-200 font-mono">
+                        {generateClozeText(currentDictationCard.frontContent)}
+                      </p>
+                    </div>
+                  )}
+                  
+                  {/* 显示原句 */}
+                  {showDictationAnswer && !dictationResult && (
+                    <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl p-4 mb-4 flex-shrink-0">
+                      <p className="text-center text-xl text-blue-800 dark:text-blue-200">
+                        {currentDictationCard.frontContent}
+                      </p>
+                    </div>
+                  )}
+                  
+                  {/* 输入框和结果 */}
+                  <div className="flex-1 flex flex-col min-h-0">
                     <input
                       ref={dictationInputRef}
                       type="text"
@@ -839,7 +894,7 @@ export function StudioPanel(props: WorkspaceViewProps) {
                       }}
                       placeholder="请输入你听到的内容..."
                       disabled={!!dictationResult}
-                      className={`w-full px-4 py-3 text-lg border-2 rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none transition-colors ${
+                      className={`w-full px-4 py-4 text-xl border-2 rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none transition-colors flex-shrink-0 ${
                         dictationResult === 'correct' 
                           ? 'border-green-500 bg-green-50 dark:bg-green-900/20' 
                           : dictationResult === 'incorrect' 
@@ -850,7 +905,7 @@ export function StudioPanel(props: WorkspaceViewProps) {
                     
                     {/* 结果反馈 */}
                     {dictationResult && (
-                      <div className={`p-4 rounded-xl ${
+                      <div className={`mt-4 p-4 rounded-xl flex-shrink-0 ${
                         dictationResult === 'correct' 
                           ? 'bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800' 
                           : 'bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800'
@@ -858,42 +913,42 @@ export function StudioPanel(props: WorkspaceViewProps) {
                         <div className="flex items-center gap-2 mb-2">
                           {dictationResult === 'correct' ? (
                             <>
-                              <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                               </svg>
-                              <span className="font-semibold text-green-700 dark:text-green-300">正确！</span>
+                              <span className="font-semibold text-lg text-green-700 dark:text-green-300">正确！</span>
                             </>
                           ) : (
                             <>
-                              <svg className="w-5 h-5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <svg className="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                               </svg>
-                              <span className="font-semibold text-red-700 dark:text-red-300">错误</span>
+                              <span className="font-semibold text-lg text-red-700 dark:text-red-300">错误</span>
                             </>
                           )}
                         </div>
                         <p className="text-gray-700 dark:text-gray-300">
                           <span className="text-gray-500">正确答案：</span>
-                          <span className="font-medium text-lg">{currentDictationCard.frontContent}</span>
+                          <span className="font-medium text-xl">{currentDictationCard.frontContent}</span>
                         </p>
                       </div>
                     )}
                   </div>
                   
-                  {/* 操作按钮 */}
-                  <div className="flex gap-3">
+                  {/* 操作按钮 - 固定在底部 */}
+                  <div className="flex gap-3 mt-4 flex-shrink-0">
                     {!dictationResult ? (
                       <button
                         onClick={checkDictation}
                         disabled={!dictationInput.trim()}
-                        className="flex-1 py-3 bg-orange-600 hover:bg-orange-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white rounded-xl font-medium transition-colors"
+                        className="flex-1 py-4 bg-orange-600 hover:bg-orange-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white text-lg rounded-xl font-medium transition-colors"
                       >
                         确认
                       </button>
                     ) : (
                       <button
                         onClick={nextDictation}
-                        className="flex-1 py-3 bg-orange-600 hover:bg-orange-700 text-white rounded-xl font-medium transition-colors"
+                        className="flex-1 py-4 bg-orange-600 hover:bg-orange-700 text-white text-lg rounded-xl font-medium transition-colors"
                       >
                         {currentDictationIndex < dictationCards.length - 1 ? '下一个' : '完成'}
                       </button>
