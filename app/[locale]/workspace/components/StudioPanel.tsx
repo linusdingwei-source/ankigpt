@@ -90,7 +90,8 @@ export function StudioPanel(props: WorkspaceViewProps) {
       params.append('limit', '50');
 
       const res = await fetch(`/api/cards/study?${params.toString()}`, { headers });
-      const data = await res.json();
+      const result = await res.json();
+      const data = result.data || result; // 兼容包装和非包装响应
       
       if (data.cards) {
         setStudyCards(data.cards);
