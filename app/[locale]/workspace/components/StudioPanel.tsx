@@ -487,48 +487,48 @@ export function StudioPanel(props: WorkspaceViewProps) {
                   </p>
                 </div>
               ) : currentCard ? (
-                <div className="flex-1 flex flex-col min-h-0">
-                  {/* 进度 */}
-                  <div className="flex items-center justify-between text-sm text-gray-500 mb-4 flex-shrink-0">
-                    <span>{currentStudyIndex + 1} / {studyCards.length}</span>
+                <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
+                  {/* 进度和播放按钮 */}
+                  <div className="flex items-center justify-between text-sm text-gray-500 mb-3 flex-shrink-0">
+                    <div className="flex items-center gap-3">
+                      <span>{currentStudyIndex + 1} / {studyCards.length}</span>
+                      {currentCard.audioUrl && (
+                        <button
+                          onClick={playAudio}
+                          className="inline-flex items-center gap-1.5 px-3 py-1 bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 rounded-lg hover:bg-indigo-200 dark:hover:bg-indigo-900/50 transition-colors text-xs"
+                        >
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
+                          </svg>
+                          播放
+                        </button>
+                      )}
+                    </div>
                     <span className="px-2 py-0.5 bg-gray-100 dark:bg-gray-700 rounded text-xs">
                       {currentCard.cardType}
                     </span>
                   </div>
                               
-                  {/* 卡片正面 - 独立滚动 */}
-                  <div className="flex-1 min-h-0 overflow-y-auto mb-3">
-                    <div className="bg-gray-50 dark:bg-gray-900/50 rounded-xl p-6 text-center">
-                      <p className="text-2xl font-medium text-gray-900 dark:text-white mb-3">
-                        {currentCard.frontContent}
-                      </p>
-                      {currentCard.audioUrl && (
-                        <button
-                          onClick={playAudio}
-                          className="inline-flex items-center gap-2 px-4 py-2 bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 rounded-lg hover:bg-indigo-200 dark:hover:bg-indigo-900/50 transition-colors"
-                        >
-                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
-                          </svg>
-                          播放发音
-                        </button>
-                      )}
-                    </div>
+                  {/* 卡片正面 - 紧凑布局 */}
+                  <div className="bg-gray-50 dark:bg-gray-900/50 rounded-xl p-4 mb-3 flex-shrink-0">
+                    <p className="text-xl font-medium text-gray-900 dark:text-white text-center">
+                      {currentCard.frontContent}
+                    </p>
                   </div>
                               
                   {/* 显示答案按钮 / 答案内容 */}
                   {!showAnswer ? (
                     <button
                       onClick={() => setShowAnswer(true)}
-                      className="w-full py-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-medium transition-colors flex-shrink-0"
+                      className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-medium transition-colors flex-shrink-0"
                     >
                       显示答案
                     </button>
                   ) : (
-                    <div className="flex-1 min-h-0 flex flex-col">
-                      {/* 答案内容 - 独立滚动 */}
-                      <div className="overflow-y-auto mb-3">
-                        <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-5">
+                    <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
+                      {/* 答案内容 - 可滚动 */}
+                      <div className="flex-1 overflow-y-auto mb-3">
+                        <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-4">
                           <div 
                             className="prose prose-sm dark:prose-invert max-w-none"
                             dangerouslySetInnerHTML={{ __html: preprocessContent(currentCard.backContent) }}
