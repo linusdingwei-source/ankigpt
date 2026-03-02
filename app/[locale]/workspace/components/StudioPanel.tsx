@@ -87,6 +87,10 @@ export function StudioPanel(props: WorkspaceViewProps) {
       if (studyType !== 'all') {
         params.append('type', studyType);
       }
+      // 如果选中了资源，只学习该资源相关的卡片
+      if (selectedSourceId) {
+        params.append('sourceId', selectedSourceId);
+      }
       params.append('limit', '50');
 
       const res = await fetch(`/api/cards/study?${params.toString()}`, { headers });
@@ -105,7 +109,7 @@ export function StudioPanel(props: WorkspaceViewProps) {
     } finally {
       setStudyLoading(false);
     }
-  }, [currentWorkspaceDeck, studyType]);
+  }, [currentWorkspaceDeck, studyType, selectedSourceId]);
 
   // 提交复习结果
   const submitReview = async (rating: number) => {

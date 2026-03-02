@@ -22,6 +22,7 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const deckName = searchParams.get('deck') || undefined;
     const cardType = searchParams.get('type'); // 'word' | 'sentence' | null (all)
+    const sourceId = searchParams.get('sourceId'); // 资源 ID
     const limit = parseInt(searchParams.get('limit') || '20');
 
     const now = new Date();
@@ -42,6 +43,11 @@ export async function GET(request: NextRequest) {
       baseConditions.cardType = '单词';
     } else if (cardType === 'sentence') {
       baseConditions.NOT = { cardType: '单词' };
+    }
+    
+    // 如果指定了资源 ID，只学习该资源相关的卡片
+    if (sourceId) {
+      baseConditions.sourceId = sourceId;
     }
 
     // 查询待学习的卡片（新卡片或到期复习的卡片）
