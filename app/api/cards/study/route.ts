@@ -24,6 +24,8 @@ export async function GET(request: NextRequest) {
     const cardType = searchParams.get('type'); // 'word' | 'sentence' | null (all)
     const limit = parseInt(searchParams.get('limit') || '20');
 
+    const now = new Date();
+
     // 构建查询条件
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const baseConditions: any = {
@@ -42,11 +44,20 @@ export async function GET(request: NextRequest) {
       baseConditions.NOT = { cardType: '单词' };
     }
 
+    // 查询待学习的卡片（新卡片或到期复习的卡片）
+    const where = {
+      ...baseConditions,
+      OR: [
+        { nextReviewAt: null }, // 新卡片（从未学习过）
+        { nextReviewAt: { lte: now } }, // 到期复习的卡片
+      ],
+    };
+
     // 查询待学习的卡片
-    // 简化查询，只按创建时间排序
     const cards = await prisma.card.findMany({
-      where: baseConditions,
+      where,
       orderBy: [
+        { nextReviewAt: 'asc' }, // null 值会排在最前面
         { createdAt: 'asc' },
       ],
       take: limit,
@@ -59,22 +70,38 @@ export async function GET(request: NextRequest) {
         timestamps: true,
         kanaText: true,
         deckName: true,
+        interval: true,
+        easeFactor: true,
+        reviewCount: true,
+        nextReviewAt: true,
+        lastReviewedAt: true,
         createdAt: true,
       },
     });
 
-    // 统计待学习卡片数量（简化：所有卡片都是“新”卡片）
-    const totalCount = await prisma.card.count({
-      where: baseConditions,
-    });
+    // 统计待学习卡片数量
+    const [newCount, reviewCount] = await Promise.all([
+      prisma.card.count({
+        where: {
+          ...baseConditions,
+          nextReviewAt: null,
+        },
+      }),
+      prisma.card.count({
+        where: {
+          ...baseConditions,
+          nextReviewAt: { lte: now },
+        },
+      }),
+    ]);
 
     return NextResponse.json(
       successResponse({
         cards,
         stats: {
-          new: totalCount,
-          review: 0,
-          total: totalCount,
+          new: newCount,
+          review: reviewCount,
+          total: newCount + reviewCount,
         },
       })
     );
