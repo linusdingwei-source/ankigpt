@@ -497,9 +497,9 @@ export function StudioPanel(props: WorkspaceViewProps) {
                   </div>
                               
                   {/* 卡片正面 - 独立滚动 */}
-                  <div className="flex-1 min-h-0 overflow-y-auto mb-4">
-                    <div className="bg-gray-50 dark:bg-gray-900/50 rounded-xl p-8 text-center">
-                      <p className="text-2xl font-medium text-gray-900 dark:text-white mb-4">
+                  <div className="flex-1 min-h-0 overflow-y-auto mb-3">
+                    <div className="bg-gray-50 dark:bg-gray-900/50 rounded-xl p-6 text-center">
+                      <p className="text-2xl font-medium text-gray-900 dark:text-white mb-3">
                         {currentCard.frontContent}
                       </p>
                       {currentCard.audioUrl && (
@@ -527,8 +527,8 @@ export function StudioPanel(props: WorkspaceViewProps) {
                   ) : (
                     <div className="flex-1 min-h-0 flex flex-col">
                       {/* 答案内容 - 独立滚动 */}
-                      <div className="flex-1 min-h-0 overflow-y-auto mb-4">
-                        <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-6 h-full">
+                      <div className="flex-1 min-h-0 overflow-y-auto mb-3">
+                        <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-5 h-full">
                           <div 
                             className="prose prose-sm dark:prose-invert max-w-none h-full overflow-y-auto"
                             dangerouslySetInnerHTML={{ __html: preprocessContent(currentCard.backContent) }}
