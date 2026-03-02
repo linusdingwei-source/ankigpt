@@ -89,6 +89,26 @@ export function StudioPanel(props: WorkspaceViewProps) {
   const dictationAudioRef = useRef<HTMLAudioElement | null>(null);
   const dictationInputRef = useRef<HTMLInputElement | null>(null);
   
+  // 跟读模式状态
+  const [showShadowingModal, setShowShadowingModal] = useState(false);
+  const [shadowingType, setShadowingType] = useState<'word' | 'sentence' | 'all'>('all');
+  const [shadowingCards, setShadowingCards] = useState<StudyCard[]>([]);
+  const [currentShadowingIndex, setCurrentShadowingIndex] = useState(0);
+  const [shadowingLoading, setShadowingLoading] = useState(false);
+  const [shadowingCompleted, setShadowingCompleted] = useState(false);
+  const [isRecording, setIsRecording] = useState(false);
+  const [recordedAudioUrl, setRecordedAudioUrl] = useState<string | null>(null);
+  const [asrTranscript, setAsrTranscript] = useState('');
+  const [asrSessionId, setAsrSessionId] = useState<string | null>(null);
+  const [shadowingStats, setShadowingStats] = useState({ practiced: 0, total: 0 });
+  const shadowingAudioRef = useRef<HTMLAudioElement | null>(null);
+  const recordedAudioRef = useRef<HTMLAudioElement | null>(null);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioChunksRef = useRef<Blob[]>([]);
+  const audioContextRef = useRef<AudioContext | null>(null);
+  const processorRef = useRef<ScriptProcessorNode | null>(null);
+  const streamRef = useRef<MediaStream | null>(null);
+  
   // 生成完形填空文本（保留标点，替换文字为下划线）
   const generateClozeText = (text: string) => {
     // 保留的字符：标点符号和空格
@@ -304,6 +324,215 @@ export function StudioPanel(props: WorkspaceViewProps) {
     }
   };
 
+  // ==================== 跟读模式函数 ====================
+  
+  // 获取跟读卡片
+  const fetchShadowingCards = useCallback(async () => {
+    setShadowingLoading(true);
+    try {
+      const { getAnonymousHeaders } = await import('@/hooks/useAnonymousUser');
+      const headers = getAnonymousHeaders();
+      const params = new URLSearchParams();
+      if (currentWorkspaceDeck && currentWorkspaceDeck !== 'default') {
+        params.append('deck', currentWorkspaceDeck);
+      }
+      if (shadowingType !== 'all') {
+        params.append('type', shadowingType);
+      }
+      if (selectedSourceId) {
+        params.append('sourceId', selectedSourceId);
+      }
+      params.append('hasAudio', 'true');
+      params.append('limit', '50');
+
+      const res = await fetch(`/api/cards/study?${params.toString()}`, { headers });
+      const result = await res.json();
+      const data = result.data || result;
+      
+      if (data.cards) {
+        const cardsWithAudio = data.cards.filter((c: StudyCard) => c.audioUrl);
+        setShadowingCards(cardsWithAudio);
+        setShadowingStats({ practiced: 0, total: cardsWithAudio.length });
+        setCurrentShadowingIndex(0);
+        setShadowingCompleted(cardsWithAudio.length === 0);
+      }
+    } catch (err) {
+      console.error('Failed to fetch shadowing cards:', err);
+    } finally {
+      setShadowingLoading(false);
+    }
+  }, [currentWorkspaceDeck, shadowingType, selectedSourceId]);
+
+  // 开始跟读时获取卡片
+  useEffect(() => {
+    if (showShadowingModal) {
+      fetchShadowingCards();
+    } else {
+      // 关闭时清理资源
+      stopRecording();
+      if (recordedAudioUrl) {
+        URL.revokeObjectURL(recordedAudioUrl);
+        setRecordedAudioUrl(null);
+      }
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [showShadowingModal]);
+
+  // 当前跟读的卡片
+  const currentShadowingCard = shadowingCards[currentShadowingIndex];
+
+  // 播放跟读音频
+  const playShadowingAudio = () => {
+    if (currentShadowingCard?.audioUrl && shadowingAudioRef.current) {
+      shadowingAudioRef.current.src = currentShadowingCard.audioUrl;
+      shadowingAudioRef.current.play();
+    }
+  };
+
+  // 播放录制的音频
+  const playRecordedAudio = () => {
+    if (recordedAudioUrl && recordedAudioRef.current) {
+      recordedAudioRef.current.src = recordedAudioUrl;
+      recordedAudioRef.current.play();
+    }
+  };
+
+  // 开始录音
+  const startRecording = async () => {
+    try {
+      // 清理之前的录音
+      if (recordedAudioUrl) {
+        URL.revokeObjectURL(recordedAudioUrl);
+        setRecordedAudioUrl(null);
+      }
+      setAsrTranscript('');
+      audioChunksRef.current = [];
+
+      // 获取麦克风权限
+      const stream = await navigator.mediaDevices.getUserMedia({ 
+        audio: {
+          sampleRate: 16000,
+          channelCount: 1,
+          echoCancellation: true,
+          noiseSuppression: true
+        } 
+      });
+      streamRef.current = stream;
+
+      // 创建 MediaRecorder 用于保存录音
+      const mediaRecorder = new MediaRecorder(stream, {
+        mimeType: 'audio/webm;codecs=opus'
+      });
+      mediaRecorderRef.current = mediaRecorder;
+
+      mediaRecorder.ondataavailable = (e) => {
+        if (e.data.size > 0) {
+          audioChunksRef.current.push(e.data);
+        }
+      };
+
+      mediaRecorder.onstop = () => {
+        // 录音停止时，创建音频 URL
+        const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+        const url = URL.createObjectURL(audioBlob);
+        setRecordedAudioUrl(url);
+      };
+
+      mediaRecorder.start(1000); // 每秒收集一次数据
+
+      // 启动实时 ASR
+      await startRealtimeASR();
+
+      setIsRecording(true);
+    } catch (err) {
+      console.error('Failed to start recording:', err);
+      alert('无法访问麦克风，请检查权限设置');
+    }
+  };
+
+  // 停止录音
+  const stopRecording = async () => {
+    setIsRecording(false);
+
+    // 停止 MediaRecorder
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+      mediaRecorderRef.current.stop();
+    }
+
+    // 停止音频流
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach(track => track.stop());
+      streamRef.current = null;
+    }
+
+    // 结束 ASR 会话
+    await finishRealtimeASR();
+  };
+
+  // 启动实时 ASR
+  const startRealtimeASR = async () => {
+    try {
+      const { getAnonymousHeaders } = await import('@/hooks/useAnonymousUser');
+      const headers = getAnonymousHeaders();
+      
+      const res = await fetch('/api/asr/realtime', {
+        method: 'POST',
+        headers: { ...headers, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'start', language: 'ja' })
+      });
+      const result = await res.json();
+      
+      if (result.success && result.data?.sessionId) {
+        setAsrSessionId(result.data.sessionId);
+      }
+    } catch (err) {
+      console.error('Failed to start ASR session:', err);
+    }
+  };
+
+  // 结束实时 ASR
+  const finishRealtimeASR = async () => {
+    if (!asrSessionId) return;
+    
+    try {
+      const { getAnonymousHeaders } = await import('@/hooks/useAnonymousUser');
+      const headers = getAnonymousHeaders();
+      
+      const res = await fetch('/api/asr/realtime', {
+        method: 'POST',
+        headers: { ...headers, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'finish', sessionId: asrSessionId })
+      });
+      const result = await res.json();
+      
+      if (result.success && result.data?.transcript) {
+        setAsrTranscript(result.data.transcript);
+      }
+    } catch (err) {
+      console.error('Failed to finish ASR session:', err);
+    } finally {
+      setAsrSessionId(null);
+    }
+  };
+
+  // 进入下一个跟读卡片
+  const nextShadowing = () => {
+    // 清理当前录音
+    if (recordedAudioUrl) {
+      URL.revokeObjectURL(recordedAudioUrl);
+      setRecordedAudioUrl(null);
+    }
+    setAsrTranscript('');
+    
+    if (currentShadowingIndex < shadowingCards.length - 1) {
+      setCurrentShadowingIndex(prev => prev + 1);
+      setShadowingStats(prev => ({ ...prev, practiced: prev.practiced + 1 }));
+    } else {
+      setShadowingStats(prev => ({ ...prev, practiced: prev.practiced + 1 }));
+      setShadowingCompleted(true);
+    }
+  };
+
   if (isStudioPanelCollapsed) {
     return (
       <div className="w-12 flex-shrink-0 bg-white dark:bg-gray-800 flex flex-col items-center py-2 border-l border-gray-200 dark:border-gray-700">
@@ -340,14 +569,14 @@ export function StudioPanel(props: WorkspaceViewProps) {
 
       {/* Studio 输出选项网格 */}
       <div className="flex-shrink-0 p-4">
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid grid-cols-4 gap-2">
           {/* 制作闪卡 */}
           <button
             onClick={handleGenerateCardsFromSource}
             disabled={props.cardLoading}
-            className={`p-3 bg-indigo-50 dark:bg-indigo-900/30 rounded-lg border-2 border-indigo-500 dark:border-indigo-400 hover:border-indigo-600 dark:hover:border-indigo-300 transition-colors text-left ${props.cardLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
+            className={`p-2 bg-indigo-50 dark:bg-indigo-900/30 rounded-lg border-2 border-indigo-500 dark:border-indigo-400 hover:border-indigo-600 dark:hover:border-indigo-300 transition-colors text-left ${props.cardLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
           >
-            <div className="flex items-center gap-2">
+            <div className="flex flex-col items-center gap-1">
               <div className="w-8 h-8 bg-indigo-100 dark:bg-indigo-900/50 rounded-lg flex items-center justify-center flex-shrink-0">
                 {props.cardLoading ? (
                   <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-indigo-600"></div>
@@ -366,9 +595,9 @@ export function StudioPanel(props: WorkspaceViewProps) {
           {/* 学习闪卡 */}
           <button
             onClick={() => setShowStudyModal(true)}
-            className="p-3 bg-green-50 dark:bg-green-900/30 rounded-lg border-2 border-green-500 dark:border-green-400 hover:border-green-600 dark:hover:border-green-300 transition-colors text-left"
+            className="p-2 bg-green-50 dark:bg-green-900/30 rounded-lg border-2 border-green-500 dark:border-green-400 hover:border-green-600 dark:hover:border-green-300 transition-colors text-left"
           >
-            <div className="flex items-center gap-2">
+            <div className="flex flex-col items-center gap-1">
               <div className="w-8 h-8 bg-green-100 dark:bg-green-900/50 rounded-lg flex items-center justify-center flex-shrink-0">
                 <svg className="w-4 h-4 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
@@ -383,9 +612,9 @@ export function StudioPanel(props: WorkspaceViewProps) {
           {/* 听写 */}
           <button
             onClick={() => setShowDictationModal(true)}
-            className="p-3 bg-orange-50 dark:bg-orange-900/30 rounded-lg border-2 border-orange-500 dark:border-orange-400 hover:border-orange-600 dark:hover:border-orange-300 transition-colors text-left"
+            className="p-2 bg-orange-50 dark:bg-orange-900/30 rounded-lg border-2 border-orange-500 dark:border-orange-400 hover:border-orange-600 dark:hover:border-orange-300 transition-colors text-left"
           >
-            <div className="flex items-center gap-2">
+            <div className="flex flex-col items-center gap-1">
               <div className="w-8 h-8 bg-orange-100 dark:bg-orange-900/50 rounded-lg flex items-center justify-center flex-shrink-0">
                 <svg className="w-4 h-4 text-orange-600 dark:text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
@@ -393,6 +622,23 @@ export function StudioPanel(props: WorkspaceViewProps) {
               </div>
               <p className="text-xs font-semibold text-orange-900 dark:text-orange-100 truncate">
                 听写
+              </p>
+            </div>
+          </button>
+          
+          {/* 跟读 */}
+          <button
+            onClick={() => setShowShadowingModal(true)}
+            className="p-2 bg-purple-50 dark:bg-purple-900/30 rounded-lg border-2 border-purple-500 dark:border-purple-400 hover:border-purple-600 dark:hover:border-purple-300 transition-colors text-left"
+          >
+            <div className="flex flex-col items-center gap-1">
+              <div className="w-8 h-8 bg-purple-100 dark:bg-purple-900/50 rounded-lg flex items-center justify-center flex-shrink-0">
+                <svg className="w-4 h-4 text-purple-600 dark:text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                </svg>
+              </div>
+              <p className="text-xs font-semibold text-purple-900 dark:text-purple-100 truncate">
+                跟读
               </p>
             </div>
           </button>
@@ -960,6 +1206,172 @@ export function StudioPanel(props: WorkspaceViewProps) {
             
             {/* 隐藏的音频播放器 */}
             <audio ref={dictationAudioRef} className="hidden" />
+          </div>
+        </div>
+      )}
+
+      {/* 跟读模态框 */}
+      {showShadowingModal && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full h-[85vh] flex flex-col">
+            {/* Header */}
+            <div className="flex items-center justify-between px-6 py-3 border-b border-gray-200 dark:border-gray-700 flex-shrink-0">
+              <div className="flex items-center gap-4">
+                <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
+                  跟读练习
+                </h2>
+                {/* 类型选择 */}
+                <select
+                  value={shadowingType}
+                  onChange={(e) => setShadowingType(e.target.value as 'word' | 'sentence' | 'all')}
+                  className="text-sm px-3 py-1.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                >
+                  <option value="all">全部</option>
+                  <option value="word">单词</option>
+                  <option value="sentence">句子</option>
+                </select>
+              </div>
+              <div className="flex items-center gap-3">
+                {/* 统计 */}
+                <div className="flex items-center gap-2 text-xs">
+                  <span className="px-2 py-1 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 rounded">
+                    已练习 {shadowingStats.practiced}/{shadowingStats.total}
+                  </span>
+                </div>
+                <button
+                  onClick={() => setShowShadowingModal(false)}
+                  className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+            
+            {/* Content */}
+            <div className="flex-1 overflow-hidden flex flex-col p-6">
+              {shadowingLoading ? (
+                <div className="flex items-center justify-center h-64">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div>
+                </div>
+              ) : shadowingCompleted ? (
+                <div className="flex flex-col items-center justify-center flex-1 text-center">
+                  <div className="w-20 h-20 bg-purple-100 dark:bg-purple-900/30 rounded-full flex items-center justify-center mb-4">
+                    <svg className="w-10 h-10 text-purple-600 dark:text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                  </div>
+                  <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
+                    {shadowingCards.length === 0 ? '没有可跟读的卡片' : '跟读完成！'}
+                  </h3>
+                  <p className="text-gray-500 dark:text-gray-400 mb-2">
+                    {shadowingCards.length === 0 ? '请先创建一些带音频的卡片' : `共练习了 ${shadowingStats.practiced} 个卡片`}
+                  </p>
+                </div>
+              ) : currentShadowingCard ? (
+                <div className="flex-1 flex flex-col min-h-0">
+                  {/* 进度 */}
+                  <div className="flex items-center justify-between text-sm text-gray-500 mb-4 flex-shrink-0">
+                    <span>{currentShadowingIndex + 1} / {shadowingCards.length}</span>
+                    <span className="px-2 py-0.5 bg-gray-100 dark:bg-gray-700 rounded text-xs">
+                      {currentShadowingCard.cardType}
+                    </span>
+                  </div>
+                  
+                  {/* 卡片正面内容 */}
+                  <div className="bg-purple-50 dark:bg-purple-900/20 rounded-xl p-6 mb-6 flex-shrink-0">
+                    <p className="text-2xl text-center text-gray-900 dark:text-white font-medium">
+                      {currentShadowingCard.frontContent}
+                    </p>
+                    {currentShadowingCard.kanaText && (
+                      <p className="text-lg text-center text-gray-500 dark:text-gray-400 mt-2">
+                        {currentShadowingCard.kanaText}
+                      </p>
+                    )}
+                  </div>
+                  
+                  {/* 播放原音频按钮 */}
+                  <div className="flex justify-center mb-6 flex-shrink-0">
+                    <button
+                      onClick={playShadowingAudio}
+                      className="inline-flex items-center gap-3 px-8 py-4 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 rounded-xl hover:bg-purple-200 dark:hover:bg-purple-900/50 transition-colors"
+                    >
+                      <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
+                      </svg>
+                      <span className="text-lg font-medium">播放原音</span>
+                    </button>
+                  </div>
+                  
+                  {/* 录音区域 */}
+                  <div className="flex-1 flex flex-col items-center justify-center bg-gray-50 dark:bg-gray-700/30 rounded-xl p-6">
+                    {/* 录音按钮 */}
+                    <div className="mb-6">
+                      {!isRecording ? (
+                        <button
+                          onClick={startRecording}
+                          className="w-24 h-24 bg-red-500 hover:bg-red-600 rounded-full flex items-center justify-center transition-colors shadow-lg"
+                        >
+                          <svg className="w-12 h-12 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
+                          </svg>
+                        </button>
+                      ) : (
+                        <button
+                          onClick={stopRecording}
+                          className="w-24 h-24 bg-red-600 rounded-full flex items-center justify-center animate-pulse shadow-lg"
+                        >
+                          <svg className="w-12 h-12 text-white" fill="currentColor" viewBox="0 0 24 24">
+                            <rect x="6" y="6" width="12" height="12" rx="2" />
+                          </svg>
+                        </button>
+                      )}
+                    </div>
+                    
+                    <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
+                      {isRecording ? '正在录音，点击停止...' : '点击开始录音'}
+                    </p>
+                    
+                    {/* ASR 实时识别结果 */}
+                    {asrTranscript && (
+                      <div className="w-full bg-white dark:bg-gray-800 rounded-xl p-4 border border-gray-200 dark:border-gray-600">
+                        <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">识别结果：</p>
+                        <p className="text-lg text-gray-900 dark:text-white">{asrTranscript}</p>
+                      </div>
+                    )}
+                    
+                    {/* 播放录制的音频 */}
+                    {recordedAudioUrl && !isRecording && (
+                      <button
+                        onClick={playRecordedAudio}
+                        className="mt-4 inline-flex items-center gap-2 px-6 py-3 bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-200 rounded-xl hover:bg-gray-300 dark:hover:bg-gray-500 transition-colors"
+                      >
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        <span>播放我的录音</span>
+                      </button>
+                    )}
+                  </div>
+                  
+                  {/* 下一个按钮 */}
+                  <div className="flex gap-3 mt-4 flex-shrink-0">
+                    <button
+                      onClick={nextShadowing}
+                      className="flex-1 py-4 bg-purple-600 hover:bg-purple-700 text-white text-lg rounded-xl font-medium transition-colors"
+                    >
+                      {currentShadowingIndex < shadowingCards.length - 1 ? '下一个' : '完成'}
+                    </button>
+                  </div>
+                </div>
+              ) : null}
+            </div>
+            
+            {/* 隐藏的音频播放器 */}
+            <audio ref={shadowingAudioRef} className="hidden" />
+            <audio ref={recordedAudioRef} className="hidden" />
           </div>
         </div>
       )}
