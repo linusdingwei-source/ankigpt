@@ -105,8 +105,6 @@ export function StudioPanel(props: WorkspaceViewProps) {
   const recordedAudioRef = useRef<HTMLAudioElement | null>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
-  const audioContextRef = useRef<AudioContext | null>(null);
-  const processorRef = useRef<ScriptProcessorNode | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   
   // 生成完形填空文本（保留标点，替换文字为下划线）
