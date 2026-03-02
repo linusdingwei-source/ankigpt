@@ -19,7 +19,7 @@ interface AsrSession {
 const sessions = new Map<string, AsrSession>();
 
 // POST: Initialize session and receive audio chunks
-export async function POST(request: NextRequest) {
+export async function POST(request: NextRequest): Promise<Response> {
   try {
     const session = await auth();
     const userId = await getUserId(session, request);
@@ -47,7 +47,7 @@ export async function POST(request: NextRequest) {
       
       const wsUrl = `${BASE_URL}?model=${MODEL}`;
       
-      return new Promise((resolve) => {
+      const wsPromise = new Promise<Response>((resolve) => {
         const ws = new WebSocket(wsUrl, {
           headers: {
             'Authorization': `Bearer ${API_KEY}`,
@@ -140,6 +140,8 @@ export async function POST(request: NextRequest) {
           }
         }, 10000);
       });
+      
+      return wsPromise;
     }
 
     if (action === 'audio' && sessionId && audioChunk) {
@@ -194,7 +196,7 @@ export async function POST(request: NextRequest) {
       }
 
       // Wait for final result
-      return new Promise((resolve) => {
+      return new Promise<Response>((resolve) => {
         const checkFinished = setInterval(() => {
           if (session.isFinished) {
             clearInterval(checkFinished);
