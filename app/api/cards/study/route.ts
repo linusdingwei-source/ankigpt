@@ -31,7 +31,6 @@ export async function GET(request: NextRequest) {
     const baseConditions: any = {
       userId,
       category: 'CARD', // 只学习卡片，不学习笔记
-      NOT: { backContent: null }, // 必须有背面内容
     };
 
     if (deckName) {
@@ -42,7 +41,7 @@ export async function GET(request: NextRequest) {
     if (cardType === 'word') {
       baseConditions.cardType = '单词';
     } else if (cardType === 'sentence') {
-      baseConditions.NOT = { ...baseConditions.NOT, cardType: '单词' };
+      baseConditions.NOT = { cardType: '单词' };
     }
     
     // 查询待学习的卡片（新卡片或到期复习的卡片）
